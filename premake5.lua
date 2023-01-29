@@ -22,11 +22,17 @@ IncludeDir["Glad"] = "Wire/vendor/Glad/include"
 IncludeDir["ImGui"] = "Wire/vendor/imgui"
 IncludeDir["glm"] = "Wire/vendor/glm"
 IncludeDir["stb_image"] = "Wire/vendor/stb_image"
+IncludeDir["rtaudio"] = "Wire/vendor/rtaudio"
+IncludeDir["entt"] = "Wire/vendor/entt/include"
+IncludeDir["yaml_cpp"] = "Wire/vendor/yaml-cpp/include"
+IncludeDir["ImGuizmo"] = "Wire/vendor/ImGuizmo"
 
 group "Dependencies"
 	include "Wire/vendor/GLFW"
 	include "Wire/vendor/Glad"
 	include "Wire/vendor/imgui"
+	include "Wire/vendor/rtaudio"
+	include "Wire/vendor/yaml-cpp"
 group ""
 
 project "Wire"
@@ -50,6 +56,8 @@ project "Wire"
 		"%{prj.name}/vendor/stb_image/**.cpp",
 		"%{prj.name}/vendor/glm/glm/**.hpp",
 		"%{prj.name}/vendor/glm/glm/**.inl",
+		"%{prj.name}/vendor/ImGuizmo/ImGuizmo.h",
+		"%{prj.name}/vendor/ImGuizmo/ImGuizmo.cpp",
 	}
 
 	defines
@@ -65,8 +73,11 @@ project "Wire"
 		"%{IncludeDir.Glad}",
 		"%{IncludeDir.ImGui}",
 		"%{IncludeDir.glm}",
-		"%{IncludeDir.stb_image}"
-
+		"%{IncludeDir.stb_image}",
+		"%{IncludeDir.rtaudio}",
+		"%{IncludeDir.entt}",
+		"%{IncludeDir.yaml_cpp}",
+		"%{IncludeDir.ImGuizmo}",
 	}
 
 	links 
@@ -74,8 +85,13 @@ project "Wire"
 		"GLFW",
 		"Glad",
 		"ImGui",
+		"rtaudio",
+		"yaml-cpp",
 		"opengl32.lib"
 	}
+
+	filter "files:Wire/vendor/ImGuizmo/**.cpp"
+		flags { "NoPCH" }
 
 	filter "system:windows"
 		systemversion "latest"
@@ -122,12 +138,15 @@ project "Sandbox"
 		"Wire/vendor/spdlog/include",
 		"Wire/src",
 		"Wire/vendor",
-		"%{IncludeDir.glm}"
+		"%{IncludeDir.glm}",
+		"%{IncludeDir.entt}",
+		"%{IncludeDir.ImGuizmo}",
 	}
 
 	links
 	{
-		"Wire"
+		"Wire",
+		"opengl32.lib",
 	}
 
 	filter "system:windows"
@@ -169,12 +188,15 @@ project "Wire-Designer"
 		"Wire/vendor/spdlog/include",
 		"Wire/src",
 		"Wire/vendor",
-		"%{IncludeDir.glm}"
+		"%{IncludeDir.glm}",
+		"%{IncludeDir.entt}",
+		"%{IncludeDir.ImGuizmo}",
 	}
 
 	links
 	{
-		"Wire"
+		"Wire",
+		"opengl32.lib",
 	}
 
 	filter "system:windows"

@@ -14,3 +14,4 @@ bin-int/
 WireProfile-Runtime.json
 WireProfile-Shutdown.json
 WireProfile-Startup.json
+Wire.log

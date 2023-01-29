@@ -8,10 +8,15 @@
 
 #include "Wire/Core/Input.h"
 #include "Wire/Core/KeyCodes.h"
-#include "Wire/Core/MouseButtonCodes.h"
+#include "Wire/Core/MouseCodes.h"
 #include "Wire/Renderer/OrthographicCameraController.h"
 
 #include "Wire/ImGui/ImGuiLayer.h"
+
+#include "Wire/Scene/Scene.h"
+#include "Wire/Scene/Entity.h"
+#include "Wire/Scene/ScriptableEntity.h"
+#include "Wire/Scene/Components.h"
 
 // Renderer --------------------------
 #include "Wire/Renderer/Renderer.h"

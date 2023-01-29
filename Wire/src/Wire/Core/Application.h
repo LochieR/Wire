@@ -7,6 +7,8 @@
 #include "Wire/Events/Event.h"
 #include "Wire/Events/ApplicationEvent.h"
 
+#include "Wire/Audio/Audio.h"
+
 #include "Wire/Plugins/PluginManager.h"
 
 #include "Timestep.h"
@@ -33,7 +35,6 @@ namespace Wire {
 		void Close();
 
 		ImGuiLayer* GetImGuiLayer() { return m_ImGuiLayer; }
-		PluginManager& GetPluginManager() { return m_PluginManager; }
 
 		inline static Application& Get() { return *s_Instance; }
 	private:
@@ -49,8 +50,6 @@ namespace Wire {
 		LayerStack m_LayerStack;
 
 		float m_LastFrameTime = 0.0f;
-
-		PluginManager m_PluginManager;
 	private:
 		static Application* s_Instance;
 	};

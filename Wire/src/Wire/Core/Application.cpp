@@ -70,15 +70,11 @@ namespace Wire {
 			if (e.Handled)
 				break;
 		}
-
-		GetPluginManager().OnEvent(e);
 	}
 
 	void Application::Run()
 	{
 		WR_PROFILE_FUNCTION();
-
-		GetPluginManager().Setup();
 
 		while (m_Running)
 		{
@@ -96,18 +92,16 @@ namespace Wire {
 					for (Layer* layer : m_LayerStack)
 						layer->OnUpdate(timestep);
 				}
-
-				m_ImGuiLayer->Begin();
-				{
-					WR_PROFILE_SCOPE("LayerStack OnImGuiRender");
-
-					for (Layer* layer : m_LayerStack)
-						layer->OnImGuiRender();
-				}
-				m_ImGuiLayer->End();
-
-				GetPluginManager().OnUpdate(timestep);
 			}
+
+			m_ImGuiLayer->Begin();
+			{
+				WR_PROFILE_SCOPE("LayerStack OnImGuiRender");
+
+				for (Layer* layer : m_LayerStack)
+					layer->OnImGuiRender();
+			}
+			m_ImGuiLayer->End();
 
 			m_Window->OnUpdate();
 		}

@@ -6,11 +6,19 @@
 	path = Wire/vendor/GLFW
 	url = https://github.com/TheCherno/glfw
 	branch = master
-[submodule "Wire/vendor/imgui"]
-	path = Wire/vendor/imgui
-	url = https://github.com/TheCherno/imgui
-	branch = docking
 [submodule "Wire/vendor/glm"]
 	path = Wire/vendor/glm
 	url = https://github.com/g-truc/glm
 	branch = master
+[submodule "Wire/vendor/rtaudio"]
+	path = Wire/vendor/rtaudio
+	url = https://github.com/Loch9/rtaudio
+[submodule "Wire/vendor/imgui"]
+	path = Wire/vendor/imgui
+	url = https://github.com/TheCherno/imgui
+[submodule "Wire/vendor/yaml-cpp"]
+	path = Wire/vendor/yaml-cpp
+	url = https://github.com/thecherno/yaml-cpp
+[submodule "Wire/vendor/ImGuizmo"]
+	path = Wire/vendor/ImGuizmo
+	url = https://github.com/TheCherno/ImGuizmo
