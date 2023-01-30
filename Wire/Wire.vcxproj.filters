@@ -31,6 +31,9 @@
     <Filter Include="src\Wire\ImGui">
       <UniqueIdentifier>{1D61699A-092F-5DA0-F2C2-CDC6DE2F3905}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\Wire\Maths">
+      <UniqueIdentifier>{5FECAB9A-4BBA-9FA0-344E-10C720BB7B05}</UniqueIdentifier>
+    </Filter>
     <Filter Include="src\Wire\Plugins">
       <UniqueIdentifier>{846501F6-705E-2048-9990-05CD85E8FF53}</UniqueIdentifier>
     </Filter>
@@ -159,6 +162,9 @@
     <ClInclude Include="src\Wire\ImGui\ImGuiLayer.h">
       <Filter>src\Wire\ImGui</Filter>
     </ClInclude>
+    <ClInclude Include="src\Wire\Maths\Maths.h">
+      <Filter>src\Wire\Maths</Filter>
+    </ClInclude>
     <ClInclude Include="src\Wire\Plugins\IPlugin.h">
       <Filter>src\Wire\Plugins</Filter>
     </ClInclude>
@@ -169,6 +175,9 @@
       <Filter>src\Wire\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="src\Wire\Renderer\Camera.h">
+      <Filter>src\Wire\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Wire\Renderer\EditorCamera.h">
       <Filter>src\Wire\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="src\Wire\Renderer\Framebuffer.h">
@@ -1482,8 +1491,6 @@
     <ClInclude Include="vendor\stb_image\stb_image.h">
       <Filter>vendor\stb_image</Filter>
     </ClInclude>
-    <ClInclude Include="src\Wire\Maths\Maths.h" />
-    <ClInclude Include="src\Wire\Renderer\EditorCamera.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Platform\OpenGL\OpenGLBuffer.cpp">
@@ -1540,10 +1547,16 @@
     <ClCompile Include="src\Wire\ImGui\ImGuiLayer.cpp">
       <Filter>src\Wire\ImGui</Filter>
     </ClCompile>
+    <ClCompile Include="src\Wire\Maths\Maths.cpp">
+      <Filter>src\Wire\Maths</Filter>
+    </ClCompile>
     <ClCompile Include="src\Wire\Plugins\PluginManager.cpp">
       <Filter>src\Wire\Plugins</Filter>
     </ClCompile>
     <ClCompile Include="src\Wire\Renderer\Buffer.cpp">
+      <Filter>src\Wire\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Wire\Renderer\EditorCamera.cpp">
       <Filter>src\Wire\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="src\Wire\Renderer\Framebuffer.cpp">
@@ -1600,7 +1613,5 @@
     <ClCompile Include="vendor\stb_image\stb_image.cpp">
       <Filter>vendor\stb_image</Filter>
     </ClCompile>
-    <ClCompile Include="src\Wire\Maths\Maths.cpp" />
-    <ClCompile Include="src\Wire\Renderer\EditorCamera.cpp" />
   </ItemGroup>
 </Project>
