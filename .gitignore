@@ -15,3 +15,7 @@ WireProfile-Runtime.json
 WireProfile-Shutdown.json
 WireProfile-Startup.json
 Wire.log
+
+Wire/vendor/VulkanSDK
+Wire-Designer/assets/cache
+scripts/__pycache__

@@ -18,7 +18,7 @@ public:
 	}
 };
 
-Wire::Application* Wire::CreateApplication()
+Wire::Application* Wire::CreateApplication(Wire::ApplicationCommandLineArgs args)
 {
 	return new Sandbox();
 }

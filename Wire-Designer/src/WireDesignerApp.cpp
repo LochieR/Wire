@@ -8,8 +8,8 @@ namespace Wire {
 	class WireDesigner : public Application
 	{
 	public:
-		WireDesigner()
-			: Application("Wire Designer")
+		WireDesigner(ApplicationCommandLineArgs args)
+			: Application("Wire Designer", args)
 		{
 			PushLayer(new EditorLayer());
 		}
@@ -19,9 +19,9 @@ namespace Wire {
 		}
 	};
 
-	Application* CreateApplication()
+	Application* CreateApplication(ApplicationCommandLineArgs args)
 	{
-		return new WireDesigner();
+		return new WireDesigner(args);
 	}
 
 }

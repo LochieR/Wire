@@ -93,6 +93,9 @@
     <ClInclude Include="src\Platform\OpenGL\OpenGLTexture.h">
       <Filter>src\Platform\OpenGL</Filter>
     </ClInclude>
+    <ClInclude Include="src\Platform\OpenGL\OpenGLUniformBuffer.h">
+      <Filter>src\Platform\OpenGL</Filter>
+    </ClInclude>
     <ClInclude Include="src\Platform\OpenGL\OpenGLVertexArray.h">
       <Filter>src\Platform\OpenGL</Filter>
     </ClInclude>
@@ -136,6 +139,9 @@
       <Filter>src\Wire\Core</Filter>
     </ClInclude>
     <ClInclude Include="src\Wire\Core\PlatformDetection.h">
+      <Filter>src\Wire\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Wire\Core\Timer.h">
       <Filter>src\Wire\Core</Filter>
     </ClInclude>
     <ClInclude Include="src\Wire\Core\Timestep.h">
@@ -208,6 +214,9 @@
       <Filter>src\Wire\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="src\Wire\Renderer\Texture.h">
+      <Filter>src\Wire\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Wire\Renderer\UniformBuffer.h">
       <Filter>src\Wire\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="src\Wire\Renderer\VertexArray.h">
@@ -1511,6 +1520,9 @@
     <ClCompile Include="src\Platform\OpenGL\OpenGLTexture.cpp">
       <Filter>src\Platform\OpenGL</Filter>
     </ClCompile>
+    <ClCompile Include="src\Platform\OpenGL\OpenGLUniformBuffer.cpp">
+      <Filter>src\Platform\OpenGL</Filter>
+    </ClCompile>
     <ClCompile Include="src\Platform\OpenGL\OpenGLVertexArray.cpp">
       <Filter>src\Platform\OpenGL</Filter>
     </ClCompile>
@@ -1587,6 +1599,9 @@
       <Filter>src\Wire\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="src\Wire\Renderer\Texture.cpp">
+      <Filter>src\Wire\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Wire\Renderer\UniformBuffer.cpp">
       <Filter>src\Wire\Renderer</Filter>
     </ClCompile>
     <ClCompile Include="src\Wire\Renderer\VertexArray.cpp">

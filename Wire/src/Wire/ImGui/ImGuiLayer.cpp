@@ -1,5 +1,5 @@
 #include "wrpch.h"
-#include "Wire/ImGui/ImGuiLayer.h"
+#include "ImGuiLayer.h"
 
 #include <imgui.h>
 #include <examples/imgui_impl_glfw.h>
@@ -11,7 +11,7 @@
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
 
-#include "imguizmo.h"
+#include "ImGuizmo.h"
 
 namespace Wire {
 
@@ -78,7 +78,7 @@ namespace Wire {
 			e.Handled |= e.IsInCategory(EventCategoryKeyboard) & io.WantCaptureKeyboard;
 		}
 	}
-	
+
 	void ImGuiLayer::Begin()
 	{
 		WR_PROFILE_FUNCTION();
@@ -119,7 +119,7 @@ namespace Wire {
 		colours[ImGuiCol_Header] = ImVec4{ 0.2f, 0.205f, 0.21f, 1.0f };
 		colours[ImGuiCol_HeaderHovered] = ImVec4{ 0.3f, 0.305f, 0.31f, 1.0f };
 		colours[ImGuiCol_HeaderActive] = ImVec4{ 0.15f, 0.1505f, 0.151f, 1.0f };
-		
+
 		// Buttons
 		colours[ImGuiCol_Button] = ImVec4{ 0.2f, 0.205f, 0.21f, 1.0f };
 		colours[ImGuiCol_ButtonHovered] = ImVec4{ 0.3f, 0.305f, 0.31f, 1.0f };
