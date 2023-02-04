@@ -1,6 +1,6 @@
 #include "wrpch.h"
-#include "Wire/Renderer/Renderer.h"
-#include "Wire/Renderer/Renderer2D.h"
+#include "Renderer.h"
+#include "Renderer2D.h"
 
 namespace Wire {
 

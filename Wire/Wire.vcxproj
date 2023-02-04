@@ -158,6 +158,7 @@
     <ClInclude Include="src\Platform\Windows\WindowsWindow.h" />
     <ClInclude Include="src\Wire.h" />
     <ClInclude Include="src\Wire\Audio\Audio.h" />
+    <ClInclude Include="src\Wire\Audio\WavHeader.h" />
     <ClInclude Include="src\Wire\Core\Application.h" />
     <ClInclude Include="src\Wire\Core\Assert.h" />
     <ClInclude Include="src\Wire\Core\Core.h" />
@@ -632,10 +633,11 @@
     <ClCompile Include="src\Platform\OpenGL\OpenGLTexture.cpp" />
     <ClCompile Include="src\Platform\OpenGL\OpenGLUniformBuffer.cpp" />
     <ClCompile Include="src\Platform\OpenGL\OpenGLVertexArray.cpp" />
-    <ClCompile Include="src\Platform\Windows\WindowsAudio.cpp" />
     <ClCompile Include="src\Platform\Windows\WindowsInput.cpp" />
     <ClCompile Include="src\Platform\Windows\WindowsPlatformUtils.cpp" />
     <ClCompile Include="src\Platform\Windows\WindowsWindow.cpp" />
+    <ClCompile Include="src\Wire\Audio\Audio.cpp" />
+    <ClCompile Include="src\Wire\Audio\WavHeader.cpp" />
     <ClCompile Include="src\Wire\Core\Application.cpp" />
     <ClCompile Include="src\Wire\Core\Layer.cpp" />
     <ClCompile Include="src\Wire\Core\LayerStack.cpp" />

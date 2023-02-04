@@ -14,7 +14,7 @@ Entities:
       Tag: Camera
     TransformComponent:
       Translation: [0, 1.70000005, 4]
-      Rotation: [-0.404916406, 0, 0]
+      Rotation: [-0.399680376, 0, 0]
       Scale: [1, 1, 1]
     CameraComponent:
       Camera:
@@ -40,8 +40,8 @@ Entities:
     TagComponent:
       Tag: Left
     TransformComponent:
-      Translation: [-0.354999989, 0, 0.349999994]
-      Rotation: [0, -0.785398185, 0]
+      Translation: [-0.352986276, 0, 0.347013682]
+      Rotation: [0, -0.785398245, 0]
       Scale: [1, 1, 1]
     SpriteRendererComponent:
       Colour: [1, 0, 0.949807167, 1]

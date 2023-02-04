@@ -23,7 +23,9 @@ namespace Wire {
 
 		void NewScene();
 		void OpenScene();
+		void SaveScene();
 		void SaveSceneAs();
+		void SerializeScene(Ref<Scene> scene, const std::filesystem::path& path);
 	private:
 		OrthographicCameraController m_CameraController;
 
@@ -32,6 +34,7 @@ namespace Wire {
 		Ref<Framebuffer> m_Framebuffer;
 
 		Ref<Scene> m_ActiveScene;
+		std::filesystem::path m_ActiveScenePath;
 		Entity m_SquareEntity;
 		Entity m_CameraEntity;
 		Entity m_SecondCamera;

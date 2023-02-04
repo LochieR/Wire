@@ -1,5 +1,4 @@
 project "Wire-Designer"
-	kind "ConsoleApp"
 	language "C++"
 	cppdialect "C++17"
 	staticruntime "off"
@@ -33,6 +32,7 @@ project "Wire-Designer"
 		systemversion "latest"
 
 	filter "configurations:Debug"
+		kind "ConsoleApp"
 		defines "WR_DEBUG"
 		runtime "Debug"
 		symbols "on"
@@ -45,6 +45,7 @@ project "Wire-Designer"
 		}
 
 	filter "configurations:Release"
+		kind "ConsoleApp"
 		defines "WR_RELEASE"
 		runtime "Release"
 		optimize "on"
@@ -57,6 +58,7 @@ project "Wire-Designer"
 		}
 
 	filter "configurations:Dist"
+		kind "WindowedApp"
 		defines "WR_DIST"
 		runtime "Release"
 		optimize "on"

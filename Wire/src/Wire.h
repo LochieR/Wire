@@ -18,6 +18,8 @@
 #include "Wire/Scene/ScriptableEntity.h"
 #include "Wire/Scene/Components.h"
 
+#include "Wire/Audio/Audio.h"
+
 // Renderer --------------------------
 #include "Wire/Renderer/Renderer.h"
 #include "Wire/Renderer/Renderer2D.h"

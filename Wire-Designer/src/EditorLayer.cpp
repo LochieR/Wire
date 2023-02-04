@@ -38,6 +38,7 @@ namespace Wire {
 			auto sceneFilePath = commandLineArgs[1];
 			SceneSerializer serializer(m_ActiveScene);
 			serializer.Deserialize(sceneFilePath);
+			m_ActiveScenePath = sceneFilePath;
 		}
 
 		m_EditorCamera = EditorCamera(30.0f, 16.0f / 9.0f, 0.1f, 1000.0f);
@@ -222,6 +223,11 @@ namespace Wire {
 					OpenScene();
 				}
 
+				if (ImGui::MenuItem("Save", "Ctrl+S"))
+				{
+					SaveScene();
+				}
+
 				if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S"))
 				{
 					SaveSceneAs();
@@ -354,8 +360,11 @@ namespace Wire {
 			}
 			case KeyCode::S:
 			{
-				if (control && shift)
-					SaveSceneAs();
+				if (control)
+					if (shift)
+						SaveSceneAs();
+					else
+						SaveScene();
 				break;
 			}
 
@@ -390,6 +399,8 @@ namespace Wire {
 		m_ActiveScene = CreateRef<Scene>();
 		m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+
+		m_ActiveScenePath = std::filesystem::path();
 	}
 
 	void EditorLayer::OpenScene()
@@ -398,6 +409,7 @@ namespace Wire {
 		if (!filepath.empty())
 		{
 			m_ActiveScene = CreateRef<Scene>();
+			m_ActiveScenePath = filepath;
 			m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
 			m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 
@@ -406,14 +418,27 @@ namespace Wire {
 		}
 	}
 
+	void EditorLayer::SaveScene()
+	{
+		if (!m_ActiveScenePath.empty())
+			SerializeScene(m_ActiveScene, m_ActiveScenePath);
+		else
+			SaveSceneAs();
+	}
+
 	void EditorLayer::SaveSceneAs()
 	{
 		std::string filepath = FileDialogs::SaveFile("Wire Scene (*.wire)\0*.wire\0");
 		if (!filepath.empty())
 		{
-			SceneSerializer serializer(m_ActiveScene);
-			serializer.Serialize(filepath);
+			SerializeScene(m_ActiveScene, filepath);
 		}
+	}
+
+	void EditorLayer::SerializeScene(Ref<Scene> scene, const std::filesystem::path& path)
+	{
+		SceneSerializer serializer(scene);
+		serializer.Serialize(path.string());
 	}
 
 }

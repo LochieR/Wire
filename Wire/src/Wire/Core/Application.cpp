@@ -2,10 +2,10 @@
 #include "Application.h"
 
 #include "Log.h"
+#include "Input.h"
 
 #include "Wire/Renderer/Renderer.h"
-
-#include "Input.h"
+#include "Wire/Audio/Audio.h"
 
 #include <glfw/glfw3.h>
 
@@ -14,6 +14,7 @@ namespace Wire {
 	Application* Application::s_Instance = nullptr;
 
 	Application::Application(const std::string& name, ApplicationCommandLineArgs args)
+		: m_CommandLineArgs(args)
 	{
 		WR_PROFILE_FUNCTION();
 
@@ -23,6 +24,7 @@ namespace Wire {
 		m_Window->SetEventCallback(WR_BIND_EVENT_FN(Application::OnEvent));
 
 		Renderer::Init();
+		AudioPlayer::Init();
 
 		m_ImGuiLayer = new ImGuiLayer();
 		PushOverlay(m_ImGuiLayer);
@@ -33,6 +35,7 @@ namespace Wire {
 		WR_PROFILE_FUNCTION();
 
 		Renderer::Shutdown();
+		AudioPlayer::Shutdown();
 	}
 
 	void Application::PushLayer(Layer* layer)

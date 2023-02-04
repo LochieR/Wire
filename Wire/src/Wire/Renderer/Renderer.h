@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Wire/Renderer/RenderCommand.h"
+#include "RenderCommand.h"
 
-#include "Wire/Renderer/OrthographicCamera.h"
-#include "Wire/Renderer/Shader.h"
+#include "OrthographicCamera.h"
+#include "Shader.h"
 
 namespace Wire {
 

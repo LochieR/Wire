@@ -1,50 +1,27 @@
 #pragma once
 
-#include <string>
-
-// Temporary
-typedef unsigned int RtAudioStreamStatus;
+class RtAudio;
 
 namespace Wire {
 
-	class Audio
-	{
-	public:
-		static int Init();
-		static void Delete();
-	};
-
-	class SoundPlayer
+	class AudioPlayer
 	{
 	public:
 		typedef struct
 		{
 			uint32_t SampleRate;
 			uint32_t ChannelNumber;
-			uint32_t FrameNumber;
-			float* WaveFormTable;
-			uint32_t Index;
+			uint32_t WaveNumber;
+			float* Waves;
+			uint32_t WavesIndexInFrame;
 		} CallbackData;
 	public:
-		static int Init();
+		static void Init();
+		static void Shutdown();
 
-		static void Play(float freq);
-		static void Stop();
+		static void PlayFile(const std::string& filepath);
 	private:
-		static int rt_callback(
-			void* outBuf,
-			void* inBuf,
-			uint32_t frames,
-			double streamTime,
-			RtAudioStreamStatus status,
-			void* userData
-		);
-	};
-
-	class FilePlayer
-	{
-	public:
-		static int Play(const std::string& path);
+		static RtAudio* m_Audio;
 	};
 
 }
