@@ -25,11 +25,18 @@ project "Wire-Designer"
 	links
 	{
 		"Wire",
-		"opengl32.lib",
 	}
 
 	filter "system:windows"
 		systemversion "latest"
+
+		links
+		{
+			"opengl32.lib"
+		}
+
+	filter "system:macosx"
+		systemversion "10.14"
 
 	filter "configurations:Debug"
 		kind "ConsoleApp"
