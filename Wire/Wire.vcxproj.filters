@@ -168,6 +168,9 @@
     <ClInclude Include="src\Wire\Events\MouseEvent.h">
       <Filter>src\Wire\Events</Filter>
     </ClInclude>
+    <ClInclude Include="src\Wire\ImGui\Colours.h">
+      <Filter>src\Wire\ImGui</Filter>
+    </ClInclude>
     <ClInclude Include="src\Wire\ImGui\ImGuiLayer.h">
       <Filter>src\Wire\ImGui</Filter>
     </ClInclude>

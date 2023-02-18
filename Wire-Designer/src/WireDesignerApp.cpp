@@ -3,53 +3,13 @@
 #include "EditorLayer.h"
 
 #ifdef WR_DEBUG
-
 int main(int argc, char** argv)
-{
-	Wire::Log::Init();
-
-	WR_PROFILE_BEGIN_SESSION("Startup", "WireProfile-Startup.json");
-
-	auto app = new Wire::Application("Wire Designer", { argc, argv });
-
-	app->PushLayer(new Wire::EditorLayer());
-
-	WR_PROFILE_END_SESSION();
-	WR_PROFILE_BEGIN_SESSION("Runtime", "WireProfile-Runtime.json");
-
-	app->Run();
-
-	WR_PROFILE_END_SESSION();
-	WR_PROFILE_BEGIN_SESSION("Shutdown", "WireProfile-Shutdown.json");
-
-	delete app;
-
-	WR_PROFILE_END_SESSION();
-}
-
-#elif defined(WR_RELEASE)
-
-int main(int argc, char** argv)
-{
-	Wire::Log::Init();
-
-	auto app = new Wire::Application("Wire Designer", { argc, argv });
-
-	app->PushLayer(new Wire::EditorLayer());
-	app->Run();
-
-	delete app;
-}
-
-#elif defined(WR_DIST)
-
-#ifdef WR_PLATFORM_WINDOWS
-#include <vector>
+#elif defined(WR_DIST) && defined(_WIN32)
+#pragma warning(disable: 4996)
+#include <windows.h>
+#include <string>
 #include <locale>
 #include <codecvt>
-
-// TODO: Fix command line arguments for Windows:Dist
-// Windows has different command line arguments, so a few functions are needed for string splitting
 
 template <typename Out>
 void split(const std::string& s, char delim, Out result)
@@ -69,39 +29,39 @@ std::vector<std::string> split(const std::string& s, char delim)
 	return elems;
 }
 
+char** GetArgs(wchar_t* original)
+{
+	std::wstring wstr(original);
+	std::string str = std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(wstr);
+	WR_INFO("{0}", str);
+	std::vector<char*> c_strings{};
+	auto splitted = split(str, ' ');
+	splitted.insert(splitted.begin(), "Wire-Designer.exe");
+	for (auto& string : splitted)
+		c_strings.push_back(&string.front());
+
+	char** result = new char* [c_strings.size()];
+	for (int i = 0; i < c_strings.size(); i++)
+		result[i] = c_strings[i];
+
+	return result;
+}
+
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
-#else
-int main(int argc, char** argv)
 #endif
 {
 	Wire::Log::Init();
-#ifdef WR_PLATFORM_WINDOWS
+
+#if defined(WR_DIST) && defined(_WIN32)
+	// TODO: Get command line args (argc, argv);
 	int argc = __argc;
-	char** argv = (char**)__wargv;
-	
-	WR_TRACE("{0}", argc);
-	
-	wchar_t* cmdLine = (wchar_t*)pCmdLine;
-
-	std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
-	std::string args(converter.to_bytes(pCmdLine));
-
-	if (!args.empty())
-	{
-		auto substrs = split(args, ' ');
-		argc = substrs.size() + 1;
-		substrs.insert(substrs.begin(), "Wire-Designer.exe");
-
-	}
+	char** argv = GetArgs((wchar_t*)pCmdLine);
 #endif
 
-
-	auto app = new Wire::Application("Wire Designer", { argc, argv });
-
+	Wire::Application* app = new Wire::Application("Wire Designer", { argc, argv });
 	app->PushLayer(new Wire::EditorLayer());
 	app->Run();
 
 	delete app;
 }
 
-#endif

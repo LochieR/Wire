@@ -3,8 +3,6 @@
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 
-#include <glm/gtc/type_ptr.hpp>
-
 #include "Wire/Scene/Components.h"
 
 namespace Wire {
@@ -38,7 +36,11 @@ namespace Wire {
 		if (ImGui::BeginPopupContextWindow("SceneHierarchyPopupMenu", popupFlags))
 		{
 			if (ImGui::MenuItem("Create Empty Entity"))
-				m_Context->CreateEntity("Empty Entity");
+			{
+				auto entity = m_Context->CreateEntity("Empty Entity");
+				if (!m_SelectionContext)
+					SetSelectedEntity(entity);
+			}
 
 			ImGui::EndPopup();
 		}
@@ -66,7 +68,9 @@ namespace Wire {
 		
 		ImGuiTreeNodeFlags flags = ((m_SelectionContext == entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
 		flags |= ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_OpenOnDoubleClick;
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
 		bool opened = ImGui::TreeNodeEx((void*)(uint64_t)(uint32_t)entity, flags, tag.c_str());
+		ImGui::PopStyleVar();
 		if (ImGui::IsItemClicked())
 		{
 			m_SelectionContext = entity;
@@ -164,6 +168,80 @@ namespace Wire {
 		ImGui::PopID();
 	}
 
+	static void DrawVec3Controls(std::vector<SceneHierarchyPanel::Vec3ControlData> datas, float columnWidth)
+	{
+		ImGuiIO& io = ImGui::GetIO();
+		auto boldFont = io.Fonts->Fonts[0];
+
+		ImGui::Columns(2);
+		ImGui::SetColumnWidth(0, columnWidth);
+
+		for (auto data : datas)
+		{
+			ImGui::Text(data.Label.c_str());
+		}
+
+		ImGui::NextColumn();
+
+		for (auto data : datas)
+		{
+			ImGui::PushID(data.Label.c_str());
+
+			ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth());
+			ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0, 0 });
+
+			float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
+			ImVec2 buttonSize = { lineHeight + 3.0f, lineHeight };
+
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0.8f, 0.1f, 0.15f, 1.0f });
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{ 0.9f, 0.2f, 0.2f, 1.0f });
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{ 0.8f, 0.1f, 0.15f, 1.0f });
+			ImGui::PushFont(boldFont);
+			if (ImGui::Button("X", buttonSize))
+				data.Values.x = data.ResetValue;
+			ImGui::PopFont();
+			ImGui::PopStyleColor(3);
+
+			ImGui::SameLine();
+			ImGui::DragFloat("##X", &data.Values.x, 0.1f, 0.0f, 0.0f, "%.2f");
+			ImGui::PopItemWidth();
+			ImGui::SameLine();
+
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0.2f, 0.7f, 0.2f, 1.0f });
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{ 0.3f, 0.8f, 0.3f, 1.0f });
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{ 0.2f, 0.7f, 0.2f, 1.0f });
+			ImGui::PushFont(boldFont);
+			if (ImGui::Button("Y", buttonSize))
+				data.Values.y = data.ResetValue;
+			ImGui::PopFont();
+			ImGui::PopStyleColor(3);
+
+			ImGui::SameLine();
+			ImGui::DragFloat("##Y", &data.Values.y, 0.1f, 0.0f, 0.0f, "%.2f");
+			ImGui::PopItemWidth();
+			ImGui::SameLine();
+
+			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0.1f, 0.25f, 0.8f, 1.0f });
+			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{ 0.2f, 0.35f, 0.9f, 1.0f });
+			ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{ 0.1f, 0.25f, 0.8f, 1.0f });
+			ImGui::PushFont(boldFont);
+			if (ImGui::Button("Z", buttonSize))
+				data.Values.z = data.ResetValue;
+			ImGui::PopFont();
+			ImGui::PopStyleColor(3);
+
+			ImGui::SameLine();
+			ImGui::DragFloat("##Z", &data.Values.z, 0.1f, 0.0f, 0.0f, "%.2f");
+			ImGui::PopItemWidth();
+
+			ImGui::PopStyleVar();
+
+			ImGui::PopID();
+		}
+
+		ImGui::Columns(1);
+	}
+
 	template<typename T, typename UIFunction>
 	static void DrawComponent(const std::string& name, Entity entity, UIFunction uiFunction)
 	{
@@ -245,11 +323,19 @@ namespace Wire {
 
 		DrawComponent<TransformComponent>("Transform", entity, [](auto& component)
 		{
-			DrawVec3Control("Translation", component.Translation);
+			/*DrawVec3Control("Translation", component.Translation);
 			glm::vec3 rotation = glm::degrees(component.Rotation);
 			DrawVec3Control("Rotation", rotation);
 			component.Rotation = glm::radians(rotation);
-			DrawVec3Control("Scale", component.Scale, 1.0f);
+			DrawVec3Control("Scale", component.Scale, 1.0f);*/
+
+			glm::vec3 rotation = glm::degrees(component.Rotation);
+			DrawVec3Controls({
+				{ "Translation", component.Translation, 0.0f }, 
+				{ "Rotation", rotation, 0.0f }, 
+				{ "Scale", component.Scale, 1.0f }
+			}, 100.0f);
+			component.Rotation = glm::radians(rotation);
 		});
 
 		DrawComponent<CameraComponent>("Camera", entity, [](auto& component)

@@ -85,7 +85,7 @@ namespace Wire {
 		#error Platform is not supported!
 #endif
 
-		WR_CORE_ASSERT(m_Audio->getDeviceCount() < 1);
+		//WR_CORE_ASSERT(m_Audio->getDeviceCount() < 1);
 
 		m_Audio->showWarnings(false);
 	}
