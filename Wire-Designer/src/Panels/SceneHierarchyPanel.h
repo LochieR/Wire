@@ -5,10 +5,19 @@
 #include "Wire/Scene/Scene.h"
 #include "Wire/Scene/Entity.h"
 
+#include <glm/gtc/type_ptr.hpp>
+
 namespace Wire {
 
 	class SceneHierarchyPanel
 	{
+	public:
+		struct Vec3ControlData
+		{
+			std::string Label;
+			glm::vec3& Values;
+			float ResetValue = 0.0f;
+		};
 	public:
 		SceneHierarchyPanel() = default;
 		SceneHierarchyPanel(const Ref<Scene>& context);

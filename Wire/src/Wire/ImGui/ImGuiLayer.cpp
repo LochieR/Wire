@@ -114,6 +114,7 @@ namespace Wire {
 	{
 		auto& colours = ImGui::GetStyle().Colors;
 		colours[ImGuiCol_WindowBg] = ImVec4{ 0.1f, 0.105f, 0.11f, 1.0f };
+		colours[ImGuiCol_PopupBg] = ImVec4{ 0.2f, 0.205f, 0.21f, 1.0f };
 
 		// Headers
 		colours[ImGuiCol_Header] = ImVec4{ 0.2f, 0.205f, 0.21f, 1.0f };

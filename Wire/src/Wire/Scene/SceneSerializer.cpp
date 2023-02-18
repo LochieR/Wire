@@ -84,7 +84,7 @@ namespace Wire {
 	static void SerializeEntity(YAML::Emitter& out, Entity entity)
 	{
 		out << YAML::BeginMap;
-		out << YAML::Key << "Entity" << YAML::Value << "42789549"; // Entity ID
+		out << YAML::Key << "Entity" << YAML::Value << (uint32_t)entity; // Entity ID
 
 		if (entity.HasComponent<TagComponent>())
 		{

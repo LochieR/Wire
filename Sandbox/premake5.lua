@@ -26,11 +26,13 @@ project "Sandbox"
 	links
 	{
 		"Wire",
-		"opengl32.lib",
 	}
 
 	filter "system:windows"
 		systemversion "latest"
+
+	filter "system:macosx"
+		systemversion "10.14"
 
 	filter "configurations:Debug"
 		defines "WR_DEBUG"

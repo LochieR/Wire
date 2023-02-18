@@ -19,17 +19,25 @@ project "Wire-Designer"
 		"%{wks.location}/Wire/vendor",
 		"%{IncludeDir.glm}",
 		"%{IncludeDir.entt}",
+		"%{IncludeDir.imgui}",
 		"%{IncludeDir.ImGuizmo}",
 	}
 
 	links
 	{
 		"Wire",
-		"opengl32.lib",
 	}
 
 	filter "system:windows"
 		systemversion "latest"
+
+		links
+		{
+			"opengl32.lib"
+		}
+
+	filter "system:macosx"
+		systemversion "10.14"
 
 	filter "configurations:Debug"
 		kind "ConsoleApp"

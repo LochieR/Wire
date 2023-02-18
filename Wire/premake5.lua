@@ -51,7 +51,6 @@ project "Wire"
 		"ImGui",
 		"rtaudio",
 		"yaml-cpp",
-		"opengl32.lib"
 	}
 
 	filter "files:vendor/ImGuizmo/**.cpp"
@@ -62,6 +61,21 @@ project "Wire"
 
 		defines
 		{
+		}
+
+		links
+		{
+			"opengl32.lib"
+		}
+
+	filter "system:macosx"
+		systemversion "10.14"
+
+		links
+		{
+			"OpenGL.framework",
+			"Cocoa.framework",
+			"IOKit.framework"
 		}
 
 	filter "configurations:Debug"
