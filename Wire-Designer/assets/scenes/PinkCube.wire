@@ -9,6 +9,8 @@ Entities:
       Scale: [0.999999881, 0.999999285, 0.999981701]
     SpriteRendererComponent:
       Colour: [0.874509811, 0, 0.835294127, 1]
+      Texture: NOTEX
+      TilingFactor: 1
   - Entity: 2
     TagComponent:
       Tag: Left
@@ -18,6 +20,8 @@ Entities:
       Scale: [1, 1, 1]
     SpriteRendererComponent:
       Colour: [1, 0.0352941193, 0.949019611, 1]
+      Texture: NOTEX
+      TilingFactor: 1
   - Entity: 1
     TagComponent:
       Tag: Right
@@ -27,6 +31,8 @@ Entities:
       Scale: [1, 1, 1]
     SpriteRendererComponent:
       Colour: [0.549019635, 0.0352941193, 0.588235319, 1]
+      Texture: NOTEX
+      TilingFactor: 1
   - Entity: 0
     TagComponent:
       Tag: Camera

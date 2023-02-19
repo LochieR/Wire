@@ -329,7 +329,10 @@ namespace Wire {
 
 	void Renderer2D::DrawSprite(const glm::mat4& transform, SpriteRendererComponent& src, int entityID)
 	{
-		DrawQuad(transform, src.Colour, entityID);
+		if (src.Texture)
+			DrawQuad(transform, src.Texture, src.TilingFactor, src.Colour, entityID);
+		else
+			DrawQuad(transform, src.Colour, entityID);
 	}
 
 	void Renderer2D::ResetStats()

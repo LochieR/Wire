@@ -9,6 +9,8 @@ Entities:
       Scale: [1, 1, 1]
     SpriteRendererComponent:
       Colour: [0, 1, 0, 1]
+      Texture: NOTEX
+      TilingFactor: 1
   - Entity: 42789549
     TagComponent:
       Tag: Red Square
@@ -18,6 +20,8 @@ Entities:
       Scale: [1, 1, 1]
     SpriteRendererComponent:
       Colour: [1, 0, 0, 1]
+      Texture: NOTEX
+      TilingFactor: 1
   - Entity: 42789549
     TagComponent:
       Tag: Camera A

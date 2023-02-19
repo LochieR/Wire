@@ -7,6 +7,8 @@
 
 namespace Wire {
 
+	extern const std::filesystem::path g_AssetPath;
+
 	SceneHierarchyPanel::SceneHierarchyPanel(const Ref<Scene>& context)
 	{
 		SetContext(context);
@@ -33,6 +35,8 @@ namespace Wire {
 
 		ImGuiPopupFlags popupFlags = ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems;
 
+		ImGui::PushStyleVar(ImGuiStyleVar_PopupRounding, 11.25f);
+
 		if (ImGui::BeginPopupContextWindow("SceneHierarchyPopupMenu", popupFlags))
 		{
 			if (ImGui::MenuItem("Create Empty Entity"))
@@ -44,6 +48,8 @@ namespace Wire {
 
 			ImGui::EndPopup();
 		}
+
+		ImGui::PopStyleVar();
 
 		ImGui::End();
 
@@ -76,6 +82,8 @@ namespace Wire {
 			m_SelectionContext = entity;
 		}
 
+		ImGui::PushStyleVar(ImGuiStyleVar_PopupRounding, 11.25f);
+
 		bool entityDeleted = false;
 		if (ImGui::BeginPopupContextItem())
 		{
@@ -84,6 +92,8 @@ namespace Wire {
 
 			ImGui::EndPopup();
 		}
+
+		ImGui::PopStyleVar();
 
 		if (opened)
 		{
@@ -255,11 +265,13 @@ namespace Wire {
 			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
 			float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
 			ImGui::Separator();
-			bool open = ImGui::TreeNodeEx((void*)typeid(T).hash_code(), flags, name.c_str());
+			bool open = ImGui::TreeNodeEx((void*)(typeid(T).hash_code() + (uint32_t)entity), flags, name.c_str());
 			ImGui::PopStyleVar();
 			ImGui::SameLine(contentRegionAvailable.x - lineHeight * 0.5f);
 			if (ImGui::Button("+", ImVec2{ lineHeight, lineHeight }))
 				ImGui::OpenPopup("ComponentSettings");
+
+			ImGui::PushStyleVar(ImGuiStyleVar_PopupRounding, 11.25f);
 
 			bool removeComponent = false;
 			if (ImGui::BeginPopup("ComponentSettings"))
@@ -269,6 +281,8 @@ namespace Wire {
 
 				ImGui::EndPopup();
 			}
+
+			ImGui::PopStyleVar();
 
 			if (open)
 			{
@@ -302,6 +316,8 @@ namespace Wire {
 		if (ImGui::Button("Add Component"))
 			ImGui::OpenPopup("AddComponent");
 
+		ImGui::PushStyleVar(ImGuiStyleVar_PopupRounding, 11.25f);
+
 		if (ImGui::BeginPopup("AddComponent"))
 		{
 			if (ImGui::MenuItem("Camera"))
@@ -318,6 +334,8 @@ namespace Wire {
 
 			ImGui::EndPopup();
 		}
+
+		ImGui::PopStyleVar();
 
 		ImGui::PopItemWidth();
 
@@ -400,6 +418,20 @@ namespace Wire {
 		DrawComponent<SpriteRendererComponent>("Sprite Renderer", entity, [](auto& component)
 		{
 			ImGui::ColorEdit4("Colour", glm::value_ptr(component.Colour));
+			
+			ImGui::Button("Texture", ImVec2{ 100.0f, 0.0f });
+			if (ImGui::BeginDragDropTarget())
+			{
+				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+				{
+					const wchar_t* path = (wchar_t*)payload->Data;
+					std::filesystem::path texturePath = std::filesystem::path(g_AssetPath) / path;
+					component.Texture = Texture2D::Create(texturePath.string());
+				}
+				ImGui::EndDragDropTarget();
+			}
+
+			ImGui::DragFloat("Tiling Factor", &component.TilingFactor, 0.1f, 0.0f, 100.0f);
 		});
 	}
 

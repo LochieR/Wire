@@ -25,6 +25,8 @@ namespace Wire {
 		{
 			return m_RendererID == ((OpenGLTexture2D&)other).m_RendererID;
 		}
+
+		virtual const std::string GetTexturePath() const override { return m_Path; }
 	private:
 		std::string m_Path;
 		uint32_t m_Width, m_Height;

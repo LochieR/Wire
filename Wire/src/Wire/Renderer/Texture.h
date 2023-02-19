@@ -20,12 +20,13 @@ namespace Wire {
 		virtual void Bind(uint32_t slot = 0) const = 0;
 
 		virtual bool operator==(const Texture& other) const = 0;
-
 	};
 
 	class Texture2D : public Texture
 	{
 	public:
+		virtual const std::string GetTexturePath() const = 0;
+
 		static Ref<Texture2D> Create(uint32_t width, uint32_t height);
 		static Ref<Texture2D> Create(const std::string& path);
 	};

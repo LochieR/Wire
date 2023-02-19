@@ -142,6 +142,9 @@ namespace Wire {
 
 			auto& spriteRendererComponent = entity.GetComponent<SpriteRendererComponent>();
 			out << YAML::Key << "Colour" << YAML::Value << spriteRendererComponent.Colour;
+			auto texturePath = spriteRendererComponent.Texture->GetTexturePath();
+			out << YAML::Key << "Texture" << YAML::Value << (spriteRendererComponent.Texture->GetTexturePath().empty() ? "NOTEX" : spriteRendererComponent.Texture->GetTexturePath());
+			out << YAML::Key << "TilingFactor" << YAML::Value << spriteRendererComponent.TilingFactor;
 
 			out << YAML::EndMap; // SpriteRendererComponent
 		}
@@ -239,6 +242,16 @@ namespace Wire {
 				{
 					auto& src = deserializedEntity.AddComponent<SpriteRendererComponent>();
 					src.Colour = spriteRendererComponent["Colour"].as<glm::vec4>();
+					std::string texturePath = spriteRendererComponent["Texture"].as<std::string>();
+					if (texturePath == "NOTEX")
+					{
+						src.Texture = nullptr;
+					}
+					else
+					{
+						src.Texture = Texture2D::Create(texturePath);
+					}
+					src.TilingFactor = spriteRendererComponent["TilingFactor"].as<float>();
 				}
 			}
 		}

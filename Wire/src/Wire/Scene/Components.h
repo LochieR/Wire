@@ -8,6 +8,7 @@
 
 #include "SceneCamera.h"
 #include "ScriptableEntity.h"
+#include "Wire/Renderer/Texture.h"
 
 namespace Wire {
 
@@ -49,6 +50,8 @@ namespace Wire {
 	struct SpriteRendererComponent
 	{
 		glm::vec4 Colour{ 1.0f, 1.0f, 1.0f, 1.0f };
+		Ref<Texture2D> Texture;
+		float TilingFactor = 1.0f;
 
 		SpriteRendererComponent() = default;
 		SpriteRendererComponent(const SpriteRendererComponent&) = default;
