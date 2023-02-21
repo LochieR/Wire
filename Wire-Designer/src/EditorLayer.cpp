@@ -209,8 +209,6 @@ namespace Wire {
 
 		style.WindowMinSize.x = minWinSizeX;
 
-		ImGui::PushStyleVar(ImGuiStyleVar_PopupRounding, 11.25f);
-
 		if (ImGui::BeginMenuBar())
 		{
 			if (ImGui::BeginMenu("File"))
@@ -219,9 +217,13 @@ namespace Wire {
 				// which we can't undo at the moment without finer window depth/z control.
 				//ImGui::MenuItem("Fullscreen", NULL, &opt_fullscreen_persistant);
 
-				if (ImGui::MenuItem("New Patch", "Ctrl+N"))
+				if (ImGui::BeginMenu("New"))
 				{
-					NewScene();
+					if (ImGui::MenuItem("New Patch", "Ctrl+N"))
+					{
+						NewScene();
+					}
+					ImGui::EndMenu();
 				}
 
 				if (ImGui::MenuItem("Open Patch...", "Ctrl+O"))
@@ -245,8 +247,6 @@ namespace Wire {
 
 			ImGui::EndMenuBar();
 		}
-
-		ImGui::PopStyleVar();
 
 		m_SceneHierarchyPanel.OnImGuiRender();
 		m_ContentBrowserPanel.OnImGuiRender(m_Timestep);

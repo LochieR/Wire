@@ -35,8 +35,6 @@ namespace Wire {
 
 		ImGuiPopupFlags popupFlags = ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems;
 
-		ImGui::PushStyleVar(ImGuiStyleVar_PopupRounding, 11.25f);
-
 		if (ImGui::BeginPopupContextWindow("SceneHierarchyPopupMenu", popupFlags))
 		{
 			if (ImGui::MenuItem("Create Empty Entity"))
@@ -48,8 +46,6 @@ namespace Wire {
 
 			ImGui::EndPopup();
 		}
-
-		ImGui::PopStyleVar();
 
 		ImGui::End();
 
@@ -82,8 +78,6 @@ namespace Wire {
 			m_SelectionContext = entity;
 		}
 
-		ImGui::PushStyleVar(ImGuiStyleVar_PopupRounding, 11.25f);
-
 		bool entityDeleted = false;
 		if (ImGui::BeginPopupContextItem())
 		{
@@ -92,8 +86,6 @@ namespace Wire {
 
 			ImGui::EndPopup();
 		}
-
-		ImGui::PopStyleVar();
 
 		if (opened)
 		{
@@ -271,8 +263,6 @@ namespace Wire {
 			if (ImGui::Button("+", ImVec2{ lineHeight, lineHeight }))
 				ImGui::OpenPopup("ComponentSettings");
 
-			ImGui::PushStyleVar(ImGuiStyleVar_PopupRounding, 11.25f);
-
 			bool removeComponent = false;
 			if (ImGui::BeginPopup("ComponentSettings"))
 			{
@@ -281,8 +271,6 @@ namespace Wire {
 
 				ImGui::EndPopup();
 			}
-
-			ImGui::PopStyleVar();
 
 			if (open)
 			{
@@ -316,8 +304,6 @@ namespace Wire {
 		if (ImGui::Button("Add Component"))
 			ImGui::OpenPopup("AddComponent");
 
-		ImGui::PushStyleVar(ImGuiStyleVar_PopupRounding, 11.25f);
-
 		if (ImGui::BeginPopup("AddComponent"))
 		{
 			if (ImGui::MenuItem("Camera"))
@@ -335,8 +321,6 @@ namespace Wire {
 			ImGui::EndPopup();
 		}
 
-		ImGui::PopStyleVar();
-
 		ImGui::PopItemWidth();
 
 		DrawComponent<TransformComponent>("Transform", entity, [](auto& component)
@@ -350,8 +334,8 @@ namespace Wire {
 			glm::vec3 rotation = glm::degrees(component.Rotation);
 			DrawVec3Controls({
 				{ "Translation", component.Translation, 0.0f }, 
-				{ "Rotation", rotation, 0.0f }, 
-				{ "Scale", component.Scale, 1.0f }
+				{ "Rotation",	 rotation,				0.0f }, 
+				{ "Scale",		 component.Scale,		1.0f }
 			}, 100.0f);
 			component.Rotation = glm::radians(rotation);
 		});

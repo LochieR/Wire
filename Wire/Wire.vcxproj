@@ -178,7 +178,6 @@
     <ClInclude Include="src\Wire\Events\Event.h" />
     <ClInclude Include="src\Wire\Events\KeyEvent.h" />
     <ClInclude Include="src\Wire\Events\MouseEvent.h" />
-    <ClInclude Include="src\Wire\ImGui\Colours.h" />
     <ClInclude Include="src\Wire\ImGui\ImGuiLayer.h" />
     <ClInclude Include="src\Wire\Maths\Maths.h" />
     <ClInclude Include="src\Wire\Plugins\IPlugin.h" />

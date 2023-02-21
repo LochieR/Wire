@@ -8,6 +8,7 @@
 #include "Wire/Audio/Audio.h"
 
 #include <glfw/glfw3.h>
+#include <imgui.h>
 
 namespace Wire {
 
@@ -101,8 +102,12 @@ namespace Wire {
 			{
 				WR_PROFILE_SCOPE("LayerStack OnImGuiRender");
 
+				ImGui::PushStyleVar(ImGuiStyleVar_PopupRounding, 11.25f);
+
 				for (Layer* layer : m_LayerStack)
 					layer->OnImGuiRender();
+
+				ImGui::PopStyleVar();
 			}
 			m_ImGuiLayer->End();
 
