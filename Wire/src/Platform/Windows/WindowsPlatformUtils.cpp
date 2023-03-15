@@ -48,4 +48,18 @@ namespace Wire {
 		return std::string();
 	}
 
+	std::vector<Ref<Window>> Popups::m_PopupWindows = std::vector<Ref<Window>>();
+
+	void Popups::OpenSettingsPopup(const std::string& title, int width, int height)
+	{
+		auto window = Window::Create(WindowProps(title, width, height));
+		window->SetVSync(true);
+		window->SetEventCallback([](auto& e)
+		{
+
+		});
+
+		m_PopupWindows.push_back(window);
+	}
+
 }

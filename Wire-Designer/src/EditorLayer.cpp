@@ -1,5 +1,7 @@
 #include "EditorLayer.h"
+
 #include <imgui/imgui.h>
+#include <imgui/imgui_internal.h>
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -13,7 +15,7 @@
 
 namespace Wire {
 
-	extern const std::filesystem::path g_AssetPath;
+	static bool s_PreferencesWindowHasSettings;
 
 	EditorLayer::EditorLayer()
 		: Layer("EditorLayer"), m_CameraController(1280.0f / 720.0f), m_SquareColour({ 0.2f, 0.3f, 0.8f, 1.0f })
@@ -25,6 +27,8 @@ namespace Wire {
 		WR_PROFILE_FUNCTION();
 
 		m_CheckerboardTexture = Texture2D::Create("assets/textures/Checkerboard.png");
+		m_IconPlay = Texture2D::Create("Resources/Icons/UIToolbar/PlayButton.png");
+		m_IconStop = Texture2D::Create("Resources/Icons/UIToolbar/PauseButton.png");
 
 		FramebufferSpecification fbSpec;
 		fbSpec.Attachments = { FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::RED_INTEGER, FramebufferTextureFormat::Depth };
@@ -44,6 +48,28 @@ namespace Wire {
 		}
 
 		m_EditorCamera = EditorCamera(30.0f, 16.0f / 9.0f, 0.1f, 1000.0f);
+
+		if (std::filesystem::exists(std::filesystem::path("imgui.ini")))
+			s_PreferencesWindowHasSettings = false;
+		else
+		{
+			std::ifstream file("imgui.ini");
+
+			std::string line;
+
+			while (std::getline(file, line))
+			{
+				if (line == "[Window][Preferences]")
+				{
+					s_PreferencesWindowHasSettings = true;
+					break;
+				}
+				else
+				{
+					s_PreferencesWindowHasSettings = false;
+				}
+			}
+		}
 
 #if 0
 		// Entity
@@ -219,6 +245,11 @@ namespace Wire {
 
 				if (ImGui::BeginMenu("New"))
 				{
+					if (ImGui::MenuItem("New Project...", "Ctrl+Shift+N"))
+					{
+						NewProject();
+					}
+
 					if (ImGui::MenuItem("New Patch", "Ctrl+N"))
 					{
 						NewScene();
@@ -226,9 +257,18 @@ namespace Wire {
 					ImGui::EndMenu();
 				}
 
-				if (ImGui::MenuItem("Open Patch...", "Ctrl+O"))
+				if (ImGui::BeginMenu("Open"))
 				{
-					OpenScene();
+					if (ImGui::MenuItem("Open Project...", "Ctrl+O"))
+					{
+						OpenProject();
+					}
+
+					if (ImGui::MenuItem("Open Patch...", "Ctrl+Shift+O"))
+					{
+						OpenScene();
+					}
+					ImGui::EndMenu();
 				}
 
 				if (ImGui::MenuItem("Save Patch", "Ctrl+S"))
@@ -242,6 +282,15 @@ namespace Wire {
 				}
 
 				if (ImGui::MenuItem("Exit", "Alt+F4")) Application::Get().Close();
+				ImGui::EndMenu();
+			}
+
+			if (ImGui::BeginMenu("Edit"))
+			{
+				if (ImGui::MenuItem("Preferences"))
+				{
+					m_ShowPreferencesWindow = true;
+				}
 				ImGui::EndMenu();
 			}
 
@@ -267,6 +316,16 @@ namespace Wire {
 
 		ImGui::End();
 
+		if (m_ShowPreferencesWindow)
+		{
+			ImGui::Begin("Preferences", &m_ShowPreferencesWindow);
+
+			if (!s_PreferencesWindowHasSettings)
+				ImGui::SetWindowSize(ImVec2{ 800, 600 });
+
+			ImGui::End();
+		}
+
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0, 0 });
 		ImGui::Begin("Viewport");
 		auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
@@ -290,7 +349,7 @@ namespace Wire {
 			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 			{
 				const wchar_t* path = (wchar_t*)payload->Data;
-				OpenScene(std::filesystem::path(g_AssetPath) / path);
+				OpenScene(std::filesystem::path(m_ContentBrowserPanel.GetAssetPath()) / path);
 			}
 			ImGui::EndDragDropTarget();
 		}
@@ -345,6 +404,38 @@ namespace Wire {
 		ImGui::PopStyleVar();
 
 		ImGui::End();
+
+		UIToolbar();
+	}
+
+	void EditorLayer::UIToolbar()
+	{
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0, 2 });
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2{ 0, 0 });
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4{ 38.0f / 255.0f, 38.0f / 255.0f, 39.0f / 255.0f, 1.0f });
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0, 0, 0, 0 });
+		auto& colours = ImGui::GetStyle().Colors;
+		const auto& buttonHovered = colours[ImGuiCol_ButtonHovered];
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(buttonHovered.x, buttonHovered.y, buttonHovered.z, 0.5f));
+		const auto& buttonActive = colours[ImGuiCol_ButtonActive];
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(buttonActive.x, buttonActive.y, buttonActive.z, 0.5f));
+
+		ImGui::Begin("##toolbar", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+		
+		float size = ImGui::GetWindowHeight() - 4.0f;
+		Ref<Texture2D> icon = m_SceneState == SceneState::Edit ? m_IconPlay : m_IconStop;
+		ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.5f) - (size * 0.5f));
+		if (ImGui::ImageButton((ImTextureID)(uint64_t)icon->GetRendererID(), ImVec2{ size, size }, ImVec2{ 0, 0 }, ImVec2{ 1, 1 }, 0))
+		{
+			if (m_SceneState == SceneState::Edit)
+				m_SceneState = SceneState::Play;
+			else if (m_SceneState == SceneState::Play)
+				m_SceneState = SceneState::Edit;
+		}
+
+		ImGui::PopStyleVar(2);
+		ImGui::PopStyleColor(4);
+		ImGui::End();
 	}
 
 	void EditorLayer::OnEvent(Event& e)
@@ -376,7 +467,8 @@ namespace Wire {
 			}
 			case Key::O:
 			{
-				if (control)
+				if (control); // Open project
+				else if (control && shift)
 					OpenScene();
 
 				break;
@@ -426,6 +518,39 @@ namespace Wire {
 				m_SceneHierarchyPanel.SetSelectedEntity(m_HoveredEntity);
 
 		return false;
+	}
+
+	void EditorLayer::NewProject()
+	{
+		std::string filepath = FileDialogs::SaveFile("Wire Project (*.wrpj)\0*.wrpj\0");
+		if (!filepath.empty())
+		{
+			NewProject(std::filesystem::path(filepath));
+		}
+	}
+
+	void EditorLayer::NewProject(const std::filesystem::path& path)
+	{
+		m_Project = CreateRef<Project>(path.stem().string(), path);
+		std::filesystem::create_directories(m_Project->GetDir().string() + "assets");
+		m_ContentBrowserPanel.OnOpenProject(m_Project);
+		m_SceneHierarchyPanel.OnOpenProject(m_Project);
+	}
+
+	void EditorLayer::OpenProject()
+	{
+		std::string filepath = FileDialogs::OpenFile("Wire Project (*.wrpj)\0*.wrpj\0");
+		if (!filepath.empty())
+		{
+			OpenProject(std::filesystem::path(filepath));
+		}
+	}
+
+	void EditorLayer::OpenProject(const std::filesystem::path& path)
+	{
+		m_Project = CreateRef<Project>(Project::OpenProject(path));
+		m_ContentBrowserPanel.OnOpenProject(m_Project);
+		m_SceneHierarchyPanel.OnOpenProject(m_Project);
 	}
 
 	void EditorLayer::NewScene()

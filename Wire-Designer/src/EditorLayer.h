@@ -19,9 +19,16 @@ namespace Wire {
 		void OnUpdate(Timestep ts) override;
 		virtual void OnImGuiRender() override;
 		void OnEvent(Event& e) override;
+
+		ContentBrowserPanel* GetContentBrowserPanel() { return &m_ContentBrowserPanel; }
 	private:
 		bool OnKeyPressed(KeyPressedEvent& e);
 		bool OnMouseButtonPressed(MouseButtonPressedEvent& e);
+
+		void NewProject();
+		void NewProject(const std::filesystem::path& path);
+		void OpenProject();
+		void OpenProject(const std::filesystem::path& path);
 
 		void NewScene();
 		void OpenScene();
@@ -29,6 +36,8 @@ namespace Wire {
 		void SaveScene();
 		void SaveSceneAs();
 		void SerializeScene(Ref<Scene> scene, const std::filesystem::path& path);
+
+		void UIToolbar();
 	private:
 		OrthographicCameraController m_CameraController;
 
@@ -41,6 +50,8 @@ namespace Wire {
 		Entity m_SquareEntity;
 		Entity m_CameraEntity;
 		Entity m_SecondCamera;
+
+		Ref<Project> m_Project;
 
 		Entity m_HoveredEntity;
 
@@ -58,11 +69,22 @@ namespace Wire {
 
 		int m_GizmoType = -1;
 
+		enum class SceneState
+		{
+			Edit = 0, Play = 1
+		};
+		SceneState m_SceneState = SceneState::Edit;
+
 		Timestep m_Timestep;
 
 		// Panels
 		SceneHierarchyPanel m_SceneHierarchyPanel;
 		ContentBrowserPanel m_ContentBrowserPanel;
+
+		bool m_ShowPreferencesWindow = false;
+
+		// Icons
+		Ref<Texture2D> m_IconPlay, m_IconStop;
 	};
 
 }

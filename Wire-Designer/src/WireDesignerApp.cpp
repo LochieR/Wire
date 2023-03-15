@@ -2,9 +2,9 @@
 
 #include "EditorLayer.h"
 
-#ifdef WR_DEBUG
+#if defined(WR_DEBUG) || defined(WR_RELEASE)
 int main(int argc, char** argv)
-#elif defined(WR_DIST) && defined(_WIN32)
+#elif defined(WR_DIST) && defined(WR_PLATFORM_WINDOWS)
 #pragma warning(disable: 4996)
 #include <windows.h>
 #include <string>
@@ -29,22 +29,20 @@ std::vector<std::string> split(const std::string& s, char delim)
 	return elems;
 }
 
-char** GetArgs(wchar_t* original)
+char** GetArgs(const std::wstring& original, int argc)
 {
-	std::wstring wstr(original);
-	std::string str = std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(wstr);
-	WR_INFO("{0}", str);
-	std::vector<char*> c_strings{};
+	std::string str = std::filesystem::path(original).string();
 	auto splitted = split(str, ' ');
-	splitted.insert(splitted.begin(), "Wire-Designer.exe");
-	for (auto& string : splitted)
-		c_strings.push_back(&string.front());
-
-	char** result = new char* [c_strings.size()];
-	for (int i = 0; i < c_strings.size(); i++)
-		result[i] = c_strings[i];
-
-	return result;
+	char** argv = new char* [argc];
+	argv[0] = "WireDesigner.exe";
+	for (int i = 0; i < argc; i++)
+	{
+		if (i != argc - 1)
+		{
+			argv[i + 1] = (char*)splitted[i].c_str();
+		}
+	}
+	return argv;
 }
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
@@ -52,16 +50,24 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 {
 	Wire::Log::Init();
 
-#if defined(WR_DIST) && defined(_WIN32)
+#if defined(WR_DIST) && defined(WR_PLATFORM_WINDOWS)
 	// TODO: Get command line args (argc, argv);
 	int argc = __argc;
-	char** argv = GetArgs((wchar_t*)pCmdLine);
+	char** argv = GetArgs(std::filesystem::path(pCmdLine).wstring(), argc);
 #endif
+
+	for (int i = 0; i < argc; i++)
+	{
+		WR_INFO("{0}", argv[i]);
+	}
 
 	Wire::Application* app = new Wire::Application("Wire Designer", { argc, argv });
 	app->PushLayer(new Wire::EditorLayer());
 	app->Run();
-
+	
+#if defined(WR_DIST) && defined(WR_PLATFORM_WINDOWS)
+	delete[] argv;
+#endif
 	delete app;
 }
 

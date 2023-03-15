@@ -7,8 +7,6 @@
 
 namespace Wire {
 
-	extern const std::filesystem::path g_AssetPath;
-
 	SceneHierarchyPanel::SceneHierarchyPanel(const Ref<Scene>& context)
 	{
 		SetContext(context);
@@ -185,9 +183,10 @@ namespace Wire {
 
 		ImGui::NextColumn();
 
+		int i = 0;
 		for (auto data : datas)
 		{
-			ImGui::PushID(data.Label.c_str());
+			ImGui::PushID((data.Label + std::to_string(i)).c_str());
 
 			ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth());
 			ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0, 0 });
@@ -239,6 +238,7 @@ namespace Wire {
 			ImGui::PopStyleVar();
 
 			ImGui::PopID();
+			i++;
 		}
 
 		ImGui::Columns(1);
@@ -399,7 +399,7 @@ namespace Wire {
 			}
 		});
 
-		DrawComponent<SpriteRendererComponent>("Sprite Renderer", entity, [](auto& component)
+		DrawComponent<SpriteRendererComponent>("Sprite Renderer", entity, [this](auto& component)
 		{
 			ImGui::ColorEdit4("Colour", glm::value_ptr(component.Colour));
 			
@@ -409,7 +409,7 @@ namespace Wire {
 				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 				{
 					const wchar_t* path = (wchar_t*)payload->Data;
-					std::filesystem::path texturePath = std::filesystem::path(g_AssetPath) / path;
+					std::filesystem::path texturePath = std::filesystem::path(m_Project->GetPath()) / path;
 					component.Texture = Texture2D::Create(texturePath.string());
 				}
 				ImGui::EndDragDropTarget();

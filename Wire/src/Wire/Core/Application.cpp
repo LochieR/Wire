@@ -7,6 +7,8 @@
 #include "Wire/Renderer/Renderer.h"
 #include "Wire/Audio/Audio.h"
 
+#include "Wire/Utils/PlatformUtils.h"
+
 #include <glfw/glfw3.h>
 #include <imgui.h>
 
@@ -112,6 +114,8 @@ namespace Wire {
 			m_ImGuiLayer->End();
 
 			m_Window->OnUpdate();
+			for (auto window : Popups::GetPopupWindows())
+				window->OnUpdate();
 		}
 	}
 

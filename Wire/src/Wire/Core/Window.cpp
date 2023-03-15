@@ -7,10 +7,10 @@
 
 namespace Wire {
 
-	Scope<Window> Window::Create(const WindowProps& props)
+	Ref<Window> Window::Create(const WindowProps& props)
 	{
 #ifdef WR_PLATFORM_WINDOWS
-		return CreateScope<WindowsWindow>(props);
+		return CreateRef<WindowsWindow>(props);
 #else
 		WR_CORE_ASSERT(false, "Unsupported platform!");
 		return nullptr;

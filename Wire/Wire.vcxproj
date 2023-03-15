@@ -182,6 +182,7 @@
     <ClInclude Include="src\Wire\Maths\Maths.h" />
     <ClInclude Include="src\Wire\Plugins\IPlugin.h" />
     <ClInclude Include="src\Wire\Plugins\PluginManager.h" />
+    <ClInclude Include="src\Wire\Projects\Project.h" />
     <ClInclude Include="src\Wire\Renderer\Buffer.h" />
     <ClInclude Include="src\Wire\Renderer\Camera.h" />
     <ClInclude Include="src\Wire\Renderer\EditorCamera.h" />
@@ -647,6 +648,7 @@
     <ClCompile Include="src\Wire\ImGui\ImGuiLayer.cpp" />
     <ClCompile Include="src\Wire\Maths\Maths.cpp" />
     <ClCompile Include="src\Wire\Plugins\PluginManager.cpp" />
+    <ClCompile Include="src\Wire\Projects\Project.cpp" />
     <ClCompile Include="src\Wire\Renderer\Buffer.cpp" />
     <ClCompile Include="src\Wire\Renderer\EditorCamera.cpp" />
     <ClCompile Include="src\Wire\Renderer\Framebuffer.cpp" />
