@@ -14,7 +14,7 @@ namespace Wire {
 		ContentBrowserPanel();
 
 		void OnImGuiRender(Timestep ts);
-		void ReloadPathEntries();
+		void ReloadDirectoryEntries();
 
 		void OnOpenProject(const Ref<Project>& project);
 		std::filesystem::path GetAssetPath() const { return m_AssetPath; }
