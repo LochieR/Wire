@@ -4,24 +4,31 @@ class RtAudio;
 
 namespace Wire {
 
-	class AudioPlayer
+	class Audio
 	{
 	public:
-		typedef struct
+		struct AudioData
 		{
 			uint32_t SampleRate;
 			uint32_t ChannelNumber;
-			uint32_t WaveNumber;
-			float* Waves;
-			uint32_t WavesIndexInFrame;
-		} CallbackData;
+			uint32_t nFrame;
+			float* WaveFormTable;
+			uint32_t WaveFormTableIndex;
+		};
 	public:
 		static void Init();
 		static void Shutdown();
 
-		static void PlayFile(const std::string& filepath);
+		static void SetSceneRuntime(bool runtime) { m_SceneRuntime = runtime; }
+
+		static void UpdateAudio();
 	private:
-		static RtAudio* m_Audio;
+		static std::thread m_AudioThread;
+		static bool m_AudioThreadRunning;
+
+		static RtAudio* m_AudioHandle;
+
+		static bool m_SceneRuntime;
 	};
 
 }

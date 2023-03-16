@@ -63,7 +63,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
 
 	Wire::Application* app = new Wire::Application("Wire Designer", { argc, argv });
 	app->PushLayer(new Wire::EditorLayer());
+	WR_PROFILE_BEGIN_SESSION("Runtime", "Wire_Runtime.json");
 	app->Run();
+	WR_PROFILE_END_SESSION();
 	
 #if defined(WR_DIST) && defined(WR_PLATFORM_WINDOWS)
 	delete[] argv;

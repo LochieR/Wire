@@ -428,9 +428,15 @@ namespace Wire {
 		if (ImGui::ImageButton((ImTextureID)(uint64_t)icon->GetRendererID(), ImVec2{ size, size }, ImVec2{ 0, 0 }, ImVec2{ 1, 1 }, 0))
 		{
 			if (m_SceneState == SceneState::Edit)
+			{
 				m_SceneState = SceneState::Play;
+				Audio::SetSceneRuntime(true);
+			}
 			else if (m_SceneState == SceneState::Play)
+			{
 				m_SceneState = SceneState::Edit;
+				Audio::SetSceneRuntime(false);
+			}
 		}
 
 		ImGui::PopStyleVar(2);

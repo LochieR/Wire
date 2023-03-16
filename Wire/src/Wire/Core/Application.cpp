@@ -27,7 +27,7 @@ namespace Wire {
 		m_Window->SetEventCallback(WR_BIND_EVENT_FN(Application::OnEvent));
 
 		Renderer::Init();
-		AudioPlayer::Init();
+		Audio::Init();
 
 		m_ImGuiLayer = new ImGuiLayer();
 		PushOverlay(m_ImGuiLayer);
@@ -37,8 +37,10 @@ namespace Wire {
 	{
 		WR_PROFILE_FUNCTION();
 
+		Audio::SetSceneRuntime(false);
+
+		Audio::Shutdown();
 		Renderer::Shutdown();
-		AudioPlayer::Shutdown();
 	}
 
 	void Application::PushLayer(Layer* layer)

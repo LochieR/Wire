@@ -7,100 +7,108 @@
 
 namespace Wire {
 
-	namespace Utils {
-
-		static WaveFile::WaveHeader ReadWaveData(const std::string& filepath, uint32_t& outDataLength, std::vector<uint8_t>& outRawWaveData, uint8_t*& outRawWaveDataPointer)
+	static void RtAudioErrorCallback(RtAudioErrorType errorType, const std::string& message)
+	{
+		switch (errorType)
 		{
-			WaveFile::WaveHeader waveHeader{};
-
-			if (auto path{ std::filesystem::current_path() /= filepath }; std::filesystem::exists(path))
-			{
-				if (std::ifstream wav{ path, std::ios::binary }; wav.is_open())
-				{
-					uint8_t* buffer = new uint8_t[1024];
-					wav.read((char*)buffer, 1024);
-					waveHeader = WaveFile::EncodeWaveHeader(buffer);
-					outDataLength = waveHeader.DataSize;
-					outRawWaveData.reserve(waveHeader.DataSize);
-					wav.seekg(waveHeader.DataOffset);
-					wav.read(reinterpret_cast<char*>(&outRawWaveData[0]), waveHeader.DataSize);
-					outRawWaveDataPointer = &outRawWaveData[0];
-				}
-				else
-				{
-					WR_CORE_ERROR("Cannot open file {0}!", filepath);
-					return WaveFile::WaveHeader();
-				}
-			}
-			else
-			{
-				WR_CORE_ERROR("File not found: {0}!", filepath);
-				return WaveFile::WaveHeader();
-			}
-
-			return waveHeader;
+		case RTAUDIO_WARNING:
+			WR_CORE_WARN(message);
+			break;
+		default:
+			WR_CORE_ERROR(message);
+			break;
 		}
-
 	}
 
-	RtAudio* AudioPlayer::m_Audio = nullptr;
-
-	static int AudioCallback(void* outBuffer, void* inBuffer, uint32_t frames, double time, RtAudioStreamStatus status, void* userData)
+	static int AudioCallback(void* outputBuffer, void* inputBuffer, uint32_t nFrames, 
+							 double streamTime, RtAudioStreamStatus status, void* userData)
 	{
-		(void)inBuffer;
-		float* buffer = (float*)outBuffer;
+		(void)inputBuffer;
+		float* outBuffer = (float*)outputBuffer;
 		uint32_t remainingFrames;
-		AudioPlayer::CallbackData* data = (AudioPlayer::CallbackData*)userData;
+		Audio::AudioData* data = (Audio::AudioData*)userData;
 
-		remainingFrames = frames;
+		remainingFrames = nFrames;
 		while (remainingFrames > 0)
 		{
-			uint32_t size = data->WaveNumber - data->WavesIndexInFrame;
+			uint32_t size = data->nFrame - data->WaveFormTableIndex;
 			if (size > remainingFrames)
 				size = remainingFrames;
-			memcpy(buffer, data->Waves + (data->WavesIndexInFrame * data->ChannelNumber), size * data->ChannelNumber * sizeof(float));
-			data->WavesIndexInFrame = (data->WavesIndexInFrame + size) % data->WaveNumber;
-			buffer += size * data->ChannelNumber;
+			memcpy(outBuffer, data->WaveFormTable + (data->WaveFormTableIndex * data->ChannelNumber),
+				size * data->ChannelNumber * sizeof(float));
+			data->WaveFormTableIndex = (data->WaveFormTableIndex + size) % data->nFrame;
+			outBuffer += size * data->ChannelNumber;
 			remainingFrames -= size;
 		}
 		return 0;
 	}
+	
+	std::thread Audio::m_AudioThread;
+	bool Audio::m_AudioThreadRunning = true;
 
-	static int AudioFileCallback(void* outBuffer, void* inBuffer, uint32_t frames, double time, RtAudioStreamStatus status, void* userData)
+	RtAudio* Audio::m_AudioHandle;
+
+	bool Audio::m_SceneRuntime = false;
+
+	void Audio::Init()
 	{
-		WaveFile::WaveHeader* waveHeader = (WaveFile::WaveHeader*)userData;
+		m_AudioHandle = new RtAudio(RtAudio::WINDOWS_DS, RtAudioErrorCallback);
 
+		m_AudioThread = std::thread(UpdateAudio);
 
+		m_AudioThread.detach();
 	}
 
-	void AudioPlayer::Init()
+	void Audio::Shutdown()
 	{
-#ifdef WR_PLATFORM_WINDOWS
-		m_Audio = new RtAudio(RtAudio::RTAUDIO_DUMMY);
-#elif defined(WR_PLATFORM_MACOS)
-		m_Audio = new RtAudio(RtAudio::MACOSX_CORE);
-#elif defined(WR_PLAFORM_LINUX)
-		m_Audio = new RtAudio(RtAudio::LINUX_ALSA);
-#else
-		#error Platform is not supported!
-#endif
-
-		//WR_CORE_ASSERT(m_Audio->getDeviceCount() < 1);
-
-		m_Audio->showWarnings(false);
+		m_AudioThreadRunning = false;
 	}
 
-	void AudioPlayer::Shutdown()
+	void Audio::UpdateAudio()
 	{
-		delete m_Audio;
-	}
+		bool streamStarted = false;
 
-	void AudioPlayer::PlayFile(const std::string& filepath)
-	{
-		uint32_t dataLength{};
-		std::vector<uint8_t> rawWavData{};
+		RtAudio::StreamParameters streamParams;
+		streamParams.deviceId = m_AudioHandle->getDefaultOutputDevice();
+		streamParams.nChannels = 2;
+		uint32_t sampleRate = 44100;
+		uint32_t bufferFrames = 256;
+		AudioData data;
 
-		uint8_t* rawWavDataPtr;
+		m_AudioHandle->openStream(&streamParams, NULL, RTAUDIO_FLOAT32, sampleRate, 
+								  &bufferFrames, &AudioCallback, &data);
+
+		data.SampleRate = 44100;
+		data.nFrame = 44100;
+		data.ChannelNumber = streamParams.nChannels;
+		data.WaveFormTableIndex = 0;
+		data.WaveFormTable = (float*)calloc(data.ChannelNumber * data.nFrame, sizeof(float));
+
+		for (uint32_t i = 0; i < data.nFrame; i++)
+		{
+			float value = (float)sin(i * M_PI * 2 * 440 / data.SampleRate);
+			for (uint32_t x = 0; x < data.ChannelNumber; x++)
+				data.WaveFormTable[i * data.ChannelNumber + x] = value;
+		}
+		
+		while (m_AudioThreadRunning)
+		{
+			if (m_SceneRuntime && !streamStarted)
+			{
+				m_AudioHandle->startStream();
+				streamStarted = true;
+			}
+			if (!m_SceneRuntime && streamStarted)
+			{
+				m_AudioHandle->stopStream();
+				streamStarted = false;
+			}
+		}
+
+		m_AudioHandle->closeStream();
+
+		WR_CORE_INFO("Deleting audio handle...");
+		delete m_AudioHandle;
 	}
 
 }

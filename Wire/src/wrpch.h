@@ -3,6 +3,8 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+#include <thread>
+
 #include <iostream>
 #include <memory>
 #include <utility>
