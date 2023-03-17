@@ -27,11 +27,11 @@ namespace Wire {
 		uint32_t m_RendererID = 0;
 		FramebufferSpecification m_Specification;
 
-		std::vector<FramebufferTextureSpecification> m_ColourAttachmentSpecs;
-		FramebufferTextureSpecification m_DepthAttachmentSpec = FramebufferTextureFormat::None;
+		std::vector<FramebufferTextureSpecification> m_ColourAttachmentSpecifications;
+		FramebufferTextureSpecification m_DepthAttachmentSpecification = FramebufferTextureFormat::None;
 
 		std::vector<uint32_t> m_ColourAttachments;
-		uint32_t m_DepthAttachment;
+		uint32_t m_DepthAttachment = 0;
 	};
 
 }

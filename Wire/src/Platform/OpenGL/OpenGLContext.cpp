@@ -1,9 +1,8 @@
 #include "wrpch.h"
-#include "OpenGLContext.h"
+#include "Platform/OpenGL/OpenGLContext.h"
 
-#include <glfw/glfw3.h>
+#include <GLFW/glfw3.h>
 #include <glad/glad.h>
-#include <GL/GL.h>
 
 namespace Wire {
 
@@ -26,14 +25,7 @@ namespace Wire {
 		WR_CORE_INFO("  Renderer: {0}", glGetString(GL_RENDERER));
 		WR_CORE_INFO("  Version: {0}", glGetString(GL_VERSION));
 
-	#ifdef WR_ENABLE_ASSERTS
-		int versionMajor;
-		int versionMinor;
-		glGetIntegerv(GL_MAJOR_VERSION, &versionMajor);
-		glGetIntegerv(GL_MINOR_VERSION, &versionMinor);
-
-		WR_CORE_ASSERT(versionMajor > 4 || (versionMajor == 4 && versionMinor >= 5), "Wire requires at least OpenGL version 4.5!");
-	#endif
+		WR_CORE_ASSERT(GLVersion.major > 4 || (GLVersion.major == 4 && GLVersion.minor >= 5), "Wire requires at least OpenGL version 4.5!");
 	}
 
 	void OpenGLContext::SwapBuffers()

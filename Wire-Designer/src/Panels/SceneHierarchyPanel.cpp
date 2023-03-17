@@ -317,14 +317,14 @@ namespace Wire {
 		{
 			if (ImGui::MenuItem("Camera"))
 			{
-				if (m_SelectionContext.HasComponent<CameraComponent>())
+				if (!m_SelectionContext.HasComponent<CameraComponent>())
 					m_SelectionContext.AddComponent<CameraComponent>();
 				ImGui::CloseCurrentPopup();
 			}
 
 			if (ImGui::MenuItem("Sprite Renderer"))
 			{
-				if (m_SelectionContext.HasComponent<SpriteRendererComponent>())
+				if (!m_SelectionContext.HasComponent<SpriteRendererComponent>())
 					m_SelectionContext.AddComponent<SpriteRendererComponent>();
 				ImGui::CloseCurrentPopup();
 			}

@@ -1,7 +1,7 @@
 #include "wrpch.h"
-#include "Shader.h"
+#include "Wire/Renderer/Shader.h"
 
-#include "Renderer.h"
+#include "Wire/Renderer/Renderer.h"
 #include "Platform/OpenGL/OpenGLShader.h"
 
 namespace Wire {

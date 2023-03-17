@@ -1,9 +1,9 @@
 #pragma once
 
-#include "RenderCommand.h"
+#include "Wire/Renderer/RenderCommand.h"
 
-#include "OrthographicCamera.h"
-#include "Shader.h"
+#include "Wire/Renderer/OrthographicCamera.h"
+#include "Wire/Renderer/Shader.h"
 
 namespace Wire {
 
@@ -20,7 +20,7 @@ namespace Wire {
 
 		static void Submit(const Ref<Shader>& shader, const Ref<VertexArray>& vertexArray, const glm::mat4& transform = glm::mat4(1.0f));
 
-		inline static RendererAPI::API GetAPI() { return RendererAPI::GetAPI(); }
+		static RendererAPI::API GetAPI() { return RendererAPI::GetAPI(); }
 	private:
 		struct SceneData
 		{

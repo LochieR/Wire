@@ -23,9 +23,7 @@ namespace Wire {
 	{
 		FramebufferTextureSpecification() = default;
 		FramebufferTextureSpecification(FramebufferTextureFormat format)
-			: TextureFormat(format)
-		{
-		}
+			: TextureFormat(format) {}
 
 		FramebufferTextureFormat TextureFormat = FramebufferTextureFormat::None;
 		// TODO: filtering/wrap
@@ -35,9 +33,7 @@ namespace Wire {
 	{
 		FramebufferAttachmentSpecification() = default;
 		FramebufferAttachmentSpecification(std::initializer_list<FramebufferTextureSpecification> attachments)
-			: Attachments(attachments)
-		{
-		}
+			: Attachments(attachments) {}
 
 		std::vector<FramebufferTextureSpecification> Attachments;
 	};
@@ -70,5 +66,6 @@ namespace Wire {
 
 		static Ref<Framebuffer> Create(const FramebufferSpecification& spec);
 	};
+
 
 }

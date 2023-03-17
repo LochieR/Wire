@@ -1,11 +1,11 @@
 #pragma once
 
-#include "OrthographicCamera.h"
+#include "Wire/Renderer/OrthographicCamera.h"
 
-#include "Texture.h"
+#include "Wire/Renderer/Texture.h"
 
-#include "Camera.h"
-#include "EditorCamera.h"
+#include "Wire/Renderer/Camera.h"
+#include "Wire/Renderer/EditorCamera.h"
 
 #include "Wire/Scene/Components.h"
 

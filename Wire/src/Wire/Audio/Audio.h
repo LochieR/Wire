@@ -26,8 +26,6 @@ namespace Wire {
 		static std::thread m_AudioThread;
 		static bool m_AudioThreadRunning;
 
-		static RtAudio* m_AudioHandle;
-
 		static bool m_SceneRuntime;
 	};
 

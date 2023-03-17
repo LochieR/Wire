@@ -1,12 +1,12 @@
 #include "wrpch.h"
-#include "Framebuffer.h"
+#include "Wire/Renderer/Framebuffer.h"
 
-#include "Renderer.h"
+#include "Wire/Renderer/Renderer.h"
 
 #include "Platform/OpenGL/OpenGLFramebuffer.h"
 
 namespace Wire {
-
+	
 	Ref<Framebuffer> Framebuffer::Create(const FramebufferSpecification& spec)
 	{
 		switch (Renderer::GetAPI())
@@ -20,3 +20,4 @@ namespace Wire {
 	}
 
 }
+

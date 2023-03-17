@@ -1,5 +1,5 @@
 #include "wrpch.h"
-#include "OpenGLShader.h"
+#include "Platform/OpenGL/OpenGLShader.h"
 
 #include <fstream>
 #include <glad/glad.h>
@@ -31,8 +31,8 @@ namespace Wire {
 		{
 			switch (stage)
 			{
-			case GL_VERTEX_SHADER:   return shaderc_glsl_vertex_shader;
-			case GL_FRAGMENT_SHADER: return shaderc_glsl_fragment_shader;
+				case GL_VERTEX_SHADER:   return shaderc_glsl_vertex_shader;
+				case GL_FRAGMENT_SHADER: return shaderc_glsl_fragment_shader;
 			}
 			WR_CORE_ASSERT(false);
 			return (shaderc_shader_kind)0;
@@ -42,8 +42,8 @@ namespace Wire {
 		{
 			switch (stage)
 			{
-			case GL_VERTEX_SHADER:   return "GL_VERTEX_SHADER";
-			case GL_FRAGMENT_SHADER: return "GL_FRAGMENT_SHADER";
+				case GL_VERTEX_SHADER:   return "GL_VERTEX_SHADER";
+				case GL_FRAGMENT_SHADER: return "GL_FRAGMENT_SHADER";
 			}
 			WR_CORE_ASSERT(false);
 			return nullptr;
@@ -66,8 +66,8 @@ namespace Wire {
 		{
 			switch (stage)
 			{
-			case GL_VERTEX_SHADER:    return ".cached_opengl.vert";
-			case GL_FRAGMENT_SHADER:  return ".cached_opengl.frag";
+				case GL_VERTEX_SHADER:    return ".cached_opengl.vert";
+				case GL_FRAGMENT_SHADER:  return ".cached_opengl.frag";
 			}
 			WR_CORE_ASSERT(false);
 			return "";
@@ -243,7 +243,7 @@ namespace Wire {
 			}
 		}
 
-		for (auto&& [stage, data] : shaderData)
+		for (auto&& [stage, data]: shaderData)
 			Reflect(stage, data);
 	}
 

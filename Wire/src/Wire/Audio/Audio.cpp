@@ -2,6 +2,7 @@
 #include "Audio.h"
 
 #include "WavHeader.h"
+#include "Modules.h"
 
 #include <RtAudio.h>
 
@@ -46,16 +47,11 @@ namespace Wire {
 	std::thread Audio::m_AudioThread;
 	bool Audio::m_AudioThreadRunning = true;
 
-	RtAudio* Audio::m_AudioHandle;
-
 	bool Audio::m_SceneRuntime = false;
 
 	void Audio::Init()
 	{
-		m_AudioHandle = new RtAudio(RtAudio::WINDOWS_DS, RtAudioErrorCallback);
-
 		m_AudioThread = std::thread(UpdateAudio);
-
 		m_AudioThread.detach();
 	}
 
@@ -66,16 +62,18 @@ namespace Wire {
 
 	void Audio::UpdateAudio()
 	{
+		RtAudio* audio = new RtAudio(RtAudio::WINDOWS_DS, RtAudioErrorCallback);
+
 		bool streamStarted = false;
 
 		RtAudio::StreamParameters streamParams;
-		streamParams.deviceId = m_AudioHandle->getDefaultOutputDevice();
+		streamParams.deviceId = audio->getDefaultOutputDevice();
 		streamParams.nChannels = 2;
 		uint32_t sampleRate = 44100;
-		uint32_t bufferFrames = 256;
+		uint32_t bufferFrames = 512;
 		AudioData data;
 
-		m_AudioHandle->openStream(&streamParams, NULL, RTAUDIO_FLOAT32, sampleRate, 
+		audio->openStream(&streamParams, NULL, RTAUDIO_FLOAT32, sampleRate, 
 								  &bufferFrames, &AudioCallback, &data);
 
 		data.SampleRate = 44100;
@@ -84,9 +82,14 @@ namespace Wire {
 		data.WaveFormTableIndex = 0;
 		data.WaveFormTable = (float*)calloc(data.ChannelNumber * data.nFrame, sizeof(float));
 
+		AudioSettings settings;
+		settings.NumChannels = data.ChannelNumber;
+		settings.SampleRate = data.SampleRate;
+
 		for (uint32_t i = 0; i < data.nFrame; i++)
 		{
-			float value = (float)sin(i * M_PI * 2 * 440 / data.SampleRate);
+			settings.Index = i;
+			float value = SineOscillator::GenerateAtFreq(440, settings);
 			for (uint32_t x = 0; x < data.ChannelNumber; x++)
 				data.WaveFormTable[i * data.ChannelNumber + x] = value;
 		}
@@ -95,20 +98,20 @@ namespace Wire {
 		{
 			if (m_SceneRuntime && !streamStarted)
 			{
-				m_AudioHandle->startStream();
+				audio->startStream();
 				streamStarted = true;
 			}
 			if (!m_SceneRuntime && streamStarted)
 			{
-				m_AudioHandle->stopStream();
+				audio->stopStream();
 				streamStarted = false;
 			}
 		}
 
-		m_AudioHandle->closeStream();
+		audio->closeStream();
 
 		WR_CORE_INFO("Deleting audio handle...");
-		delete m_AudioHandle;
+		delete audio;
 	}
 
 }

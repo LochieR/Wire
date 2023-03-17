@@ -9,7 +9,7 @@
 #include "Entity.h"
 
 namespace Wire {
-
+	
 	Scene::Scene()
 	{
 	}
@@ -46,7 +46,7 @@ namespace Wire {
 					nsc.Instance->OnCreate();
 				}
 
-				nsc.Instance->OnUpdate(ts);
+			nsc.Instance->OnUpdate(ts);
 			});
 		}
 

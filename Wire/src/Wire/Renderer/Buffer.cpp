@@ -1,7 +1,7 @@
 #include "wrpch.h"
-#include "Buffer.h"
+#include "Wire/Renderer/Buffer.h"
 
-#include "Renderer.h"
+#include "Wire/Renderer/Renderer.h"
 
 #include "Platform/OpenGL/OpenGLBuffer.h"
 
@@ -31,12 +31,12 @@ namespace Wire {
 		return nullptr;
 	}
 
-	Ref<IndexBuffer> IndexBuffer::Create(uint32_t* indices, uint32_t count)
+	Ref<IndexBuffer> IndexBuffer::Create(uint32_t* indices, uint32_t size)
 	{
 		switch (Renderer::GetAPI())
 		{
 			case RendererAPI::API::None:    WR_CORE_ASSERT(false, "RendererAPI::None is currently not supported!"); return nullptr;
-			case RendererAPI::API::OpenGL:  return CreateRef<OpenGLIndexBuffer>(indices, count);
+			case RendererAPI::API::OpenGL:  return CreateRef<OpenGLIndexBuffer>(indices, size);
 		}
 
 		WR_CORE_ASSERT(false, "Unknown RendererAPI!");
