@@ -100,7 +100,7 @@ namespace Wire {
 					ImGui::PushID(filenameString.c_str());
 					Ref<Texture2D> icon = directoryEntry.is_directory() ? m_DirectoryIcon : m_FileIcon;
 					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0, 0, 0, 0 });
-					ImGui::ImageButton((ImTextureID)icon->GetRendererID(), { thumbnailSize, thumbnailSize }, { 0, 1 }, { 1,0 });
+					ImGui::ImageButton((ImTextureID)(uint64_t)icon->GetRendererID(), { thumbnailSize, thumbnailSize }, { 0, 1 }, { 1,0 });
 
 					if (ImGui::BeginDragDropSource())
 					{
@@ -140,24 +140,18 @@ namespace Wire {
 				ImGui::PopStyleColor();
 			}
 
-			/*ImGui::SliderFloat("Thumbnail Size", &thumbnailSize, 16, 512);
-			ImGui::SliderFloat("Padding", &padding, 0, 32);*/
-
 			ImGui::End();
 
-			if (m_Project != nullptr)
-			{
-				m_Ticks++;
+			m_Ticks++;
 
-				m_TotalFrameRates += (int)(1000.0f / ts.GetMilliseconds());
-				m_AverageFrameRate = m_TotalFrameRates / m_Ticks;
+			m_TotalFrameRates += (int)(1000.0f / ts.GetMilliseconds());
+			m_AverageFrameRate = (float)m_TotalFrameRates / m_Ticks;
 
-				int twoSeconds = 2 * m_AverageFrameRate;
+			int twoSeconds = 2 * (int)m_AverageFrameRate;
 
-				if (m_Ticks != 0 && twoSeconds != 0)
-					if (m_Ticks % twoSeconds == 0)
-						ReloadDirectoryEntries();
-			}
+			if (m_Ticks != 0 && twoSeconds != 0)
+				if (m_Ticks % twoSeconds == 0 && m_Project != nullptr)
+					ReloadDirectoryEntries();
 		}
 	}
 

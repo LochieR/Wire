@@ -18,6 +18,8 @@ namespace Wire {
 
 		void OnOpenProject(const Ref<Project>& project);
 		std::filesystem::path GetAssetPath() const { return m_AssetPath; }
+
+		float GetAverageFrameRate() { return m_AverageFrameRate; }
 	private:
 		std::filesystem::path m_AssetPath;
 		std::filesystem::path m_CurrentDirectory;

@@ -1,9 +1,10 @@
 #pragma once
 
-#include "entt.hpp"
-
 #include "Wire/Core/Timestep.h"
+#include "Wire/Core/UUID.h"
 #include "Wire/Renderer/EditorCamera.h"
+
+#include "entt.hpp"
 
 namespace Wire {
 
@@ -16,6 +17,7 @@ namespace Wire {
 		~Scene();
 
 		Entity CreateEntity(const std::string& name = std::string());
+		Entity CreateEntityWithUUID(UUID uuid, const std::string& name = std::string());
 		void DestroyEntity(Entity entity);
 
 		void OnUpdateEditor(Timestep ts, EditorCamera& camera);

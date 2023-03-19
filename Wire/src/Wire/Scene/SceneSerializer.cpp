@@ -83,8 +83,10 @@ namespace Wire {
 
 	static void SerializeEntity(YAML::Emitter& out, Entity entity)
 	{
+		WR_CORE_ASSERT(entity.HasComponent<IDComponent>());
+
 		out << YAML::BeginMap;
-		out << YAML::Key << "Entity" << YAML::Value << (uint32_t)entity; // Entity ID
+		out << YAML::Key << "Entity" << YAML::Value << entity.GetUUID();
 
 		if (entity.HasComponent<TagComponent>())
 		{
@@ -142,8 +144,11 @@ namespace Wire {
 
 			auto& spriteRendererComponent = entity.GetComponent<SpriteRendererComponent>();
 			out << YAML::Key << "Colour" << YAML::Value << spriteRendererComponent.Colour;
-			auto texturePath = spriteRendererComponent.Texture->GetTexturePath();
-			out << YAML::Key << "Texture" << YAML::Value << (spriteRendererComponent.Texture->GetTexturePath().empty() ? "NOTEX" : spriteRendererComponent.Texture->GetTexturePath());
+			if (spriteRendererComponent.Texture != nullptr)
+			{
+				auto texturePath = spriteRendererComponent.Texture->GetTexturePath();
+				out << YAML::Key << "Texture" << YAML::Value << spriteRendererComponent.Texture->GetTexturePath();
+			}
 			out << YAML::Key << "TilingFactor" << YAML::Value << spriteRendererComponent.TilingFactor;
 
 			out << YAML::EndMap; // SpriteRendererComponent
@@ -205,7 +210,7 @@ namespace Wire {
 
 				WR_CORE_TRACE("Deserialized entity with ID = {0}, name = {1}", uuid, name);
 
-				Entity deserializedEntity = m_Scene->CreateEntity(name);
+				Entity deserializedEntity = m_Scene->CreateEntityWithUUID(uuid, name);
 
 				auto transformComponent = entity["TransformComponent"];
 				if (transformComponent)
@@ -242,13 +247,9 @@ namespace Wire {
 				{
 					auto& src = deserializedEntity.AddComponent<SpriteRendererComponent>();
 					src.Colour = spriteRendererComponent["Colour"].as<glm::vec4>();
-					std::string texturePath = spriteRendererComponent["Texture"].as<std::string>();
-					if (texturePath == "NOTEX")
+					if (spriteRendererComponent["Texture"])
 					{
-						src.Texture = nullptr;
-					}
-					else
-					{
+						std::string texturePath = spriteRendererComponent["Texture"].as<std::string>();
 						src.Texture = Texture2D::Create(texturePath);
 					}
 					src.TilingFactor = spriteRendererComponent["TilingFactor"].as<float>();

@@ -1,6 +1,6 @@
 Scene: Untitled
 Entities:
-  - Entity: 3
+  - Entity: 11368079265064885954
     TagComponent:
       Tag: Top
     TransformComponent:
@@ -9,9 +9,8 @@ Entities:
       Scale: [0.999999881, 0.999999285, 0.999981701]
     SpriteRendererComponent:
       Colour: [0.874509811, 0, 0.835294127, 1]
-      Texture: NOTEX
       TilingFactor: 1
-  - Entity: 2
+  - Entity: 18360880016523627785
     TagComponent:
       Tag: Left
     TransformComponent:
@@ -20,9 +19,8 @@ Entities:
       Scale: [1, 1, 1]
     SpriteRendererComponent:
       Colour: [1, 0.0352941193, 0.949019611, 1]
-      Texture: NOTEX
       TilingFactor: 1
-  - Entity: 1
+  - Entity: 9297443112752030413
     TagComponent:
       Tag: Right
     TransformComponent:
@@ -31,14 +29,13 @@ Entities:
       Scale: [1, 1, 1]
     SpriteRendererComponent:
       Colour: [0.549019635, 0.0352941193, 0.588235319, 1]
-      Texture: NOTEX
       TilingFactor: 1
-  - Entity: 0
+  - Entity: 5338072042869368015
     TagComponent:
       Tag: Camera
     TransformComponent:
-      Translation: [0, 0, 0]
-      Rotation: [0, 0, 0]
+      Translation: [0, 1.39999998, 3.9000001]
+      Rotation: [-0.319395244, 0, 0]
       Scale: [1, 1, 1]
     CameraComponent:
       Camera:

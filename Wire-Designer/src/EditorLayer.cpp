@@ -28,7 +28,8 @@ namespace Wire {
 
 		m_CheckerboardTexture = Texture2D::Create("assets/textures/Checkerboard.png");
 		m_IconPlay = Texture2D::Create("Resources/Icons/UIToolbar/PlayButton.png");
-		m_IconStop = Texture2D::Create("Resources/Icons/UIToolbar/PauseButton.png");
+		m_IconPause = Texture2D::Create("Resources/Icons/UIToolbar/PauseButton.png");
+		m_IconStop = Texture2D::Create("Resources/Icons/UIToolbar/StopButton.png");
 
 		FramebufferSpecification fbSpec;
 		fbSpec.Attachments = { FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::RED_INTEGER, FramebufferTextureFormat::Depth };
@@ -123,11 +124,16 @@ namespace Wire {
 #endif
 
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+
+		// TEMP
+		OpenProject(std::filesystem::current_path() / "project.wrpj");
 	}
 
 	void EditorLayer::OnDetach()
 	{
 		WR_PROFILE_FUNCTION();
+
+		WR_INFO("Average frame rate was {0} fps", m_ContentBrowserPanel.GetAverageFrameRate());
 	}
 
 	void EditorLayer::OnUpdate(Timestep ts)
@@ -147,22 +153,33 @@ namespace Wire {
 			m_ActiveScene->OnViewportResize((uint32_t)m_ViewportSize.x, (uint32_t)m_ViewportSize.y);
 		}
 
-		// Update
-		if (m_ViewportFocused)
-			m_CameraController.OnUpdate(ts);
-		
-		m_EditorCamera.OnUpdate(ts);
-
 		// Render
 		Renderer2D::ResetStats();
 		m_Framebuffer->Bind();
 		RenderCommand::SetClearColour({ 0.1f, 0.1f, 0.1f, 1 });
 		RenderCommand::Clear();
 
+		// Set entity ID attachment to -1
 		m_Framebuffer->ClearAttachment(1, -1);
 
-		// Update scene
-		m_ActiveScene->OnUpdateEditor(ts, m_EditorCamera);
+		switch (m_SceneState)
+		{
+			case SceneState::Edit:
+			{
+				if (m_ViewportFocused)
+					m_CameraController.OnUpdate(ts);
+
+				m_EditorCamera.OnUpdate(ts);
+
+				m_ActiveScene->OnUpdateEditor(ts, m_EditorCamera);
+				break;
+			}
+			case SceneState::Play:
+			{
+				m_ActiveScene->OnUpdateRuntime(ts);
+				break;
+			}
+		}
 
 		auto [mx, my] = ImGui::GetMousePos();
 		mx -= m_ViewportBounds[0].x;
@@ -407,9 +424,9 @@ namespace Wire {
 		ImGui::End();
 		ImGui::PopStyleVar();
 
-		ImGui::End();
-
 		UIToolbar();
+
+		ImGui::End();
 	}
 
 	void EditorLayer::UIToolbar()
@@ -427,20 +444,24 @@ namespace Wire {
 		ImGui::Begin("##toolbar", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 		
 		float size = ImGui::GetWindowHeight() - 4.0f;
-		Ref<Texture2D> icon = m_SceneState == SceneState::Edit ? m_IconPlay : m_IconStop;
-		ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.5f) - (size * 0.5f));
+		Ref<Texture2D> icon = m_SceneState == SceneState::Edit ? m_IconPlay : m_IconPause;
+		ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.5f) - size);
 		if (ImGui::ImageButton((ImTextureID)(uint64_t)icon->GetRendererID(), ImVec2{ size, size }, ImVec2{ 0, 0 }, ImVec2{ 1, 1 }, 0))
 		{
 			if (m_SceneState == SceneState::Edit)
 			{
-				m_SceneState = SceneState::Play;
-				Audio::SetSceneRuntime(true);
+				OnScenePlay();
 			}
 			else if (m_SceneState == SceneState::Play)
 			{
-				m_SceneState = SceneState::Edit;
-				Audio::SetSceneRuntime(false);
+				// TODO: OnScenePause(); instead
+				OnSceneStop();
 			}
+		}
+		ImGui::SameLine();
+		if (ImGui::ImageButton((ImTextureID)(uint64_t)m_IconStop->GetRendererID(), ImVec2{ size, size }, ImVec2{ 0, 0 }, ImVec2{ 1, 1 }, 0))
+		{
+			OnSceneStop();
 		}
 
 		ImGui::PopStyleVar(2);
@@ -615,6 +636,18 @@ namespace Wire {
 	{
 		SceneSerializer serializer(scene);
 		serializer.Serialize(path.string());
+	}
+
+	void EditorLayer::OnScenePlay()
+	{
+		m_SceneState = SceneState::Play;
+		Audio::SetSceneRuntime(true);
+	}
+
+	void EditorLayer::OnSceneStop()
+	{
+		m_SceneState = SceneState::Edit;
+		Audio::SetSceneRuntime(false);
 	}
 
 }

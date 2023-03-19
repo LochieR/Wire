@@ -37,6 +37,9 @@ namespace Wire {
 		void SaveSceneAs();
 		void SerializeScene(Ref<Scene> scene, const std::filesystem::path& path);
 
+		void OnScenePlay();
+		void OnSceneStop();
+
 		void UIToolbar();
 	private:
 		OrthographicCameraController m_CameraController;
@@ -84,7 +87,7 @@ namespace Wire {
 		bool m_ShowPreferencesWindow = false;
 
 		// Icons
-		Ref<Texture2D> m_IconPlay, m_IconStop;
+		Ref<Texture2D> m_IconPlay, m_IconPause, m_IconStop;
 	};
 
 }
