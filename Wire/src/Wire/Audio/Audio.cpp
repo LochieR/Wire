@@ -1,7 +1,6 @@
 #include "wrpch.h"
 #include "Audio.h"
 
-#include "WavHeader.h"
 #include "Modules.h"
 
 #include <RtAudio.h>
@@ -62,7 +61,15 @@ namespace Wire {
 
 	void Audio::UpdateAudio()
 	{
+#ifdef WR_PLATFORM_WINDOWS
 		RtAudio* audio = new RtAudio(RtAudio::WINDOWS_DS, RtAudioErrorCallback);
+#elif defined(WR_PLATFORM_MACOS)
+		RtAudio* audio = new RtAudio(RtAudio::MACOSX_CORE, RtAudioErrorCallback);
+#elif defined(WR_PLATFORM_LINUX)
+		RtAudio* audio = new RtAudio(RtAudio::UNIX_JACK, RtAudioErrorCallback);
+#else
+		RtAudio* audio = new RtAudio(RtAudio::UNSPECIFIED, RtAudioErrorCallback);
+#endif
 
 		bool streamStarted = false;
 
@@ -89,7 +96,7 @@ namespace Wire {
 		for (uint32_t i = 0; i < data.nFrame; i++)
 		{
 			settings.Index = i;
-			float value = SineOscillator::GenerateAtFreq(440, settings);
+			float value = SineOscillator::GenerateAtFreq(220, settings);
 			for (uint32_t x = 0; x < data.ChannelNumber; x++)
 				data.WaveFormTable[i * data.ChannelNumber + x] = value;
 		}

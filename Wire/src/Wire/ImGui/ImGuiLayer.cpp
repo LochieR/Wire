@@ -2,8 +2,8 @@
 #include "ImGuiLayer.h"
 
 #include <imgui.h>
-#include <examples/imgui_impl_glfw.h>
-#include <examples/imgui_impl_opengl3.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_opengl3.h>
 
 #include "Wire/Core/Application.h"
 
@@ -38,6 +38,24 @@ namespace Wire {
 		io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Bold.ttf", 18.0f);
 		io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Regular.ttf", 18.0f);
 
+		m_ImGuiIniPath = std::filesystem::current_path() / "imgui.ini";
+
+		if (std::filesystem::exists(m_ImGuiIniPath))
+		{
+			std::ifstream file(m_ImGuiIniPath);
+
+			std::string line, all;
+
+			while (std::getline(file, line))
+			{
+				all += line + "\n";
+			}
+			char* data = (char*)all.c_str();
+
+			ImGui::LoadIniSettingsFromMemory(data, strlen(data));
+			file.close();
+		}
+
 		// Setup Dear ImGui style
 		ImGui::StyleColorsDark();
 		//ImGui::StyleColorsClassic();
@@ -63,6 +81,12 @@ namespace Wire {
 	void ImGuiLayer::OnDetach()
 	{
 		WR_PROFILE_FUNCTION();
+
+		const char* data = ImGui::SaveIniSettingsToMemory();
+
+		std::ofstream file(m_ImGuiIniPath);
+		file << data;
+		file.close();
 
 		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplGlfw_Shutdown();

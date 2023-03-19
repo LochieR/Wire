@@ -13,7 +13,7 @@ namespace Wire {
 	public:
 		ContentBrowserPanel();
 
-		void OnImGuiRender(Timestep ts);
+		void OnImGuiRender(bool* open, Timestep ts);
 		void ReloadDirectoryEntries();
 
 		void OnOpenProject(const Ref<Project>& project);
@@ -29,6 +29,9 @@ namespace Wire {
 		Ref<Texture2D> m_FileIcon;
 
 		uint32_t m_Ticks = 0;
+
+		double m_TotalFrameRates = 0.0f;
+		float m_AverageFrameRate = 0.0f;
 	};
 
 }

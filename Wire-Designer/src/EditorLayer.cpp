@@ -49,7 +49,7 @@ namespace Wire {
 
 		m_EditorCamera = EditorCamera(30.0f, 16.0f / 9.0f, 0.1f, 1000.0f);
 
-		if (std::filesystem::exists(std::filesystem::path("imgui.ini")))
+		if (!std::filesystem::exists(std::filesystem::path("imgui.ini")))
 			s_PreferencesWindowHasSettings = false;
 		else
 		{
@@ -297,8 +297,12 @@ namespace Wire {
 			ImGui::EndMenuBar();
 		}
 
-		m_SceneHierarchyPanel.OnImGuiRender();
-		m_ContentBrowserPanel.OnImGuiRender(m_Timestep);
+		static bool sceneHierarchyOpen = true;
+		static bool contentBrowserOpen = true;
+		static bool propertiesPanelOpen = true;
+
+		m_SceneHierarchyPanel.OnImGuiRender(&sceneHierarchyOpen, &propertiesPanelOpen);
+		m_ContentBrowserPanel.OnImGuiRender(&contentBrowserOpen, m_Timestep);
 
 		ImGui::Begin("Stats");
 
@@ -539,6 +543,7 @@ namespace Wire {
 	{
 		m_Project = CreateRef<Project>(path.stem().string(), path);
 		std::filesystem::create_directories(m_Project->GetDir().string() + "assets");
+		m_EditorCamera = EditorCamera(30.0f, 16.0f / 9.0f, 0.1f, 1000.0f);
 		m_ContentBrowserPanel.OnOpenProject(m_Project);
 		m_SceneHierarchyPanel.OnOpenProject(m_Project);
 	}
@@ -555,6 +560,7 @@ namespace Wire {
 	void EditorLayer::OpenProject(const std::filesystem::path& path)
 	{
 		m_Project = CreateRef<Project>(Project::OpenProject(path));
+		m_EditorCamera = EditorCamera(30.0f, 16.0f / 9.0f, 0.1f, 1000.0f);
 		m_ContentBrowserPanel.OnOpenProject(m_Project);
 		m_SceneHierarchyPanel.OnOpenProject(m_Project);
 	}

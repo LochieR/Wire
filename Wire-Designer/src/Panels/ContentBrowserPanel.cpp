@@ -20,137 +20,144 @@ namespace Wire {
 		ReloadDirectoryEntries();
 	}
 
-	void ContentBrowserPanel::OnImGuiRender(Timestep ts)
+	void ContentBrowserPanel::OnImGuiRender(bool* open, Timestep ts)
 	{
-		ImGui::Begin("Content Browser");
-
-		static float width = ImGui::GetWindowWidth();
-		static float height = 30.0f;
-		if (m_CurrentDirectory == "assets" && m_Project != nullptr)
+		if (*open)
 		{
-			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0.1f, 0.105f, 0.11f, 1.0f });
-			if (ImGui::Button(m_CurrentDirectory.string().c_str()))
-			{
-				m_CurrentDirectory = "assets";
-				ReloadDirectoryEntries();
-			}
-			ImGui::PopStyleColor();
-			ImGui::SameLine();
-			ImGui::Text("/");
-		}
-		else if (m_Project != nullptr)
-		{
-			std::vector<std::string> pathSplit;
-			std::string delimiter = "/";
-			std::string str = m_CurrentDirectory.string();
-			std::replace(str.begin(), str.end(), '\\', '/');
+			ImGui::Begin("Content Browser", open);
 
-			size_t pos = 0;
-			std::string token;
-			while ((pos = str.find(delimiter)) != std::string::npos)
-			{
-				token = str.substr(0, pos);
-				pathSplit.push_back(token);
-				str.erase(0, pos + delimiter.length());
-			}
-			pathSplit.push_back(str);
-
-			int i = 0;
-			for (std::string str : pathSplit)
+			static float width = ImGui::GetWindowWidth();
+			static float height = 30.0f;
+			if (m_CurrentDirectory == "assets" && m_Project != nullptr)
 			{
 				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0.1f, 0.105f, 0.11f, 1.0f });
-				if (ImGui::Button(str.c_str()))
+				if (ImGui::Button(m_CurrentDirectory.string().c_str()))
 				{
-					std::string gotoPath;
-					for (int x = 0; x <= i; x++)
-						gotoPath += pathSplit[x] + (x == i ? "" : "/");
-					m_CurrentDirectory = gotoPath;
+					m_CurrentDirectory = "assets";
 					ReloadDirectoryEntries();
 				}
 				ImGui::PopStyleColor();
 				ImGui::SameLine();
 				ImGui::Text("/");
-				if (i != pathSplit.size() - 1)
-					ImGui::SameLine();
-				i++;
 			}
-		}
-
-		if (m_Project != nullptr)
-		{
-			static float padding = 12.0f;
-			static float thumbnailSize = 80.0f;
-			float cellSize = thumbnailSize + padding;
-
-			float panelWidth = ImGui::GetContentRegionAvail().x;
-			int columnCount = (int)(panelWidth / cellSize);
-			if (columnCount < 1)
-				columnCount = 1;
-
-			ImGui::Columns(columnCount, 0, false);
-
-			for (auto& directoryEntry : m_DirectoryEntries)
+			else if (m_Project != nullptr)
 			{
-				const auto& path = directoryEntry.path();
-				auto relativePath = std::filesystem::relative(path, m_AssetPath);
-				std::string filenameString = relativePath.filename().string();
+				std::vector<std::string> pathSplit;
+				std::string delimiter = "/";
+				std::string str = m_CurrentDirectory.string();
+				std::replace(str.begin(), str.end(), '\\', '/');
 
-				ImGui::PushID(filenameString.c_str());
-				Ref<Texture2D> icon = directoryEntry.is_directory() ? m_DirectoryIcon : m_FileIcon;
-				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0, 0, 0, 0 });
-				ImGui::ImageButton((ImTextureID)icon->GetRendererID(), { thumbnailSize, thumbnailSize }, { 0, 1 }, { 1,0 });
-
-				if (ImGui::BeginDragDropSource())
+				size_t pos = 0;
+				std::string token;
+				while ((pos = str.find(delimiter)) != std::string::npos)
 				{
-					const wchar_t* itemPath = relativePath.c_str();
-					ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", itemPath, (wcslen(itemPath) + 1) * sizeof(wchar_t), ImGuiCond_Once);
-					ImGui::EndDragDropSource();
+					token = str.substr(0, pos);
+					pathSplit.push_back(token);
+					str.erase(0, pos + delimiter.length());
 				}
+				pathSplit.push_back(str);
 
-				ImGui::PopStyleColor();
-				if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+				int i = 0;
+				for (std::string str : pathSplit)
 				{
-					if (directoryEntry.is_directory())
+					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0.1f, 0.105f, 0.11f, 1.0f });
+					if (ImGui::Button(str.c_str()))
 					{
-						m_CurrentDirectory /= path.filename();
+						std::string gotoPath;
+						for (int x = 0; x <= i; x++)
+							gotoPath += pathSplit[x] + (x == i ? "" : "/");
+						m_CurrentDirectory = gotoPath;
 						ReloadDirectoryEntries();
 					}
+					ImGui::PopStyleColor();
+					ImGui::SameLine();
+					ImGui::Text("/");
+					if (i != pathSplit.size() - 1)
+						ImGui::SameLine();
+					i++;
 				}
-				ImGui::TextWrapped(filenameString.c_str());
-
-				ImGui::NextColumn();
-
-				ImGui::PopID();
 			}
 
-			ImGui::Columns(1);
-		}
-		else
-		{
-			auto windowSize = ImGui::GetWindowSize();
-			auto textSize = ImGui::CalcTextSize("No Open Project");
+			if (m_Project != nullptr)
+			{
+				static float padding = 12.0f;
+				static float thumbnailSize = 80.0f;
+				float cellSize = thumbnailSize + padding;
 
-			ImGui::SetCursorPosX((windowSize.x - textSize.x) * 0.5f);
-			ImGui::SetCursorPosY((windowSize.y - textSize.y) * 0.5f);
-			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 0.388f, 0.388f, 0.388f, 1.0f });
-			ImGui::Text("No Open Project");
-			ImGui::PopStyleColor();
-		}
+				float panelWidth = ImGui::GetContentRegionAvail().x;
+				int columnCount = (int)(panelWidth / cellSize);
+				if (columnCount < 1)
+					columnCount = 1;
 
-		/*ImGui::SliderFloat("Thumbnail Size", &thumbnailSize, 16, 512);
-		ImGui::SliderFloat("Padding", &padding, 0, 32);*/
+				ImGui::Columns(columnCount, 0, false);
 
-		ImGui::End();
+				for (auto& directoryEntry : m_DirectoryEntries)
+				{
+					const auto& path = directoryEntry.path();
+					auto relativePath = std::filesystem::relative(path, m_AssetPath);
+					std::string filenameString = relativePath.filename().string();
 
-		if (m_Project != nullptr)
-		{
-			m_Ticks++;
+					ImGui::PushID(filenameString.c_str());
+					Ref<Texture2D> icon = directoryEntry.is_directory() ? m_DirectoryIcon : m_FileIcon;
+					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0, 0, 0, 0 });
+					ImGui::ImageButton((ImTextureID)icon->GetRendererID(), { thumbnailSize, thumbnailSize }, { 0, 1 }, { 1,0 });
 
-			int twoSeconds = 2 * (int)(1000.0f / ts.GetMilliseconds());
+					if (ImGui::BeginDragDropSource())
+					{
+						auto absolutePath = std::filesystem::absolute("assets" / relativePath);
+						const wchar_t* itemPath = absolutePath.c_str();
+						ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", itemPath, (wcslen(itemPath) + 1) * sizeof(wchar_t), ImGuiCond_Once);
+						ImGui::EndDragDropSource();
+					}
 
-			if (m_Ticks != 0 && twoSeconds != 0)
-				if (m_Ticks % twoSeconds == 0)
-					ReloadDirectoryEntries();
+					ImGui::PopStyleColor();
+					if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+					{
+						if (directoryEntry.is_directory())
+						{
+							m_CurrentDirectory /= path.filename();
+							ReloadDirectoryEntries();
+						}
+					}
+					ImGui::TextWrapped(filenameString.c_str());
+
+					ImGui::NextColumn();
+
+					ImGui::PopID();
+				}
+
+				ImGui::Columns(1);
+			}
+			else
+			{
+				auto windowSize = ImGui::GetWindowSize();
+				auto textSize = ImGui::CalcTextSize("No Open Project");
+
+				ImGui::SetCursorPosX((windowSize.x - textSize.x) * 0.5f);
+				ImGui::SetCursorPosY((windowSize.y - textSize.y) * 0.5f);
+				ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 0.388f, 0.388f, 0.388f, 1.0f });
+				ImGui::Text("No Open Project");
+				ImGui::PopStyleColor();
+			}
+
+			/*ImGui::SliderFloat("Thumbnail Size", &thumbnailSize, 16, 512);
+			ImGui::SliderFloat("Padding", &padding, 0, 32);*/
+
+			ImGui::End();
+
+			if (m_Project != nullptr)
+			{
+				m_Ticks++;
+
+				m_TotalFrameRates += (int)(1000.0f / ts.GetMilliseconds());
+				m_AverageFrameRate = m_TotalFrameRates / m_Ticks;
+
+				int twoSeconds = 2 * m_AverageFrameRate;
+
+				if (m_Ticks != 0 && twoSeconds != 0)
+					if (m_Ticks % twoSeconds == 0)
+						ReloadDirectoryEntries();
+			}
 		}
 	}
 
@@ -167,8 +174,7 @@ namespace Wire {
 	void ContentBrowserPanel::OnOpenProject(const Ref<Project>& project)
 	{
 		m_Project = project; 
-		int success = chdir(m_Project->GetDir().string().c_str());
-		WR_CORE_ASSERT(success == 0, "Failed to change directory!");
+		std::filesystem::current_path(project->GetDir());
 		m_AssetPath = "assets";
 		m_CurrentDirectory = m_AssetPath;
 		ReloadDirectoryEntries();

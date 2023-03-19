@@ -25,7 +25,7 @@ namespace Wire {
 
 		void SetContext(const Ref<Scene>& context);
 
-		void OnImGuiRender();
+		void OnImGuiRender(bool* sceneHierarchyOpen, bool* propertiesPanelOpen);
 
 		Entity GetSelectedEntity() const { return m_SelectionContext; }
 		void SetSelectedEntity(Entity entity);

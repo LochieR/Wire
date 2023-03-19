@@ -18,43 +18,49 @@ namespace Wire {
 		m_SelectionContext = {};
 	}
 
-	void SceneHierarchyPanel::OnImGuiRender()
+	void SceneHierarchyPanel::OnImGuiRender(bool* sceneHierarchyOpen, bool* propertiesPanelOpen)
 	{
-		ImGui::Begin("Scene Hierarchy");
-
-		m_Context->m_Registry.each([&](auto entityId)
+		if (*sceneHierarchyOpen)
 		{
-			Entity entity{ entityId, m_Context.get() };
-			DrawEntityNode(entity);
-		});
+			ImGui::Begin("Scene Hierarchy", sceneHierarchyOpen);
 
-		if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
-			m_SelectionContext = {};
-
-		ImGuiPopupFlags popupFlags = ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems;
-
-		if (ImGui::BeginPopupContextWindow("SceneHierarchyPopupMenu", popupFlags))
-		{
-			if (ImGui::MenuItem("Create Empty Entity"))
+			m_Context->m_Registry.each([&](auto entityId)
 			{
-				auto entity = m_Context->CreateEntity("Empty Entity");
-				if (!m_SelectionContext)
-					SetSelectedEntity(entity);
+				Entity entity{ entityId, m_Context.get() };
+			DrawEntityNode(entity);
+			});
+
+			if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
+				m_SelectionContext = {};
+
+			ImGuiPopupFlags popupFlags = ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems;
+
+			if (ImGui::BeginPopupContextWindow("SceneHierarchyPopupMenu", popupFlags))
+			{
+				if (ImGui::MenuItem("Create Empty Entity"))
+				{
+					auto entity = m_Context->CreateEntity("Empty Entity");
+					if (!m_SelectionContext)
+						SetSelectedEntity(entity);
+				}
+
+				ImGui::EndPopup();
 			}
 
-			ImGui::EndPopup();
+			ImGui::End();
 		}
 
-		ImGui::End();
-
-		ImGui::Begin("Properties");
-
-		if (m_SelectionContext)
+		if (*propertiesPanelOpen)
 		{
-			DrawComponents(m_SelectionContext);
-		}
+			ImGui::Begin("Properties", propertiesPanelOpen);
 
-		ImGui::End();
+			if (m_SelectionContext)
+			{
+				DrawComponents(m_SelectionContext);
+			}
+
+			ImGui::End();
+		}
 	}
 
 	void SceneHierarchyPanel::SetSelectedEntity(Entity entity)

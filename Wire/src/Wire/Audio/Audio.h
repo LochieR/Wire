@@ -1,7 +1,5 @@
 #pragma once
 
-class RtAudio;
-
 namespace Wire {
 
 	class Audio
