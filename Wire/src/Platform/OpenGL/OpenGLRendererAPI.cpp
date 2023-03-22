@@ -6,14 +6,18 @@
 namespace Wire {
 	
 	void OpenGLMessageCallback(
-		unsigned source,
-		unsigned type,
-		unsigned id,
-		unsigned severity,
+		uint32_t source,
+		uint32_t type,
+		uint32_t id,
+		uint32_t severity,
 		int length,
 		const char* message,
 		const void* userParam)
 	{
+		// Disable warning for lines with a width of over 1.00
+		if (id == 7)
+			return;
+
 		switch (severity)
 		{
 			case GL_DEBUG_SEVERITY_HIGH:         WR_CORE_CRITICAL(message); return;
@@ -41,6 +45,7 @@ namespace Wire {
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 		glEnable(GL_DEPTH_TEST);
+		glEnable(GL_LINE_SMOOTH);
 	}
 
 	void OpenGLRendererAPI::SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height)
@@ -48,9 +53,9 @@ namespace Wire {
 		glViewport(x, y, width, height);
 	}
 
-	void OpenGLRendererAPI::SetClearColour(const glm::vec4& color)
+	void OpenGLRendererAPI::SetClearColour(const glm::vec4& colour)
 	{
-		glClearColor(color.r, color.g, color.b, color.a);
+		glClearColor(colour.r, colour.g, colour.b, colour.a);
 	}
 
 	void OpenGLRendererAPI::Clear()
@@ -60,9 +65,20 @@ namespace Wire {
 
 	void OpenGLRendererAPI::DrawIndexed(const Ref<VertexArray>& vertexArray, uint32_t indexCount)
 	{
+		vertexArray->Bind();
 		uint32_t count = indexCount ? indexCount : vertexArray->GetIndexBuffer()->GetCount();
 		glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, nullptr);
-		glBindTexture(GL_TEXTURE_2D, 0);
+	}
+
+	void OpenGLRendererAPI::DrawLines(const Ref<VertexArray>& vertexArray, uint32_t vertexCount)
+	{
+		vertexArray->Bind();
+		glDrawArrays(GL_LINES, 0, vertexCount);
+	}
+
+	void OpenGLRendererAPI::SetLineWidth(float width)
+	{
+		glLineWidth(width);
 	}
 
 }
