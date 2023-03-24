@@ -9,8 +9,6 @@
 
 #include "Wire/Audio/Audio.h"
 
-#include "Wire/Plugins/PluginManager.h"
-
 #include "Timestep.h"
 
 #include "Wire/ImGui/ImGuiLayer.h"
