@@ -1,7 +1,8 @@
 #pragma once
 
-#include <memory>
 #include "Wire/Renderer/Buffer.h"
+
+#include <memory>
 
 namespace Wire {
 

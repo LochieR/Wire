@@ -1,8 +1,8 @@
 #pragma once
 
-#include <memory>
-
 #include "Wire/Core/PlatformDetection.h"
+
+#include <memory>
 
 #ifdef WR_DEBUG
 	#if defined(WR_PLATFORM_WINDOWS)

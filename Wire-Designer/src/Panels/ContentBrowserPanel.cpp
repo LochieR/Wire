@@ -104,8 +104,8 @@ namespace Wire {
 
 					if (ImGui::BeginDragDropSource())
 					{
-						ImGui::Image((ImTextureID)(uint64_t)icon->GetRendererID(), { thumbnailSize, thumbnailSize }, { 0, 1 }, { 1, 0 });
-						ImGui::TextWrapped(filenameString.c_str());
+						ImGui::Image((ImTextureID)(uint64_t)icon->GetRendererID(), { thumbnailSize / 1.5f, thumbnailSize / 1.5f }, { 0, 1 }, { 1, 0 });
+						ImGui::Text(filenameString.c_str());
 						auto absolutePath = std::filesystem::absolute("assets" / relativePath);
 						const wchar_t* itemPath = absolutePath.c_str();
 						ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", itemPath, (wcslen(itemPath) + 1) * sizeof(wchar_t), ImGuiCond_Once);

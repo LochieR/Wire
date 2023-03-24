@@ -1,12 +1,12 @@
 #include "wrpch.h"
 #include "Wire/Utils/PlatformUtils.h"
 
+#include "Wire/Core/Application.h"
+
 #include <commdlg.h>
 #include <GLFW/glfw3.h>
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3native.h>
-
-#include "Wire/Core/Application.h"
 
 namespace Wire {
 
@@ -48,18 +48,9 @@ namespace Wire {
 		return std::string();
 	}
 
-	std::vector<Ref<Window>> Popups::m_PopupWindows = std::vector<Ref<Window>>();
-
-	void Popups::OpenSettingsPopup(const std::string& title, int width, int height)
+	float Time::GetTime()
 	{
-		auto window = Window::Create(WindowProps(title, width, height));
-		window->SetVSync(true);
-		window->SetEventCallback([](auto& e)
-		{
-
-		});
-
-		m_PopupWindows.push_back(window);
+		return glfwGetTime();
 	}
 
 }

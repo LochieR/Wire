@@ -32,6 +32,9 @@ namespace Wire {
 
 		void OnOpenProject(const Ref<Project>& project) { m_Project = project; }
 	private:
+		template<typename T>
+		void DisplayAddComponentEntry(const std::string& displayName);
+
 		void DrawEntityNode(Entity entity);
 		void DrawComponents(Entity entity);
 	private:

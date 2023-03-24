@@ -1,15 +1,14 @@
 #include "EditorLayer.h"
 
+#include "Wire/Scene/SceneSerializer.h"
+#include "Wire/Utils/PlatformUtils.h"
+#include "Wire/Maths/Maths.h"
+
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
-#include "Wire/Scene/SceneSerializer.h"
-
-#include "Wire/Utils/PlatformUtils.h"
-#include "Wire/Maths/Maths.h"
 
 #include "ImGuizmo/ImGuizmo.h"
 
@@ -477,7 +476,8 @@ namespace Wire {
 	void EditorLayer::OnEvent(Event& e)
 	{
 		m_CameraController.OnEvent(e);
-		m_EditorCamera.OnEvent(e);
+		if (m_SceneState == SceneState::Edit)
+			m_EditorCamera.OnEvent(e);
 
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<KeyPressedEvent>(WR_BIND_EVENT_FN(EditorLayer::OnKeyPressed));
@@ -486,7 +486,7 @@ namespace Wire {
 
 	bool EditorLayer::OnKeyPressed(KeyPressedEvent& e)
 	{
-		if (e.GetRepeatCount() > 0)
+		if (e.IsRepeat())
 			return false;
 
 		bool control = Input::IsKeyPressed(Key::LeftControl) || Input::IsKeyPressed(Key::RightControl);

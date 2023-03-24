@@ -1,5 +1,6 @@
 #include "wrpch.h"
 #include "Platform/OpenGL/OpenGLShader.h"
+#include "Wire/Core/Timer.h"
 
 #include <fstream>
 #include <glad/glad.h>
@@ -9,8 +10,6 @@
 #include <shaderc/shaderc.hpp>
 #include <spirv_cross/spirv_cross.hpp>
 #include <spirv_cross/spirv_glsl.hpp>
-
-#include "Wire/Core/Timer.h"
 
 namespace Wire {
 

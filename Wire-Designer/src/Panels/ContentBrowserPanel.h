@@ -1,10 +1,10 @@
 #pragma once
 
-#include <filesystem>
-
 #include "Wire/Renderer/Texture.h"
 #include "Wire/Core/Timestep.h"
 #include "Wire/Projects/Project.h"
+
+#include <filesystem>
 
 namespace Wire {
 

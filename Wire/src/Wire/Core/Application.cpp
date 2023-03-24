@@ -9,7 +9,6 @@
 
 #include "Wire/Utils/PlatformUtils.h"
 
-#include <glfw/glfw3.h>
 #include <imgui.h>
 
 namespace Wire {
@@ -88,7 +87,7 @@ namespace Wire {
 		{
 			WR_PROFILE_SCOPE("RunLoop");
 
-			float time = (float)glfwGetTime();
+			float time = Time::GetTime();
 			Timestep timestep = time - m_LastFrameTime;
 			m_LastFrameTime = time;
 
@@ -116,8 +115,6 @@ namespace Wire {
 			m_ImGuiLayer->End();
 
 			m_Window->OnUpdate();
-			for (auto window : Popups::GetPopupWindows())
-				window->OnUpdate();
 		}
 	}
 

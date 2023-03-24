@@ -13,14 +13,10 @@ namespace Wire {
 		static std::string SaveFile(const char* filter);
 	};
 
-	class Popups
+	class Time
 	{
 	public:
-		static void OpenSettingsPopup(const std::string& title, int width, int height);
-		
-		static std::vector<Ref<Window>> GetPopupWindows() { return m_PopupWindows; }
-	private:
-		static std::vector<Ref<Window>> m_PopupWindows;
+		static float GetTime();
 	};
 
 }
