@@ -18,7 +18,7 @@
 #include "Wire/Scene/ScriptableEntity.h"
 #include "Wire/Scene/Components.h"
 
-#include "Wire/Audio/Audio.h"
+#include "Wire/Audio/AudioEngine.h"
 
 // Renderer --------------------------
 #include "Wire/Renderer/Renderer.h"

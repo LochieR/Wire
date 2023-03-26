@@ -39,6 +39,7 @@ project "Wire"
 		"%{IncludeDir.stb_image}",
 		"%{IncludeDir.rtaudio}",
 		"%{IncludeDir.entt}",
+		"%{IncludeDir.mono}",
 		"%{IncludeDir.yaml_cpp}",
 		"%{IncludeDir.ImGuizmo}",
 		"%{IncludeDir.VulkanSDK}"
@@ -51,6 +52,8 @@ project "Wire"
 		"ImGui",
 		"rtaudio",
 		"yaml-cpp",
+
+		"%{Library.mono}"
 	}
 
 	filter "files:vendor/ImGuizmo/**.cpp"
@@ -59,12 +62,12 @@ project "Wire"
 	filter "system:windows"
 		systemversion "latest"
 
-		defines
-		{
-		}
-
 		links
 		{
+			"%{Library.WinSock}",
+			"%{Library.WinMM}",
+			"%{Library.WinVersion}",
+			"%{Library.Bcrypt}",
 			"opengl32.lib"
 		}
 

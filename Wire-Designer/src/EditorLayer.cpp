@@ -127,7 +127,7 @@ namespace Wire {
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 
 		// TEMP
-		OpenProject(std::filesystem::current_path() / "project.wrpj");
+		//OpenProject(std::filesystem::current_path() / "project.wrpj");
 	}
 
 	void EditorLayer::OnDetach()
@@ -646,13 +646,13 @@ namespace Wire {
 	void EditorLayer::OnScenePlay()
 	{
 		m_SceneState = SceneState::Play;
-		Audio::SetSceneRuntime(true);
+		AudioEngine::SetSceneRuntime(true);
 	}
 
 	void EditorLayer::OnSceneStop()
 	{
 		m_SceneState = SceneState::Edit;
-		Audio::SetSceneRuntime(false);
+		AudioEngine::SetSceneRuntime(false);
 	}
 
 }

@@ -1,0 +1,25 @@
+project "Wire-ScriptCore"
+	kind "SharedLib"
+	language "C#"
+	dotnetframework "4.7.2"
+
+	targetdir ("%{wks.location}/Wire-Designer/Resources/Scripts")
+	objdir ("%{wks.location}/Wire-Designer/Resources/Intermediates")
+
+	files
+	{
+		"Source/**.cs",
+		"Properties/**.cs",
+	}
+
+	filter "configurations:Debug"
+		optimize "off"
+		symbols "Default"
+
+	filter "configurations:Release"
+		optimize "on"
+		symbols "Default"
+
+	filter "configurations:Dist"
+		optimize "full"
+		symbols "off"

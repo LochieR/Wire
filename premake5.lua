@@ -1,4 +1,3 @@
-include "./vendor/premake/premake_customization/solution_items.lua"
 include "Dependencies.lua"
 
 workspace "Wire"
@@ -10,11 +9,6 @@ workspace "Wire"
 		"Debug",
 		"Release",
 		"Dist"
-	}
-
-	solution_items
-	{
-		".editorconfig"
 	}
 
 	flags
@@ -33,6 +27,13 @@ group "Dependencies"
 	include "Wire/vendor/rtaudio"
 group ""
 
-include "Wire"
-include "Sandbox"
+group "Core"
+	include "Wire"
+	include "Wire-ScriptCore"
+group ""
+
 include "Wire-Designer"
+
+group "Misc"
+	include "Sandbox"
+group ""

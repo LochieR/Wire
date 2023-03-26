@@ -7,7 +7,7 @@
 #include "Wire/Events/Event.h"
 #include "Wire/Events/ApplicationEvent.h"
 
-#include "Wire/Audio/Audio.h"
+#include "Wire/Audio/AudioEngine.h"
 
 #include "Timestep.h"
 

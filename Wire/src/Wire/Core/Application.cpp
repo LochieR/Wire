@@ -5,7 +5,8 @@
 #include "Input.h"
 
 #include "Wire/Renderer/Renderer.h"
-#include "Wire/Audio/Audio.h"
+#include "Wire/Scripting/ScriptEngine.h"
+#include "Wire/Audio/AudioEngine.h"
 
 #include "Wire/Utils/PlatformUtils.h"
 
@@ -26,7 +27,8 @@ namespace Wire {
 		m_Window->SetEventCallback(WR_BIND_EVENT_FN(Application::OnEvent));
 
 		Renderer::Init();
-		Audio::Init();
+		ScriptEngine::Init();
+		AudioEngine::Init();
 
 		m_ImGuiLayer = new ImGuiLayer();
 		PushOverlay(m_ImGuiLayer);
@@ -36,9 +38,10 @@ namespace Wire {
 	{
 		WR_PROFILE_FUNCTION();
 
-		Audio::SetSceneRuntime(false);
+		AudioEngine::SetSceneRuntime(false);
 
-		Audio::Shutdown();
+		AudioEngine::Shutdown();
+		ScriptEngine::Shutdown();
 		Renderer::Shutdown();
 	}
 

@@ -2,6 +2,7 @@
 **/bin/
 !vendor/premake5/bin/
 bin-int/
+libs/
 
 # Visual Studio files and folders
 .vs/
