@@ -2,7 +2,6 @@
 **/bin/
 !vendor/premake5/bin/
 bin-int/
-libs/
 
 # Visual Studio files and folders
 .vs/
@@ -10,6 +9,9 @@ libs/
 **.vcxproj
 **.vcxproj.filters
 **.vcxproj.user
+**.csproj
+**.csproj.filters
+**.csproj.user
 
 # Other files
 WireProfile-Runtime.json

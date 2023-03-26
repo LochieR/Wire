@@ -19,7 +19,7 @@
     <DebugSymbols>true</DebugSymbols>
     <Optimize>false</Optimize>
     <OutputPath>..\Wire-Designer\Resources\Scripts\</OutputPath>
-    <BaseIntermediateOutputPath>..\Wire-Designer\Resources\Intermediates\Debug\</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>..\Wire-Designer\Resources\Scripts\Intermediates\Debug\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <DefineConstants></DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -31,7 +31,7 @@
     <DebugSymbols>true</DebugSymbols>
     <Optimize>true</Optimize>
     <OutputPath>..\Wire-Designer\Resources\Scripts\</OutputPath>
-    <BaseIntermediateOutputPath>..\Wire-Designer\Resources\Intermediates\Release\</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>..\Wire-Designer\Resources\Scripts\Intermediates\Release\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <DefineConstants></DefineConstants>
     <ErrorReport>prompt</ErrorReport>
@@ -43,7 +43,7 @@
     <DebugSymbols>false</DebugSymbols>
     <Optimize>true</Optimize>
     <OutputPath>..\Wire-Designer\Resources\Scripts\</OutputPath>
-    <BaseIntermediateOutputPath>..\Wire-Designer\Resources\Intermediates\Dist\</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>..\Wire-Designer\Resources\Scripts\Intermediates\Dist\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
     <DefineConstants></DefineConstants>
     <ErrorReport>prompt</ErrorReport>

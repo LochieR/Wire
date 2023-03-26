@@ -1,3 +1,4 @@
+include "./vendor/premake/premake_customization/solution_items.lua"
 include "Dependencies.lua"
 
 workspace "Wire"
@@ -32,8 +33,10 @@ group "Core"
 	include "Wire-ScriptCore"
 group ""
 
-include "Wire-Designer"
-
 group "Misc"
 	include "Sandbox"
+group ""
+
+group "Tools"
+	include "Wire-Designer"
 group ""

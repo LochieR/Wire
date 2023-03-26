@@ -4,12 +4,12 @@ project "Wire-ScriptCore"
 	dotnetframework "4.7.2"
 
 	targetdir ("%{wks.location}/Wire-Designer/Resources/Scripts")
-	objdir ("%{wks.location}/Wire-Designer/Resources/Intermediates")
+	objdir ("%{wks.location}/Wire-Designer/Resources/Scripts/Intermediates")
 
 	files
 	{
 		"Source/**.cs",
-		"Properties/**.cs",
+		"Properties/**.cs"
 	}
 
 	filter "configurations:Debug"

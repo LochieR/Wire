@@ -134,7 +134,7 @@ namespace Wire {
 		void* param = &value;
 
 		mono_runtime_invoke(printIntFunc, object, &param, nullptr);
-		
+
 		MonoMethod* printCustomMessageFunc = mono_class_get_method_from_name(mainClass, "PrintCustomMessage", 1);
 
 		MonoString* str = mono_string_new(s_Data->AppDomain, "Hello!");
