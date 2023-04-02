@@ -93,12 +93,11 @@ namespace Wire {
 		LoadAssembly("Resources/Scripts/Wire-ScriptCore.dll");
 		LoadAssemblyClasses(s_Data->CoreAssembly);
 		
+		ScriptGlue::RegisterComponents();
 		ScriptGlue::RegisterFunctions();
 
 		s_Data->EntityClass = ScriptClass("Wire", "Entity");
 		/*
-
-
 		MonoObject* instance = s_Data->EntityClass.Instantiate();
 
 		MonoMethod* printMessageFunc = s_Data->EntityClass.GetMethod("PrintMessage", 0);
@@ -237,6 +236,16 @@ namespace Wire {
 		}
 	}
 
+	MonoImage* ScriptEngine::GetCoreAssemblyImage()
+	{
+		return s_Data->CoreAssemblyImage;
+	}
+
+	MonoDomain* ScriptEngine::GetAppDomain()
+	{
+		return s_Data->AppDomain;
+	}
+
 	MonoObject* ScriptEngine::InstantiateClass(MonoClass* monoClass)
 	{
 		MonoObject* instance = mono_object_new(s_Data->AppDomain, monoClass);
@@ -285,13 +294,17 @@ namespace Wire {
 
 	void ScriptInstance::InvokeOnCreate()
 	{
-		m_ScriptClass->InvokeMethod(m_Instance, m_OnCreateMethod);
+		if (m_OnCreateMethod)
+			m_ScriptClass->InvokeMethod(m_Instance, m_OnCreateMethod);
 	}
 
 	void ScriptInstance::InvokeOnUpdate(float ts)
 	{
-		void* param = &ts;
-		m_ScriptClass->InvokeMethod(m_Instance, m_OnUpdateMethod, &param);
+		if (m_OnUpdateMethod)
+		{
+			void* param = &ts;
+			m_ScriptClass->InvokeMethod(m_Instance, m_OnUpdateMethod, &param);
+		}
 	}
 
 }

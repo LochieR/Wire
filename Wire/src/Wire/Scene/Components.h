@@ -114,4 +114,12 @@ namespace Wire {
 		}
 	};
 
+	template<typename... Component>
+	struct ComponentGroup
+	{
+	};
+
+	using AllComponents = ComponentGroup<TransformComponent, SpriteRendererComponent,
+		CircleRendererComponent, CameraComponent, ScriptComponent, NativeScriptComponent>;
+
 }

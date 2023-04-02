@@ -31,6 +31,10 @@ namespace Sandbox
 			Vector3 translation = Translation;
 			translation += velocity * ts;
 			Translation = translation;
+
+			Vector3 rotation = Rotation;
+			rotation.Z += 2.0f * ts;
+			Rotation = rotation;
 		}
 	}
 }

@@ -17,6 +17,8 @@ Entities:
       Translation: [-0.355383873, 0, 0.343173325]
       Rotation: [0, -0.785398245, 0]
       Scale: [1, 1, 1]
+    ScriptComponent:
+      Class: Sandbox.TextureTest
     SpriteRendererComponent:
       Colour: [1, 0.0352941193, 0.949019611, 1]
       TilingFactor: 1

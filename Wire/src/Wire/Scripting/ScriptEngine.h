@@ -11,6 +11,7 @@ extern "C" {
 	typedef struct _MonoMethod MonoMethod;
 	typedef struct _MonoAssembly MonoAssembly;
 	typedef struct _MonoImage MonoImage;
+	typedef struct _MonoDomain MonoDomain;
 }
 
 namespace Wire {
@@ -65,6 +66,9 @@ namespace Wire {
 
 		static Scene* GetSceneContext();
 		static std::unordered_map<std::string, Ref<ScriptClass>> GetEntityClasses();
+
+		static MonoImage* GetCoreAssemblyImage();
+		static MonoDomain* GetAppDomain();
 	private:
 		static void InitMono();
 		static void ShutdownMono();
@@ -73,6 +77,7 @@ namespace Wire {
 		static void LoadAssemblyClasses(MonoAssembly* assembly);
 
 		friend class ScriptClass;
+		friend class ScriptGlue;
 	};
 
 }
