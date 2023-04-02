@@ -18,6 +18,6 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 
 	app->PushLayer(new Wire::EditorLayer());
 	app->Run();
-
+	
 	delete app;
 }

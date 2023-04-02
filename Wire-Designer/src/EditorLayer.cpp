@@ -3,6 +3,7 @@
 #include "Wire/Scene/SceneSerializer.h"
 #include "Wire/Utils/PlatformUtils.h"
 #include "Wire/Maths/Maths.h"
+#include "Wire/ImGui/ImGuiLayer.h"
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
@@ -335,7 +336,6 @@ namespace Wire {
 		ImGui::Text("Quads: %d", stats.QuadCount);
 		ImGui::Text("Vertices: %d", stats.GetTotalVertexCount());
 		ImGui::Text("Indices: %d", stats.GetTotalIndexCount());
-
 		ImGui::End();
 
 		if (m_ShowPreferencesWindow)
@@ -647,12 +647,14 @@ namespace Wire {
 	{
 		m_SceneState = SceneState::Play;
 		AudioEngine::SetSceneRuntime(true);
+		m_ActiveScene->OnSceneStart();
 	}
 
 	void EditorLayer::OnSceneStop()
 	{
 		m_SceneState = SceneState::Edit;
 		AudioEngine::SetSceneRuntime(false);
+		m_ActiveScene->OnSceneStop();
 	}
 
 }

@@ -1,9 +1,10 @@
 #include "wrpch.h"
-#include "Platform/Windows/WindowsWindow.h"
+#include "WindowsWindow.h"
 
 #include "Wire/Events/ApplicationEvent.h"
 #include "Wire/Events/MouseEvent.h"
 #include "Wire/Events/KeyEvent.h"
+#include "Wire/Utils/PlatformUtils.h"
 
 #include "Platform/OpenGL/OpenGLContext.h"
 
@@ -151,6 +152,8 @@ namespace Wire {
 			MouseMovedEvent event((float)xPos, (float)yPos);
 			data.EventCallback(event);
 		});
+
+		WindowUtils::SetWindowAttributes((void*)m_Window);
 	}
 
 	void WindowsWindow::Shutdown()

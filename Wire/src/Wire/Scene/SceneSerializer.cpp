@@ -137,6 +137,19 @@ namespace Wire {
 			out << YAML::EndMap; // CameraComponent
 		}
 
+		if (entity.HasComponent<ScriptComponent>())
+		{
+			out << YAML::Key << "ScriptComponent";
+			out << YAML::BeginMap; // ScriptComponent
+
+			auto& scriptComponent = entity.GetComponent<ScriptComponent>();
+			auto name = scriptComponent.ClassName;
+
+			out << YAML::Key << "Class" << YAML::Value << name;
+
+			out << YAML::EndMap; // ScriptComponent
+		}
+
 		if (entity.HasComponent<SpriteRendererComponent>())
 		{
 			out << YAML::Key << "SpriteRendererComponent";
@@ -259,6 +272,14 @@ namespace Wire {
 
 					cc.Primary = cameraComponent["Primary"].as<bool>();
 					cc.FixedAspectRatio = cameraComponent["FixedAspectRatio"].as<bool>();
+				}
+
+				auto scriptComponent = entity["ScriptComponent"];
+				if (scriptComponent)
+				{
+					auto& sc = deserializedEntity.AddComponent<ScriptComponent>();
+					auto className = scriptComponent["Class"].as<std::string>();
+					sc.ClassName = className;
 				}
 
 				auto spriteRendererComponent = entity["SpriteRendererComponent"];

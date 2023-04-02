@@ -1,11 +1,11 @@
 #include "wrpch.h"
 #include "ImGuiLayer.h"
 
+#include "Wire/Core/Application.h"
+
 #include <imgui.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
-
-#include "Wire/Core/Application.h"
 
 // TEMPORARY
 #include <GLFW/glfw3.h>
@@ -148,7 +148,8 @@ namespace Wire {
 		// Buttons
 		colours[ImGuiCol_Button] = ImVec4{ 0.2f, 0.205f, 0.21f, 1.0f };
 		colours[ImGuiCol_ButtonHovered] = ImVec4{ 0.3f, 0.305f, 0.31f, 1.0f };
-		colours[ImGuiCol_ButtonActive] = ImVec4{ 0.15f, 0.1505f, 0.151f, 1.0f };
+		//colours[ImGuiCol_ButtonActive] = ImVec4{ 0.15f, 0.1505f, 0.151f, 1.0f };
+		colours[ImGuiCol_ButtonActive] = ImVec4{ ACCENT_COLOUR_5, 1.0f };
 
 		// Frame BG
 		colours[ImGuiCol_FrameBg] = ImVec4{ 0.2f, 0.205f, 0.21f, 1.0f };

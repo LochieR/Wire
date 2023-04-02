@@ -19,4 +19,11 @@ namespace Wire {
 		static float GetTime();
 	};
 
+	class WindowUtils
+	{
+	public:
+		static void SetWindowAttributes(void* window);
+		static void SetWindowBorderColour(void* window, float r, float g, float b);
+	};
+
 }

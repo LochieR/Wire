@@ -7,11 +7,30 @@ namespace Wire
 	{
 		public float X, Y, Z;
 
+		public static Vector3 Zero => new Vector3(0.0f);
+
+		public Vector3(float scalar)
+		{
+			X = scalar;
+			Y = scalar;
+			Z = scalar;
+		}
+
 		public Vector3(float x, float y, float z)
 		{
 			X = x;
 			Y = y;
 			Z = z;
+		}
+
+		public static Vector3 operator+(Vector3 a, Vector3 b)
+		{
+			return new Vector3(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
+		}
+
+		public static Vector3 operator*(Vector3 vector, float scalar)
+		{
+			return new Vector3(vector.X * scalar, vector.Y * scalar, vector.Z * scalar);
 		}
 	}
 
@@ -22,46 +41,40 @@ namespace Wire
 
 		[MethodImpl(MethodImplOptions.InternalCall)]
 		internal extern static void NativeLog_Vector(ref Vector3 parameter, out Vector3 result);
+
+		[MethodImpl(MethodImplOptions.InternalCall)]
+
+		internal extern static void Entity_GetTranslation(ulong entityId, out Vector3 translation);
+
+		[MethodImpl(MethodImplOptions.InternalCall)]
+		internal extern static void Entity_SetTranslation(ulong entityId, ref Vector3 translation);
+
+		[MethodImpl(MethodImplOptions.InternalCall)]
+		internal extern static bool Input_IsKeyDown(KeyCode keycode);
 	}
 
 	public class Entity
 	{
-		public float FloatVar { get; set; }
+		protected Entity() { ID = 0; }
 
-		public Entity()
+		internal Entity(ulong id)
 		{
-			Console.WriteLine("Main constructor!");
-			Log("Hello: ", 324289);
-
-			Vector3 pos = new Vector3(5, 2.2f, 1);
-			var result = Log(pos);
-			Console.WriteLine($"{result.X}, {result.Y}, {result.Z}");
+			ID = id;
 		}
 
-		public void PrintMessage()
-		{
-			Console.WriteLine("Hello World from C#!");
-		}
+		public readonly ulong ID;
 
-		public void PrintInt(int value)
+		public Vector3 Translation
 		{
-			Console.WriteLine($"C# says: {value}");
-		}
-
-		public void PrintCustomMessage(string message)
-		{
-			Console.WriteLine($"C# says: {message}");
-		}
-
-		private void Log(string text, int parameter)
-		{
-			InternalCalls.NativeLog(text, parameter);
-		}
-
-		private Vector3 Log(Vector3 parameter)
-		{
-			InternalCalls.NativeLog_Vector(ref parameter, out Vector3 result);
-			return result;
+			get
+			{
+				InternalCalls.Entity_GetTranslation(ID, out Vector3 translation);
+				return translation;
+			}
+			set
+			{
+				InternalCalls.Entity_SetTranslation(ID, ref value);
+			}
 		}
 	}
 }
