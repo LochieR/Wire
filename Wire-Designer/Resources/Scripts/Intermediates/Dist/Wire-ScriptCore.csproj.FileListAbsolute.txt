@@ -1,0 +1,4 @@
+E:\dev\Wire\Wire-Designer\Resources\Scripts\Intermediates\Dist\Wire-ScriptCore.csproj.AssemblyReference.cache
+E:\dev\Wire\Wire-Designer\Resources\Scripts\Intermediates\Dist\Wire-ScriptCore.csproj.CoreCompileInputs.cache
+E:\dev\Wire\Wire-Designer\Resources\Scripts\Intermediates\Dist\Wire-ScriptCore.dll
+E:\dev\Wire\Wire-Designer\Resources\Scripts\Wire-ScriptCore.dll

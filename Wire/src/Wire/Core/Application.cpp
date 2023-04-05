@@ -38,7 +38,7 @@ namespace Wire {
 	{
 		WR_PROFILE_FUNCTION();
 
-		AudioEngine::SetSceneRuntime(false);
+		AudioEngine::OnSceneStop();
 
 		AudioEngine::Shutdown();
 		ScriptEngine::Shutdown();

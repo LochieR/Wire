@@ -4,6 +4,7 @@
 #include "Wire/Utils/PlatformUtils.h"
 #include "Wire/Maths/Maths.h"
 #include "Wire/ImGui/ImGuiLayer.h"
+#include "Wire/Scripting/ScriptGlue.h"
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
@@ -74,56 +75,7 @@ namespace Wire {
 			file.close();
 		}
 
-#if 0
-		// Entity
-		auto square = m_ActiveScene->CreateEntity("Green Square");
-		square.AddComponent<SpriteRendererComponent>(glm::vec4{ 0.0f, 1.0f, 0.0f, 1.0f });
-
-		auto redSquare = m_ActiveScene->CreateEntity("Red Square");
-		redSquare.AddComponent<SpriteRendererComponent>(glm::vec4{ 1.0f, 0.0f, 0.0f, 1.0f });
-
-		m_SquareEntity = square;
-
-		m_CameraEntity = m_ActiveScene->CreateEntity("Camera A");
-		m_CameraEntity.AddComponent<CameraComponent>();
-
-		m_SecondCamera = m_ActiveScene->CreateEntity("Camera B");
-		auto& cc = m_SecondCamera.AddComponent<CameraComponent>();
-		cc.Primary = false;
-
-		class CameraController : public ScriptableEntity
-		{
-		public:
-			virtual void OnCreate() override
-			{
-				auto& translation = GetComponent<TransformComponent>().Translation;
-				translation.x = rand() % 10 - 5.0f;
-			}
-
-			virtual void OnDestroy() override
-			{
-			}
-
-			virtual void OnUpdate(Timestep ts) override
-			{
-				auto& translation = GetComponent<TransformComponent>().Translation;
-
-				float speed = 5.0f;
-
-				if (Input::IsKeyPressed(Key::A))
-					translation.x -= speed * ts;
-				if (Input::IsKeyPressed(Key::D))
-					translation.x += speed * ts;
-				if (Input::IsKeyPressed(Key::W))
-					translation.y += speed * ts;
-				if (Input::IsKeyPressed(Key::S))
-					translation.y -= speed * ts;
-			}
-		};
-
-		m_CameraEntity.AddComponent<NativeScriptComponent>().Bind<CameraController>();
-		m_SecondCamera.AddComponent<NativeScriptComponent>().Bind<CameraController>();
-#endif
+		ScriptGlue::SetUILogFunc([this](int level, const std::string& message) { m_ConsolePanel.Log((LogLevel)level, message); });
 
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 
@@ -319,9 +271,11 @@ namespace Wire {
 		static bool sceneHierarchyOpen = true;
 		static bool contentBrowserOpen = true;
 		static bool propertiesPanelOpen = true;
+		static bool consolePanelOpen = true;
 
 		m_SceneHierarchyPanel.OnImGuiRender(&sceneHierarchyOpen, &propertiesPanelOpen);
 		m_ContentBrowserPanel.OnImGuiRender(&contentBrowserOpen, m_Timestep);
+		m_ConsolePanel.OnImGuiRender(&consolePanelOpen);
 
 		ImGui::Begin("Stats");
 
@@ -646,14 +600,15 @@ namespace Wire {
 	void EditorLayer::OnScenePlay()
 	{
 		m_SceneState = SceneState::Play;
-		AudioEngine::SetSceneRuntime(true);
+		AudioEngine::OnSceneStart();
+		m_ConsolePanel.OnSceneStart();
 		m_ActiveScene->OnSceneStart();
 	}
 
 	void EditorLayer::OnSceneStop()
 	{
 		m_SceneState = SceneState::Edit;
-		AudioEngine::SetSceneRuntime(false);
+		AudioEngine::OnSceneStop();
 		m_ActiveScene->OnSceneStop();
 	}
 

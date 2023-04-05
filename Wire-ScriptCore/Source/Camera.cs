@@ -8,7 +8,9 @@ namespace Sandbox
 	{
 		void OnCreate()
 		{
-			Console.WriteLine($"{ID}");
+			Debug.LogWarning($"Camera: {ID}");
+			Debug.LogInfo($"Camera Position: {Translation.X}, {Translation.Y}, {Translation.Z}");
+			Debug.LogError($"Camera Rotation: {Rotation.X}, {Rotation.Y}, {Rotation.Z}");
 		}
 
 		void OnUpdate(float ts)

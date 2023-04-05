@@ -4,6 +4,7 @@
 
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/ContentBrowserPanel.h"
+#include "Panels/ConsolePanel.h"
 
 namespace Wire {
 
@@ -21,6 +22,7 @@ namespace Wire {
 		void OnEvent(Event& e) override;
 
 		ContentBrowserPanel* GetContentBrowserPanel() { return &m_ContentBrowserPanel; }
+		ConsolePanel* GetConsolePanel() { return &m_ConsolePanel; }
 	private:
 		bool OnKeyPressed(KeyPressedEvent& e);
 		bool OnMouseButtonPressed(MouseButtonPressedEvent& e);
@@ -83,6 +85,7 @@ namespace Wire {
 		// Panels
 		SceneHierarchyPanel m_SceneHierarchyPanel;
 		ContentBrowserPanel m_ContentBrowserPanel;
+		ConsolePanel m_ConsolePanel;
 
 		bool m_ShowPreferencesWindow = false;
 

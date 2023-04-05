@@ -14,7 +14,16 @@ namespace Wire {
 
 #define WR_ADD_INTERNAL_CALL(name) mono_add_internal_call("Wire.InternalCalls::" #name, name)
 
-#pragma region Entity
+	#pragma region Log
+	static void UILog_Log(int logLevel, MonoString* message)
+	{
+		std::string msg = mono_string_to_utf8(message);
+
+		ScriptGlue::GetUILogFunc()(logLevel, msg);
+	}
+	#pragma endregion
+
+	#pragma region Entity
 	static bool Entity_HasComponent(UUID entityID, MonoReflectionType* componentType)
 	{
 		Scene* scene = ScriptEngine::GetSceneContext();
@@ -26,9 +35,9 @@ namespace Wire {
 		WR_CORE_ASSERT(s_EntityHasComponentFuncs.find(managedType) != s_EntityHasComponentFuncs.end());
 		return s_EntityHasComponentFuncs.at(managedType)(entity);
 	}
-#pragma endregion
+	#pragma endregion
 
-#pragma region TransformComponent
+	#pragma region TransformComponent
 	static void TransformComponent_GetTranslation(UUID entityID, glm::vec3* outTranslation)
 	{
 		Scene* scene = ScriptEngine::GetSceneContext();
@@ -76,9 +85,9 @@ namespace Wire {
 
 		entity.GetComponent<TransformComponent>().Scale = *scale;
 	}
-#pragma endregion
+	#pragma endregion
 
-#pragma region SpriteRendererComponent
+	#pragma region SpriteRendererComponent
 	static void SpriteRendererComponent_GetColour(UUID entityID, glm::vec4* outColour)
 	{
 		Scene* scene = ScriptEngine::GetSceneContext();
@@ -130,14 +139,14 @@ namespace Wire {
 
 		entity.GetComponent<SpriteRendererComponent>().TilingFactor = tilingFactor;
 	}
-#pragma endregion
+	#pragma endregion
 
-#pragma region Input
+	#pragma region Input
 	static bool Input_IsKeyDown(KeyCode keycode)
 	{
 		return Input::IsKeyPressed(keycode);
 	}
-#pragma endregion
+	#pragma endregion
 
 	template<typename... Component>
 	static void RegisterComponent()
@@ -164,6 +173,8 @@ namespace Wire {
 		RegisterComponent<Component...>();
 	}
 
+	ScriptGlue::LogFunc ScriptGlue::m_UILogFunc = nullptr;
+
 	void ScriptGlue::RegisterComponents()
 	{
 		RegisterComponent(AllComponents{});
@@ -171,31 +182,45 @@ namespace Wire {
 
 	void ScriptGlue::RegisterFunctions()
 	{
-#pragma region Entity
-		WR_ADD_INTERNAL_CALL(Entity_HasComponent);
-#pragma endregion
+		#pragma region Log
+		WR_ADD_INTERNAL_CALL(UILog_Log);
+		#pragma endregion
 
-#pragma region TransformComponent
+		#pragma region Entity
+		WR_ADD_INTERNAL_CALL(Entity_HasComponent);
+		#pragma endregion
+
+		#pragma region TransformComponent
 		WR_ADD_INTERNAL_CALL(TransformComponent_GetTranslation);
 		WR_ADD_INTERNAL_CALL(TransformComponent_SetTranslation);
 		WR_ADD_INTERNAL_CALL(TransformComponent_GetRotation);
 		WR_ADD_INTERNAL_CALL(TransformComponent_SetRotation);
 		WR_ADD_INTERNAL_CALL(TransformComponent_GetScale);
 		WR_ADD_INTERNAL_CALL(TransformComponent_SetScale);
-#pragma endregion
+		#pragma endregion
 
-#pragma region SpriteRendererComponent
+		#pragma region SpriteRendererComponent
 		WR_ADD_INTERNAL_CALL(SpriteRendererComponent_GetColour);
 		WR_ADD_INTERNAL_CALL(SpriteRendererComponent_SetColour);
 		WR_ADD_INTERNAL_CALL(SpriteRendererComponent_GetTexturePath);
 		WR_ADD_INTERNAL_CALL(SpriteRendererComponent_SetTexturePath);
 		WR_ADD_INTERNAL_CALL(SpriteRendererComponent_GetTilingFactor);
 		WR_ADD_INTERNAL_CALL(SpriteRendererComponent_SetTilingFactor);
-#pragma endregion
+		#pragma endregion
 
-#pragma region Input
+		#pragma region Input
 		WR_ADD_INTERNAL_CALL(Input_IsKeyDown);
-#pragma endregion
+		#pragma endregion
+	}
+
+	void ScriptGlue::SetUILogFunc(const LogFunc& func)
+	{
+		m_UILogFunc = func;
+	}
+
+	ScriptGlue::LogFunc ScriptGlue::GetUILogFunc()
+	{
+		return m_UILogFunc;
 	}
 
 }

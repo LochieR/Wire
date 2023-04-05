@@ -17,7 +17,8 @@ namespace Wire {
 		static void Init();
 		static void Shutdown();
 
-		static void SetSceneRuntime(bool runtime) { m_SceneRuntime = runtime; }
+		static void OnSceneStart() { m_SceneRuntime = true; }
+		static void OnSceneStop() { m_SceneRuntime = false; }
 
 		static void UpdateAudio();
 	private:

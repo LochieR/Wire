@@ -5,6 +5,11 @@ namespace Wire
 {
 	public static class InternalCalls
 	{
+		#region Log
+		[MethodImpl(MethodImplOptions.InternalCall)]
+		internal extern static void UILog_Log(int logLevel, string message);
+		#endregion Log
+
 		#region Entity
 		[MethodImpl(MethodImplOptions.InternalCall)]
 		internal extern static bool Entity_HasComponent(ulong entityID, Type componentType);
