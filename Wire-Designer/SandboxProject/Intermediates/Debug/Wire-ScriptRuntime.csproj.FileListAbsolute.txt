@@ -1,0 +1,9 @@
+E:\dev\Wire\Wire-Designer\SandboxProject\Intermediates\Debug\Wire-ScriptRuntime.csproj.AssemblyReference.cache
+E:\dev\Wire\Wire-Designer\SandboxProject\Intermediates\Debug\Wire-ScriptRuntime.csproj.CoreCompileInputs.cache
+E:\dev\Wire\Wire-Designer\SandboxProject\Binaries\Wire-ScriptRuntime.dll
+E:\dev\Wire\Wire-Designer\SandboxProject\Binaries\Wire-ScriptRuntime.pdb
+E:\dev\Wire\Wire-Designer\SandboxProject\Binaries\Wire-ScriptCore.dll
+E:\dev\Wire\Wire-Designer\SandboxProject\Binaries\Wire-ScriptCore.pdb
+E:\dev\Wire\Wire-Designer\SandboxProject\Intermediates\Debug\Wire-ScriptRuntime.csproj.CopyComplete
+E:\dev\Wire\Wire-Designer\SandboxProject\Intermediates\Debug\Wire-ScriptRuntime.dll
+E:\dev\Wire\Wire-Designer\SandboxProject\Intermediates\Debug\Wire-ScriptRuntime.pdb

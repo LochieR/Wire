@@ -4,8 +4,8 @@ project "Wire-ScriptCore"
 	dotnetframework "4.7.2"
 	namespace "Wire"
 
-	targetdir ("%{wks.location}/Wire-Designer/Resources/Scripts")
-	objdir ("%{wks.location}/Wire-Designer/Resources/Scripts/Intermediates")
+	targetdir ("../Wire-Designer/Resources/Scripts")
+	objdir ("../Wire-Designer/Resources/Scripts/Intermediates")
 
 	files
 	{

@@ -12,7 +12,6 @@ namespace Wire {
 		std::filesystem::path GetPath() const { return m_Path; }
 
 		std::filesystem::path GetDir() { return m_Path.remove_filename(); }
-		//std::filesystem::path GetDir() const { return m_Path.remove_filename(); }
 
 		std::string GetName() { return m_Name; }
 		std::string GetName() const { return m_Name; }

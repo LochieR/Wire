@@ -5,6 +5,7 @@
 #include "Wire/Maths/Maths.h"
 #include "Wire/ImGui/ImGuiLayer.h"
 #include "Wire/Scripting/ScriptGlue.h"
+#include "Wire/Scripting/ScriptEngine.h"
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
@@ -80,7 +81,7 @@ namespace Wire {
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 
 		// TEMP
-		OpenProject(std::filesystem::current_path() / "project.wrpj");
+		OpenProject("SandboxProject/Sandbox.wrpj");
 	}
 
 	void EditorLayer::OnDetach()
@@ -543,6 +544,7 @@ namespace Wire {
 		m_EditorCamera = EditorCamera(30.0f, 16.0f / 9.0f, 0.1f, 1000.0f);
 		m_ContentBrowserPanel.OnOpenProject(m_Project);
 		m_SceneHierarchyPanel.OnOpenProject(m_Project);
+		ScriptEngine::OnOpenProject(m_Project);
 	}
 
 	void EditorLayer::NewScene()

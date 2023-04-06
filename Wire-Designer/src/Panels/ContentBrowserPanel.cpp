@@ -12,12 +12,17 @@
 namespace Wire {
 
 	ContentBrowserPanel::ContentBrowserPanel()
-		: m_AssetPath("assets"), m_CurrentDirectory(m_AssetPath), m_Project(nullptr)
+		: m_AssetPath("Assets"), m_CurrentDirectory(m_AssetPath), m_Project(nullptr)
 	{
 		m_DirectoryIcon = Texture2D::Create("Resources/Icons/ContentBrowser/DirectoryIcon.png");
 		m_FileIcon = Texture2D::Create("Resources/Icons/ContentBrowser/FileIcon.png");
 
 		ReloadDirectoryEntries();
+	}
+
+	static std::string GetCurrentDirRelativeToProject(const Ref<Project>& project, const std::filesystem::path& path)
+	{
+		return std::filesystem::relative(std::filesystem::absolute(path), std::filesystem::absolute(project->GetDir())).string();
 	}
 
 	void ContentBrowserPanel::OnImGuiRender(bool* open, Timestep ts)
@@ -28,53 +33,56 @@ namespace Wire {
 
 			static float width = ImGui::GetWindowWidth();
 			static float height = 30.0f;
-			if (m_CurrentDirectory == "assets" && m_Project != nullptr)
+			if (m_Project != nullptr)
 			{
-				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0.1f, 0.105f, 0.11f, 1.0f });
-				if (ImGui::Button(m_CurrentDirectory.string().c_str()))
-				{
-					m_CurrentDirectory = "assets";
-					ReloadDirectoryEntries();
-				}
-				ImGui::PopStyleColor();
-				ImGui::SameLine();
-				ImGui::Text("/");
-			}
-			else if (m_Project != nullptr)
-			{
-				std::vector<std::string> pathSplit;
-				std::string delimiter = "/";
-				std::string str = m_CurrentDirectory.string();
-				std::replace(str.begin(), str.end(), '\\', '/');
-
-				size_t pos = 0;
-				std::string token;
-				while ((pos = str.find(delimiter)) != std::string::npos)
-				{
-					token = str.substr(0, pos);
-					pathSplit.push_back(token);
-					str.erase(0, pos + delimiter.length());
-				}
-				pathSplit.push_back(str);
-
-				int i = 0;
-				for (std::string str : pathSplit)
+				if (m_CurrentDirectory == std::filesystem::absolute(m_Project->GetDir() / "Assets"))
 				{
 					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0.1f, 0.105f, 0.11f, 1.0f });
-					if (ImGui::Button(str.c_str()))
+					if (ImGui::Button(GetCurrentDirRelativeToProject(m_Project, m_CurrentDirectory).c_str()))
 					{
-						std::string gotoPath;
-						for (int x = 0; x <= i; x++)
-							gotoPath += pathSplit[x] + (x == i ? "" : "/");
-						m_CurrentDirectory = gotoPath;
+						m_CurrentDirectory = m_Project->GetDir() / "Assets";
 						ReloadDirectoryEntries();
 					}
 					ImGui::PopStyleColor();
 					ImGui::SameLine();
 					ImGui::Text("/");
-					if (i != pathSplit.size() - 1)
+				}
+				else if (m_Project != nullptr)
+				{
+					std::vector<std::string> pathSplit;
+					std::string delimiter = "/";
+					std::string str = GetCurrentDirRelativeToProject(m_Project, m_CurrentDirectory);
+					std::replace(str.begin(), str.end(), '\\', '/');
+
+					size_t pos = 0;
+					std::string token;
+					while ((pos = str.find(delimiter)) != std::string::npos)
+					{
+						token = str.substr(0, pos);
+						pathSplit.push_back(token);
+						str.erase(0, pos + delimiter.length());
+					}
+					pathSplit.push_back(str);
+
+					int i = 0;
+					for (std::string str : pathSplit)
+					{
+						ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0.1f, 0.105f, 0.11f, 1.0f });
+						if (ImGui::Button(str.c_str()))
+						{
+							std::string gotoPath = std::filesystem::absolute(m_Project->GetPath()).string();
+							for (int x = 0; x <= i; x++)
+								gotoPath += "/" + pathSplit[x] + (x == i ? "" : "/");
+							m_CurrentDirectory = gotoPath;
+							ReloadDirectoryEntries();
+						}
+						ImGui::PopStyleColor();
 						ImGui::SameLine();
-					i++;
+						ImGui::Text("/");
+						if (i != pathSplit.size() - 1)
+							ImGui::SameLine();
+						i++;
+					}
 				}
 			}
 
@@ -106,7 +114,7 @@ namespace Wire {
 					{
 						ImGui::Image((ImTextureID)(uint64_t)icon->GetRendererID(), { thumbnailSize / 1.5f, thumbnailSize / 1.5f }, { 0, 1 }, { 1, 0 });
 						ImGui::Text(filenameString.c_str());
-						auto absolutePath = std::filesystem::absolute("assets" / relativePath);
+						auto absolutePath = std::filesystem::absolute("Assets" / relativePath);
 						const wchar_t* itemPath = absolutePath.c_str();
 						ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", itemPath, (wcslen(itemPath) + 1) * sizeof(wchar_t), ImGuiCond_Once);
 						ImGui::EndDragDropSource();
@@ -169,9 +177,8 @@ namespace Wire {
 
 	void ContentBrowserPanel::OnOpenProject(const Ref<Project>& project)
 	{
-		m_Project = project; 
-		std::filesystem::current_path(project->GetDir());
-		m_AssetPath = "assets";
+		m_Project = project;
+		m_AssetPath = std::filesystem::absolute(m_Project->GetDir() / "Assets");
 		m_CurrentDirectory = m_AssetPath;
 		ReloadDirectoryEntries();
 	}

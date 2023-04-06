@@ -27,8 +27,6 @@ namespace Wire {
 	private:
 		bool m_BlockEvents = true;
 		float m_Time = 0.0f;
-
-		std::filesystem::path m_ImGuiIniPath;
 	};
 
 }

@@ -75,6 +75,9 @@ namespace Wire {
 		MonoAssembly* CoreAssembly = nullptr;
 		MonoImage* CoreAssemblyImage = nullptr;
 
+		MonoAssembly* AppAssembly = nullptr;
+		MonoImage* AppAssemblyImage = nullptr;
+
 		ScriptClass EntityClass;
 
 		std::unordered_map<std::string, Ref<ScriptClass>> EntityClasses;
@@ -85,33 +88,24 @@ namespace Wire {
 
 	static ScriptEngineData* s_Data;
 
+	Ref<Project> ScriptEngine::m_Project;
+
 	void ScriptEngine::Init()
 	{
 		s_Data = new ScriptEngineData();
 
 		InitMono();
 		LoadAssembly("Resources/Scripts/Wire-ScriptCore.dll");
-		LoadAssemblyClasses(s_Data->CoreAssembly);
+		if (m_Project != nullptr)
+		{
+			LoadAppAssembly(m_Project->GetDir() / "Binaries" / "Wire-ScriptRuntime.dll");
+			LoadAssemblyClasses();
+		}
 		
 		ScriptGlue::RegisterComponents();
 		ScriptGlue::RegisterFunctions();
 
-		s_Data->EntityClass = ScriptClass("Wire", "Entity");
-		/*
-		MonoObject* instance = s_Data->EntityClass.Instantiate();
-
-		MonoMethod* printMessageFunc = s_Data->EntityClass.GetMethod("PrintMessage", 0);
-		s_Data->EntityClass.InvokeMethod(instance, printMessageFunc);
-
-		MonoMethod* printIntFunc = s_Data->EntityClass.GetMethod("PrintInt", 1);
-		int value = 5;
-		void* param = &value;
-		s_Data->EntityClass.InvokeMethod(instance, printIntFunc, &param);
-
-		MonoMethod* printCustomMessageFunc = s_Data->EntityClass.GetMethod("PrintCustomMessage", 1);
-		MonoString* str = mono_string_new(s_Data->AppDomain, "Hello!");
-		void* stringParam = str;
-		s_Data->EntityClass.InvokeMethod(instance, printCustomMessageFunc, &stringParam);*/
+		s_Data->EntityClass = ScriptClass("Wire", "Entity", true);
 	}
 
 	void ScriptEngine::Shutdown()
@@ -148,9 +142,13 @@ namespace Wire {
 		mono_domain_set(s_Data->AppDomain, true);
 
 		s_Data->CoreAssembly = Utils::LoadMonoAssembly(filepath);
-		// Utils::PrintAssemblyTypes(s_Data->CoreAssembly);
-
 		s_Data->CoreAssemblyImage = mono_assembly_get_image(s_Data->CoreAssembly);
+	}
+
+	void ScriptEngine::LoadAppAssembly(const std::filesystem::path& filepath)
+	{
+		s_Data->AppAssembly = Utils::LoadMonoAssembly(filepath);
+		s_Data->AppAssemblyImage = mono_assembly_get_image(s_Data->AppAssembly);
 	}
 
 	void ScriptEngine::OnSceneStart(Scene* scene)
@@ -201,25 +199,24 @@ namespace Wire {
 		return s_Data->EntityClasses;
 	}
 
-	void ScriptEngine::LoadAssemblyClasses(MonoAssembly* assembly)
+	void ScriptEngine::LoadAssemblyClasses()
 	{
 		s_Data->EntityClasses.clear();
 
-		MonoImage* image = mono_assembly_get_image(assembly);
-		const MonoTableInfo* typeDefinitionsTable = mono_image_get_table_info(image, MONO_TABLE_TYPEDEF);
+		const MonoTableInfo* typeDefinitionsTable = mono_image_get_table_info(s_Data->AppAssemblyImage, MONO_TABLE_TYPEDEF);
 		int32_t numTypes = mono_table_info_get_rows(typeDefinitionsTable);
 
-		MonoClass* entityClass = mono_class_from_name(image, "Wire", "Entity");
+		MonoClass* entityClass = mono_class_from_name(s_Data->CoreAssemblyImage, "Wire", "Entity");
 
-		for (int32_t i = 0; i < numTypes; i++)
+		for (int i = 0; i < numTypes; i++)
 		{
 			uint32_t cols[MONO_TYPEDEF_SIZE];
 			mono_metadata_decode_row(typeDefinitionsTable, i, cols, MONO_TYPEDEF_SIZE);
 
-			const char* nameSpace = mono_metadata_string_heap(image, cols[MONO_TYPEDEF_NAMESPACE]);
-			const char* name = mono_metadata_string_heap(image, cols[MONO_TYPEDEF_NAME]);
+			const char* nameSpace = mono_metadata_string_heap(s_Data->AppAssemblyImage, cols[MONO_TYPEDEF_NAMESPACE]);
+			const char* name = mono_metadata_string_heap(s_Data->AppAssemblyImage, cols[MONO_TYPEDEF_NAME]);
 
-			MonoClass* monoClass = mono_class_from_name(image, nameSpace, name);
+			MonoClass* monoClass = mono_class_from_name(s_Data->AppAssemblyImage, nameSpace, name);
 
 			if (monoClass == entityClass)
 				continue;
@@ -253,10 +250,17 @@ namespace Wire {
 		return instance;
 	}
 
-	ScriptClass::ScriptClass(const std::string& namespaceName, const std::string& className)
+	void ScriptEngine::OnOpenProject(const Ref<Project>& project)
+	{
+		m_Project = project;
+		LoadAppAssembly(m_Project->GetDir() / "Binaries" / "Wire-ScriptRuntime.dll");
+		LoadAssemblyClasses();
+	}
+
+	ScriptClass::ScriptClass(const std::string& namespaceName, const std::string& className, bool isCore)
 		: m_Namespace(namespaceName), m_Class(className)
 	{
-		m_MonoClass = mono_class_from_name(s_Data->CoreAssemblyImage, m_Namespace.c_str(), m_Class.c_str());
+		m_MonoClass = mono_class_from_name(isCore ? s_Data->CoreAssemblyImage : s_Data->AppAssemblyImage, m_Namespace.c_str(), m_Class.c_str());
 	}
 
 	ScriptClass::ScriptClass(MonoClass* monoClass)

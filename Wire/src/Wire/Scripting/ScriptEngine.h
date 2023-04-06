@@ -2,6 +2,7 @@
 
 #include "Wire/Scene/Scene.h"
 #include "Wire/Scene/Entity.h"
+#include "Wire/Projects/Project.h"
 
 #include <string>
 
@@ -21,7 +22,7 @@ namespace Wire {
 	public:
 		ScriptClass() = default;
 
-		ScriptClass(const std::string& namespaceName, const std::string& className);
+		ScriptClass(const std::string& namespaceName, const std::string& className, bool isCore = false);
 		ScriptClass(MonoClass* monoClass);
 
 		MonoObject* Instantiate();
@@ -56,6 +57,7 @@ namespace Wire {
 		static void Shutdown();
 
 		static void LoadAssembly(const std::filesystem::path& filepath);
+		static void LoadAppAssembly(const std::filesystem::path& filepath);
 
 		static void OnSceneStart(Scene* scene);
 		static void OnSceneStop();
@@ -69,12 +71,16 @@ namespace Wire {
 
 		static MonoImage* GetCoreAssemblyImage();
 		static MonoDomain* GetAppDomain();
+
+		static void OnOpenProject(const Ref<Project>& project);
 	private:
 		static void InitMono();
 		static void ShutdownMono();
 
 		static MonoObject* InstantiateClass(MonoClass* monoClass);
-		static void LoadAssemblyClasses(MonoAssembly* assembly);
+		static void LoadAssemblyClasses();
+
+		static Ref<Project> m_Project;
 
 		friend class ScriptClass;
 		friend class ScriptGlue;

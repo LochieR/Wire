@@ -8,9 +8,9 @@ namespace Sandbox
 	{
 		void OnCreate()
 		{
-			Debug.LogWarning($"Camera: {ID}");
+			Debug.LogError($"Camera: {ID}");
 			Debug.LogInfo($"Camera Position: {Translation.X}, {Translation.Y}, {Translation.Z}");
-			Debug.LogError($"Camera Rotation: {Rotation.X}, {Rotation.Y}, {Rotation.Z}");
+			Debug.LogInfo($"Camera Rotation: {Rotation.X}, {Rotation.Y}, {Rotation.Z}");
 		}
 
 		void OnUpdate(float ts)
@@ -33,10 +33,6 @@ namespace Sandbox
 			Vector3 translation = Translation;
 			translation += velocity * ts;
 			Translation = translation;
-
-			Vector3 rotation = Rotation;
-			rotation.Z += 2.0f * ts;
-			Rotation = rotation;
 		}
 	}
 }
