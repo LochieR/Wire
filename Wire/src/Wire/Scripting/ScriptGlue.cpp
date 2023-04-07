@@ -14,8 +14,8 @@ namespace Wire {
 
 #define WR_ADD_INTERNAL_CALL(name) mono_add_internal_call("Wire.InternalCalls::" #name, name)
 
-	#pragma region Log
-	static void UILog_Log(int logLevel, MonoString* message)
+	#pragma region Debug
+	static void Debug_Log(int logLevel, MonoString* message)
 	{
 		std::string msg = mono_string_to_utf8(message);
 
@@ -183,7 +183,7 @@ namespace Wire {
 	void ScriptGlue::RegisterFunctions()
 	{
 		#pragma region Log
-		WR_ADD_INTERNAL_CALL(UILog_Log);
+		WR_ADD_INTERNAL_CALL(Debug_Log);
 		#pragma endregion
 
 		#pragma region Entity

@@ -6,16 +6,20 @@ namespace Sandbox
 {
 	public class Camera : Entity
 	{
+		public float Speed;
+		public float Timestep;
+		public Entity OtherEntity;
+
 		void OnCreate()
 		{
-			Debug.LogError($"Camera: {ID}");
-			Debug.LogInfo($"Camera Position: {Translation.X}, {Translation.Y}, {Translation.Z}");
-			Debug.LogInfo($"Camera Rotation: {Rotation.X}, {Rotation.Y}, {Rotation.Z}");
+			Debug.LogInfo($"Camera: {ID}");
 		}
 
 		void OnUpdate(float ts)
 		{
-			float speed = 2.5f;
+			Timestep += ts;
+
+			float speed = Speed;
 			Vector3 velocity = Vector3.Zero;
 
 			if (Input.IsKeyDown(KeyCode.W))

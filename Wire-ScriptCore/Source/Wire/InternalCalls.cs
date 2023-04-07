@@ -5,10 +5,10 @@ namespace Wire
 {
 	public static class InternalCalls
 	{
-		#region Log
+		#region Debug
 		[MethodImpl(MethodImplOptions.InternalCall)]
-		internal extern static void UILog_Log(int logLevel, string message);
-		#endregion Log
+		internal extern static void Debug_Log(int logLevel, string message);
+		#endregion Debug
 
 		#region Entity
 		[MethodImpl(MethodImplOptions.InternalCall)]

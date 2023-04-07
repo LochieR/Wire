@@ -94,9 +94,9 @@ namespace Wire {
 
 #ifdef WR_PLATFORM_WINDOWS
 		std::ofstream gen(usePath.remove_filename() / "Win-GenProjects.bat");
-		gen << "@echo off" << std::endl << "call ..\\..\\vendor\\premake\\bin\\premake5.exe vs2022" << std::endl;
+		gen << "@echo off" << std::endl << "pushd %~dp0\\" << std::endl << "call ..\\..\\vendor\\premake\\bin\\premake5.exe vs2022" << std::endl << "popd" << std::endl;
 		gen.close();
-		system((usePath.remove_filename() / "Win-GenProjects.bat > nul").string().c_str());
+		system(((usePath.remove_filename() / "Win-GenProjects.bat").string() + " > nul").c_str());
 #else
 		#error "Platform is not currently supported!"
 #endif
