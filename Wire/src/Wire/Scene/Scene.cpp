@@ -45,6 +45,8 @@ namespace Wire {
 
 	void Scene::OnSceneStart()
 	{
+		m_Running = true;
+
 		// Scripting
 		{
 			ScriptEngine::OnSceneStart(this);
@@ -60,6 +62,7 @@ namespace Wire {
 
 	void Scene::OnSceneStop()
 	{
+		m_Running = false;
 		ScriptEngine::OnSceneStop();
 	}
 

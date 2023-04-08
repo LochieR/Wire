@@ -5,8 +5,6 @@
 
 namespace Wire {
 
-	// TODO: Stop changing working directories when opening project
-
 	const std::string g_CSharpProjectTemplate =
 		"workspace \"{WR_PRJ_NAME}\"\n"
 		"	architecture \"x86_64\"\n"
@@ -68,6 +66,7 @@ namespace Wire {
 		YAML::Emitter out;
 		out << YAML::BeginMap;
 		out << YAML::Key << "Project" << YAML::Value << name;
+		out << YAML::EndMap;
 
 		std::filesystem::path usePath;
 

@@ -30,12 +30,15 @@ namespace Wire {
 		Entity GetEntityByUUID(UUID uuid);
 
 		Entity GetPrimaryCameraEntity();
+
+		bool IsRunning() const { return m_Running; }
 	private:
 		template<typename T>
 		void OnComponentAdded(Entity entity, T& component);
 	private:
 		entt::registry m_Registry;
 		uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
+		bool m_Running = false;	
 
 		std::unordered_map<UUID, entt::entity> m_EntityMap;
 

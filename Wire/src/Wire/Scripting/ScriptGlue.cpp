@@ -182,7 +182,7 @@ namespace Wire {
 
 	void ScriptGlue::RegisterFunctions()
 	{
-		#pragma region Log
+		#pragma region Debug
 		WR_ADD_INTERNAL_CALL(Debug_Log);
 		#pragma endregion
 

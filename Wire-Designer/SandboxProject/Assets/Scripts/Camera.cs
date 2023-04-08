@@ -9,6 +9,7 @@ namespace Sandbox
 		public float Speed;
 		public float Timestep;
 		public Entity OtherEntity;
+		public Vector3 Value;
 
 		void OnCreate()
 		{
