@@ -41,7 +41,7 @@ namespace Wire {
 		Ref<Scene> m_Context;
 		Entity m_SelectionContext;
 
-		Ref<Project> m_Project = CreateRef<Project>(Project::CreateNullProject());
+		Ref<Project> m_Project = Project::CreateNullProject();
 	};
 
 }

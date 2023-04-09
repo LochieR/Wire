@@ -25,7 +25,7 @@ namespace Wire {
 		std::filesystem::path m_CurrentDirectory;
 		std::vector<std::filesystem::directory_entry> m_DirectoryEntries;
 
-		Ref<Project> m_Project = CreateRef<Project>(Project::CreateNullProject());
+		Ref<Project> m_Project = Project::CreateNullProject();
 
 		Ref<Texture2D> m_DirectoryIcon;
 		Ref<Texture2D> m_FileIcon;

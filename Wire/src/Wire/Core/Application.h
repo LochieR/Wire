@@ -18,12 +18,33 @@ namespace Wire {
 	struct ApplicationCommandLineArgs
 	{
 		int Count = 0;
-		char** Args = nullptr;
+		std::vector<char*> Args;
 
 		const char* operator[](int index) const
 		{
 			WR_CORE_ASSERT(index < Count);
 			return Args[index];
+		}
+
+		std::vector<char*>::iterator begin()
+		{
+			return Args.begin();
+		}
+
+		std::vector<char*>::iterator end()
+		{
+			return Args.end();
+		}
+
+		ApplicationCommandLineArgs(int count, char** args)
+			: Count(count)
+		{
+			Args = std::vector<char*>(args, args + count);
+		}
+
+		ApplicationCommandLineArgs()
+			: Count(0), Args()
+		{
 		}
 	};
 

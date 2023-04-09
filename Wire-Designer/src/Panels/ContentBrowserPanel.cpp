@@ -3,12 +3,6 @@
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 
-#ifdef WR_PLATFORM_WINDOWS
-#include <direct.h>
-#else
-#include <unistd.h>
-#endif
-
 namespace Wire {
 
 	ContentBrowserPanel::ContentBrowserPanel()
@@ -114,7 +108,7 @@ namespace Wire {
 					{
 						ImGui::Image((ImTextureID)(uint64_t)icon->GetRendererID(), { thumbnailSize / 1.5f, thumbnailSize / 1.5f }, { 0, 1 }, { 1, 0 });
 						ImGui::Text(filenameString.c_str());
-						auto absolutePath = std::filesystem::absolute("Assets" / relativePath);
+						auto absolutePath = std::filesystem::absolute(std::filesystem::absolute(m_Project->GetDir()) / "Assets" / relativePath);
 						const wchar_t* itemPath = absolutePath.c_str();
 						ImGui::SetDragDropPayload("CONTENT_BROWSER_ITEM", itemPath, (wcslen(itemPath) + 1) * sizeof(wchar_t), ImGuiCond_Once);
 						ImGui::EndDragDropSource();

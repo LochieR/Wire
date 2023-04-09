@@ -41,13 +41,39 @@ namespace Wire {
 
 		m_ActiveScene = CreateRef<Scene>();
 
-		auto commandLineArgs = Application::Get().GetCommandLineArgs();
+		ApplicationCommandLineArgs commandLineArgs = Application::Get().GetCommandLineArgs();
 		if (commandLineArgs.Count > 1)
 		{
-			auto sceneFilePath = commandLineArgs[1];
-			SceneSerializer serializer(m_ActiveScene);
-			serializer.Deserialize(sceneFilePath);
-			m_ActiveScenePath = sceneFilePath;
+			bool project = false;
+			int projectIndex = -1;
+			bool scene = false;
+			int sceneIndex = -1;
+			int i = 0;
+			for (auto arg : commandLineArgs)
+			{
+				if (std::string(arg) == std::string("--project"))
+				{
+					project = true;
+					projectIndex = i + 1;
+				}
+				if (std::string(arg) == std::string("--scene"))
+				{
+					scene = true;
+					sceneIndex = i + 1;
+				}
+				i++;
+			}
+
+			if (project)
+			{
+				auto prjPath = commandLineArgs[projectIndex];
+				OpenProject(prjPath);
+			}
+			if (scene)
+			{
+				auto sceneFilePath = commandLineArgs[sceneIndex];
+				OpenScene(sceneFilePath);
+			}
 		}
 
 		m_EditorCamera = EditorCamera(30.0f, 16.0f / 9.0f, 0.1f, 1000.0f);
@@ -79,9 +105,6 @@ namespace Wire {
 		ScriptGlue::SetUILogFunc([this](int level, const std::string& message) { m_ConsolePanel.Log((LogLevel)level, message); });
 
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
-
-		// TEMP
-		OpenProject("SandboxProject/Sandbox.wrpj");
 	}
 
 	void EditorLayer::OnDetach()
@@ -211,10 +234,6 @@ namespace Wire {
 		{
 			if (ImGui::BeginMenu("File"))
 			{
-				// Disabling fullscreen would allow the window to be moved to the front of other windows, 
-				// which we can't undo at the moment without finer window depth/z control.
-				//ImGui::MenuItem("Fullscreen", NULL, &opt_fullscreen_persistant);
-
 				if (ImGui::BeginMenu("New"))
 				{
 					if (ImGui::MenuItem("New Project...", "Ctrl+Shift+N"))
@@ -313,7 +332,7 @@ namespace Wire {
 
 		m_ViewportFocused = ImGui::IsWindowFocused();
 		m_ViewportHovered = ImGui::IsWindowHovered();
-		Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewportFocused && !m_ViewportHovered);
+		Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewportHovered);
 
 		ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
 		m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
@@ -328,7 +347,7 @@ namespace Wire {
 				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 				{
 					const wchar_t* path = (wchar_t*)payload->Data;
-					OpenScene(std::filesystem::path(m_ContentBrowserPanel.GetAssetPath()) / path);
+					OpenScene(std::filesystem::path(path));
 				}
 				ImGui::EndDragDropTarget();
 			}
@@ -540,7 +559,7 @@ namespace Wire {
 
 	void EditorLayer::OpenProject(const std::filesystem::path& path)
 	{
-		m_Project = CreateRef<Project>(Project::OpenProject(path));
+		m_Project = Project::OpenProject(path);
 		m_EditorCamera = EditorCamera(30.0f, 16.0f / 9.0f, 0.1f, 1000.0f);
 		m_ContentBrowserPanel.OnOpenProject(m_Project);
 		m_SceneHierarchyPanel.OnOpenProject(m_Project);

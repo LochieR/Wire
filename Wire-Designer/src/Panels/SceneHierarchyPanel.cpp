@@ -504,7 +504,7 @@ namespace Wire {
 				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
 				{
 					const wchar_t* path = (wchar_t*)payload->Data;
-					std::filesystem::path texturePath = std::filesystem::path(m_Project->GetPath()) / path;
+					std::filesystem::path texturePath = std::filesystem::path(path);
 					component.Texture = Texture2D::Create(texturePath.string());
 				}
 				ImGui::EndDragDropTarget();

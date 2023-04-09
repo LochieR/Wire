@@ -31,5 +31,10 @@ namespace Wire
 		{
 			return new Vector3(vector.X * scalar, vector.Y * scalar, vector.Z * scalar);
 		}
+
+		public override string ToString()
+		{
+			return $"{X}, {Y}, {Z}";
+		}
 	}
 }

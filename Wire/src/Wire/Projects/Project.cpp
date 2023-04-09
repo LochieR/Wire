@@ -93,7 +93,7 @@ namespace Wire {
 
 #ifdef WR_PLATFORM_WINDOWS
 		std::ofstream gen(usePath.remove_filename() / "Win-GenProjects.bat");
-		gen << "@echo off" << std::endl << "pushd %~dp0\\" << std::endl << "call ..\\..\\vendor\\premake\\bin\\premake5.exe vs2022" << std::endl << "popd" << std::endl;
+		gen << "@echo off" << std::endl << "pushd %~dp0\\" << std::endl << "call ..\\vendor\\premake\\bin\\premake5.exe vs2022" << std::endl << "popd" << std::endl;
 		gen.close();
 		system(((usePath.remove_filename() / "Win-GenProjects.bat").string() + " > nul").c_str());
 #else
@@ -101,7 +101,7 @@ namespace Wire {
 #endif
 	}
 
-	Project Project::OpenProject(const std::filesystem::path& path)
+	Ref<Project> Project::OpenProject(const std::filesystem::path& path)
 	{
 		std::ifstream stream(path);
 		std::stringstream ss;
@@ -112,7 +112,10 @@ namespace Wire {
 			return CreateNullProject();
 
 		std::string name = data["Project"].as<std::string>();
-		Project project(name, path);
+		Ref<Project> project = CreateRef<Project>();
+		project->m_Path = path;
+		project->m_Name = name;
+		project->m_Null = false;
 
 		return project;
 	}

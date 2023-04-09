@@ -43,6 +43,8 @@ namespace Wire {
 		AudioEngine::Shutdown();
 		ScriptEngine::Shutdown();
 		Renderer::Shutdown();
+
+		s_Instance = nullptr;
 	}
 
 	void Application::PushLayer(Layer* layer)
