@@ -1,5 +1,49 @@
 Scene: Untitled
 Entities:
+  - Entity: 263515740062652543
+    TagComponent:
+      Tag: Green Square
+    TransformComponent:
+      Translation: [0.699999988, 0.5, 14.1999998]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Colour: [0, 1, 0, 1]
+      TilingFactor: 1
+  - Entity: 17879028744201264644
+    TagComponent:
+      Tag: Red Square
+    TransformComponent:
+      Translation: [3.4000001, 0, 5.80000019]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Colour: [1, 0, 0, 1]
+      TilingFactor: 1
+  - Entity: 15961371396191291635
+    TagComponent:
+      Tag: Camera A
+    TransformComponent:
+      Translation: [3.18166351, -0.454925537, 22.1193047]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    CameraComponent:
+      Camera:
+        ProjectionType: 1
+        PerspectiveFOV: 0.785398185
+        PerspectiveNear: 0.00999999978
+        PerspectiveFar: 1000
+        OrthographicSize: 10
+        OrthographicNear: -1
+        OrthographicFar: 22
+      Primary: true
+      FixedAspectRatio: false
+    ScriptComponent:
+      Class: Sandbox.Camera
+      ScriptFields:
+        - Name: Speed
+          Type: Float
+          Data: 3
   - Entity: 9476630318428448073
     TagComponent:
       Tag: Camera B
@@ -16,43 +60,5 @@ Entities:
         OrthographicSize: 10
         OrthographicNear: -1
         OrthographicFar: 1
-      Primary: true
-      FixedAspectRatio: false
-  - Entity: 15961371396191291635
-    TagComponent:
-      Tag: Camera A
-    TransformComponent:
-      Translation: [0, 0, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    CameraComponent:
-      Camera:
-        ProjectionType: 1
-        PerspectiveFOV: 0.785398185
-        PerspectiveNear: 0.00999999978
-        PerspectiveFar: 1000
-        OrthographicSize: 10
-        OrthographicNear: -1
-        OrthographicFar: 1
       Primary: false
       FixedAspectRatio: false
-  - Entity: 17879028744201264644
-    TagComponent:
-      Tag: Red Square
-    TransformComponent:
-      Translation: [3.4000001, 0, 5.80000019]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    SpriteRendererComponent:
-      Colour: [1, 0, 0, 1]
-      TilingFactor: 1
-  - Entity: 263515740062652543
-    TagComponent:
-      Tag: Green Square
-    TransformComponent:
-      Translation: [0.699999988, 0.5, 14.1999998]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    SpriteRendererComponent:
-      Colour: [0, 1, 0, 1]
-      TilingFactor: 1
