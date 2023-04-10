@@ -1,5 +1,7 @@
 #include "ConsolePanel.h"
 
+#include "Wire/Core/Log.h"
+
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
 
@@ -44,8 +46,13 @@ namespace Wire {
 	}
 
 	void ConsolePanel::OnImGuiRender(bool* open)
-	{		
+	{
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 8));
 		ImGui::Begin("Console", open);
+
+		// Padding for the button
+		ImGui::Text("");
+		ImGui::SameLine();
 
 		if (ImGui::Button("Clear"))
 		{
@@ -59,7 +66,7 @@ namespace Wire {
 		// TODO: Add buttons which hide all of one type of message
 
 		ImGuiTableFlags flags = ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY | ImGuiTableFlags_NoPadInnerX | ImGuiTableFlags_NoPadOuterX;
-		flags |= ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_BordersOuter;
+		flags |= ImGuiTableFlags_BordersOuterV;
 
 		ImGui::PushStyleColor(ImGuiCol_HeaderActive, ImVec4(48.0f / 255.0f, 48.0f / 255.0f, 51.0f / 255.0f, 1.0f));
 		ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(48.0f / 255.0f, 48.0f / 255.0f, 51.0f / 255.0f, 1.0f));
@@ -191,6 +198,7 @@ namespace Wire {
 		ImGui::PopStyleColor(2);
 
 		ImGui::End();
+		ImGui::PopStyleVar();
 	}
 
 	void ConsolePanel::Log(const ConsoleMessage& message)
