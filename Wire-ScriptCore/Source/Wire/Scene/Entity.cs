@@ -11,6 +11,18 @@ namespace Wire
 
 		public readonly ulong ID;
 
+		public string Name
+		{
+			get
+			{
+				return InternalCalls.TagComponent_GetTag(ID);
+			}
+			set
+			{
+				InternalCalls.TagComponent_SetTag(ID, value);
+			}
+		}
+
 		public Vector3 Translation
 		{
 			get

@@ -15,6 +15,14 @@ namespace Wire
 		internal static extern bool Entity_HasComponent(ulong entityID, Type componentType);
 		#endregion Entity
 
+		#region TagComponent
+		[MethodImpl(MethodImplOptions.InternalCall)]
+		internal static extern string TagComponent_GetTag(ulong entityID);
+
+		[MethodImpl(MethodImplOptions.InternalCall)]
+		internal static extern void TagComponent_SetTag(ulong entityID, string value);
+		#endregion TagComponent
+
 		#region TransformComponent
 		[MethodImpl(MethodImplOptions.InternalCall)]
 		internal static extern void TransformComponent_GetTranslation(ulong entityID, out Vector3 translation);

@@ -17,7 +17,9 @@ namespace Wire {
 	#pragma region Debug
 	static void Debug_Log(int logLevel, MonoString* message)
 	{
-		std::string msg = mono_string_to_utf8(message);
+		char* cStr = mono_string_to_utf8(message);
+		std::string msg = std::string(cStr);
+		mono_free(cStr);
 
 		ScriptGlue::GetUILogFunc()(logLevel, msg);
 	}
@@ -34,6 +36,30 @@ namespace Wire {
 		MonoType* managedType = mono_reflection_type_get_type(componentType);
 		WR_CORE_ASSERT(s_EntityHasComponentFuncs.find(managedType) != s_EntityHasComponentFuncs.end());
 		return s_EntityHasComponentFuncs.at(managedType)(entity);
+	}
+	#pragma region TagComponent
+	static MonoString* TagComponent_GetTag(UUID entityID)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		WR_CORE_ASSERT(scene);
+		Entity entity = scene->GetEntityByUUID(entityID);
+		WR_CORE_ASSERT(entity);
+
+		std::string tag = entity.GetComponent<TagComponent>().Tag;
+
+		return mono_string_new(ScriptEngine::GetAppDomain(), tag.c_str());
+	}
+
+	static void TagComponent_SetTag(UUID entityID, MonoString* value)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		WR_CORE_ASSERT(scene);
+		Entity entity = scene->GetEntityByUUID(entityID);
+		WR_CORE_ASSERT(entity);
+
+		char* cStr = mono_string_to_utf8(value);
+		entity.GetComponent<TagComponent>().Tag = std::string(cStr);
+		mono_free(cStr);
 	}
 	#pragma endregion
 
@@ -119,8 +145,21 @@ namespace Wire {
 		Scene* scene = ScriptEngine::GetSceneContext();
 		Entity entity = scene->GetEntityByUUID(entityID);
 
-		std::string path = mono_string_to_utf8(monoStr);
-		entity.GetComponent<SpriteRendererComponent>().Texture = Texture2D::Create(path);
+		char* cStr = mono_string_to_utf8(monoStr);
+		std::string path = std::string(cStr);
+		mono_free(cStr);
+
+		if (path.empty())
+		{
+			Ref<Texture2D> whiteTexture = Texture2D::Create(1, 1);
+			uint32_t whiteTextureData = 0xffffffff;
+			whiteTexture->SetData(&whiteTextureData, sizeof(uint32_t));
+			entity.GetComponent<SpriteRendererComponent>().Texture = whiteTexture;
+		}
+		else
+		{
+			entity.GetComponent<SpriteRendererComponent>().Texture = Texture2D::Create(path);
+		}
 	}
 
 	static float SpriteRendererComponent_GetTilingFactor(UUID entityID)
@@ -334,6 +373,9 @@ namespace Wire {
 
 		#pragma region Entity
 		WR_ADD_INTERNAL_CALL(Entity_HasComponent);
+		#pragma region TagComponent
+		WR_ADD_INTERNAL_CALL(TagComponent_GetTag);
+		WR_ADD_INTERNAL_CALL(TagComponent_SetTag);
 		#pragma endregion
 
 		#pragma region TransformComponent
