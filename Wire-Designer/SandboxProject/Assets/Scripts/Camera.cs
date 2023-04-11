@@ -38,7 +38,7 @@ namespace Sandbox
 				Entity other = FindEntityByName("Camera B");//.As<Camera>();
 				other.Translation = Translation;
 
-				if (Input.IsKeyPressed(KeyCode.Tab))
+				if (Input.IsKeyDown(KeyCode.Tab))
 				{
 					// switch primary camera
 
