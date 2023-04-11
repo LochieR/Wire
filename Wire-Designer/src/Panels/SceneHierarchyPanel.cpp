@@ -326,6 +326,10 @@ namespace Wire {
 			{
 				tag = std::string(buffer);
 			}
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 4.59375f);
+			if (ImGui::IsItemHovered())
+				ImGui::SetTooltip(fmt::format("{}", (uint64_t)entity.GetUUID()).c_str());
+			ImGui::PopStyleVar();
 		}
 
 		ImGui::SameLine();

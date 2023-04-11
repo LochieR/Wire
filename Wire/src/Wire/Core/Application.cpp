@@ -110,7 +110,7 @@ namespace Wire {
 			{
 				WR_PROFILE_SCOPE("LayerStack OnImGuiRender");
 
-				ImGui::PushStyleVar(ImGuiStyleVar_PopupRounding, 11.25f);
+				ImGui::PushStyleVar(ImGuiStyleVar_PopupRounding, 4.59375f);
 
 				for (Layer* layer : m_LayerStack)
 					layer->OnImGuiRender();
