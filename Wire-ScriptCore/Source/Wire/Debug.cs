@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Globalization;
-using System.IO;
 
 namespace Wire
 {
@@ -367,7 +365,8 @@ namespace Wire
 
 		public static void LogError(ulong value)
 		{
-			_LogError(value.ToString());
+			LogError_Internal(value.ToString());
 		}
+		#endregion Log
 	}
 }

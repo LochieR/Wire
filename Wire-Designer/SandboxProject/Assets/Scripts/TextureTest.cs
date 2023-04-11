@@ -6,6 +6,9 @@ namespace Sandbox
 {
 	public class TextureTest : Entity
 	{
+		public string Path;
+		private string m_LastPath;
+
 		private static int m_NumTests = 0;
 
 		private bool m_TextureHasChanged = false;
@@ -21,8 +24,15 @@ namespace Sandbox
 		{
 			if (Input.IsKeyDown(KeyCode.Tab) && !m_TextureHasChanged)
 			{
-				GetComponent<SpriteRendererComponent>().Texture = "assets/textures/WireLogo.png";
+				Path = "Assets/Textures/WireLogo.png";
 			}
+
+			if (m_LastPath != Path)
+			{
+				GetComponent<SpriteRendererComponent>().Texture = Path;
+			}
+
+			m_LastPath = Path;
 
 			float tilingFactor = Math.Abs(10.0f * (float)Math.Sin(m_Time));
 			GetComponent<SpriteRendererComponent>().TilingFactor = tilingFactor;

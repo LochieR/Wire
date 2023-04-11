@@ -12,7 +12,7 @@ namespace Wire {
 			Apostrophe = 39, /* ' */
 			Comma = 44, /* , */
 			Minus = 45, /* - */
-			Period = 46, /* . */
+			Dot = 46, /* . */
 			Slash = 47, /* / */
 
 			D0 = 48, /* 0 */

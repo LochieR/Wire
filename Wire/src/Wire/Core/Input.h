@@ -9,7 +9,7 @@ namespace Wire {
 	class Input
 	{
 	public:
-		static bool IsKeyPressed(KeyCode key);
+		static bool IsKeyPressed(KeyCode keycode);
 
 		static bool IsMouseButtonPressed(MouseCode button);
 		static std::pair<float, float> GetMousePosition();
