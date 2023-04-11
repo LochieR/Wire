@@ -141,6 +141,152 @@ namespace Wire {
 	}
 	#pragma endregion
 
+	#pragma region CameraComponent
+	static bool CameraComponent_IsPrimary(UUID entityID)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		Entity entity = scene->GetEntityByUUID(entityID);
+
+		return entity.GetComponent<CameraComponent>().Primary;
+	}
+
+	static void CameraComponent_SetPrimary(UUID entityID, bool primary)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		Entity entity = scene->GetEntityByUUID(entityID);
+
+		entity.GetComponent<CameraComponent>().Primary = primary;
+	}
+
+	static SceneCamera::ProjectionType CameraComponent_GetProjectionType(UUID entityID)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		Entity entity = scene->GetEntityByUUID(entityID);
+
+		return entity.GetComponent<CameraComponent>().Camera.GetProjectionType();
+	}
+
+	static void CameraComponent_SetProjectionType(UUID entityID, SceneCamera::ProjectionType type)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		Entity entity = scene->GetEntityByUUID(entityID);
+
+		entity.GetComponent<CameraComponent>().Camera.SetProjectionType(type);
+	}
+
+	static float CameraComponent_GetPerspectiveVerticalFOV(UUID entityID)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		Entity entity = scene->GetEntityByUUID(entityID);
+
+		return entity.GetComponent<CameraComponent>().Camera.GetPerspectiveVerticalFOV();
+	}
+
+	static void CameraComponent_SetPerspectiveVerticalFOV(UUID entityID, float value)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		Entity entity = scene->GetEntityByUUID(entityID);
+
+		entity.GetComponent<CameraComponent>().Camera.SetPerspectiveVerticalFOV(value);
+	}
+
+	static float CameraComponent_GetPerspectiveNear(UUID entityID)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		Entity entity = scene->GetEntityByUUID(entityID);
+
+		return entity.GetComponent<CameraComponent>().Camera.GetPerspectiveNearClip();
+	}
+
+	static void CameraComponent_SetPerspectiveNear(UUID entityID, float value)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		Entity entity = scene->GetEntityByUUID(entityID);
+
+		entity.GetComponent<CameraComponent>().Camera.SetPerspectiveNearClip(value);
+	}
+
+	static float CameraComponent_GetPerspectiveFar(UUID entityID)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		Entity entity = scene->GetEntityByUUID(entityID);
+
+		return entity.GetComponent<CameraComponent>().Camera.GetPerspectiveFarClip();
+	}
+
+	static void CameraComponent_SetPerspectiveFar(UUID entityID, float value)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		Entity entity = scene->GetEntityByUUID(entityID);
+
+		entity.GetComponent<CameraComponent>().Camera.SetPerspectiveFarClip(value);
+	}
+
+	static float CameraComponent_GetOrthographicSize(UUID entityID)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		Entity entity = scene->GetEntityByUUID(entityID);
+
+		return entity.GetComponent<CameraComponent>().Camera.GetOrthographicSize();
+	}
+
+	static void CameraComponent_SetOrthographicSize(UUID entityID, float value)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		Entity entity = scene->GetEntityByUUID(entityID);
+
+		entity.GetComponent<CameraComponent>().Camera.SetOrthographicSize(value);
+	}
+
+	static float CameraComponent_GetOrthographicNear(UUID entityID)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		Entity entity = scene->GetEntityByUUID(entityID);
+
+		return entity.GetComponent<CameraComponent>().Camera.GetOrthographicNearClip();
+	}
+
+	static void CameraComponent_SetOrthographicNear(UUID entityID, float value)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		Entity entity = scene->GetEntityByUUID(entityID);
+
+		entity.GetComponent<CameraComponent>().Camera.SetOrthographicNearClip(value);
+	}
+
+	static float CameraComponent_GetOrthographicFar(UUID entityID)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		Entity entity = scene->GetEntityByUUID(entityID);
+
+		return entity.GetComponent<CameraComponent>().Camera.GetOrthographicFarClip();
+	}
+
+	static void CameraComponent_SetOrthographicFar(UUID entityID, float value)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		Entity entity = scene->GetEntityByUUID(entityID);
+
+		entity.GetComponent<CameraComponent>().Camera.SetOrthographicFarClip(value);
+	}
+
+	static bool CameraComponent_IsFixedAspectRatio(UUID entityID)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		Entity entity = scene->GetEntityByUUID(entityID);
+
+		return entity.GetComponent<CameraComponent>().FixedAspectRatio;
+	}
+
+	static void CameraComponent_SetFixedAspectRatio(UUID entityID, bool value)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		Entity entity = scene->GetEntityByUUID(entityID);
+
+		entity.GetComponent<CameraComponent>().FixedAspectRatio = value;
+	}
+	#pragma endregion
+
 	#pragma region Input
 	static bool Input_IsKeyDown(KeyCode keycode)
 	{
@@ -206,6 +352,27 @@ namespace Wire {
 		WR_ADD_INTERNAL_CALL(SpriteRendererComponent_SetTexturePath);
 		WR_ADD_INTERNAL_CALL(SpriteRendererComponent_GetTilingFactor);
 		WR_ADD_INTERNAL_CALL(SpriteRendererComponent_SetTilingFactor);
+		#pragma endregion
+
+		#pragma region CameraComponent
+		WR_ADD_INTERNAL_CALL(CameraComponent_IsPrimary);
+		WR_ADD_INTERNAL_CALL(CameraComponent_SetPrimary);
+		WR_ADD_INTERNAL_CALL(CameraComponent_GetProjectionType);
+		WR_ADD_INTERNAL_CALL(CameraComponent_SetProjectionType);
+		WR_ADD_INTERNAL_CALL(CameraComponent_GetPerspectiveVerticalFOV);
+		WR_ADD_INTERNAL_CALL(CameraComponent_SetPerspectiveVerticalFOV);
+		WR_ADD_INTERNAL_CALL(CameraComponent_GetPerspectiveNear);
+		WR_ADD_INTERNAL_CALL(CameraComponent_SetPerspectiveNear);
+		WR_ADD_INTERNAL_CALL(CameraComponent_GetPerspectiveFar);
+		WR_ADD_INTERNAL_CALL(CameraComponent_SetPerspectiveFar);
+		WR_ADD_INTERNAL_CALL(CameraComponent_GetOrthographicSize);
+		WR_ADD_INTERNAL_CALL(CameraComponent_SetOrthographicSize);
+		WR_ADD_INTERNAL_CALL(CameraComponent_GetOrthographicNear);
+		WR_ADD_INTERNAL_CALL(CameraComponent_SetOrthographicNear);
+		WR_ADD_INTERNAL_CALL(CameraComponent_GetOrthographicFar);
+		WR_ADD_INTERNAL_CALL(CameraComponent_SetOrthographicFar);
+		WR_ADD_INTERNAL_CALL(CameraComponent_IsFixedAspectRatio);
+		WR_ADD_INTERNAL_CALL(CameraComponent_SetFixedAspectRatio);
 		#pragma endregion
 
 		#pragma region Input
