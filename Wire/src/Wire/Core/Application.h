@@ -7,8 +7,6 @@
 #include "Wire/Events/Event.h"
 #include "Wire/Events/ApplicationEvent.h"
 
-#include "Wire/Audio/AudioEngine.h"
-
 #include "Timestep.h"
 
 #include "Wire/ImGui/ImGuiLayer.h"

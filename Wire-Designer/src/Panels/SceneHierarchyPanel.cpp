@@ -28,7 +28,7 @@ namespace Wire {
 			m_Context->m_Registry.each([&](auto entityId)
 			{
 				Entity entity{ entityId, m_Context.get() };
-			DrawEntityNode(entity);
+				DrawEntityNode(entity);
 			});
 
 			if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
@@ -214,7 +214,7 @@ namespace Wire {
 		ImGui::NextColumn();
 
 		int i = 0;
-		for (auto data : datas)
+		for (const auto& data : datas)
 		{
 			ImGui::PushID((data.Label + std::to_string(i)).c_str());
 
@@ -425,13 +425,64 @@ namespace Wire {
 			bool scriptClassExists = ScriptEngine::EntityClassExists(component.ClassName);
 
 			static char buffer[64];
-			strcpy(buffer, component.ClassName.c_str());
 
-			if (!scriptClassExists)
-				ImGui::PushStyleColor(ImGuiCol_Text, ImVec4{ 0.9f, 0.2f, 0.3f, 1.0f });
+			if (ImGui::Button(component.ClassName.empty() ? "Select Class..." : component.ClassName.c_str()))
+			{
+				memset(buffer, 0, sizeof(buffer));
+				buffer[0] = 0;
+				ImGui::OpenPopup("SelectClass");
+			}
 
-			if (ImGui::InputText("Class", buffer, sizeof(buffer)))
-				component.ClassName = buffer;
+			ImGui::PushStyleColor(ImGuiCol_PopupBg, ImGui::GetStyle().Colors[ImGuiCol_MenuBarBg]);
+			if (ImGui::BeginPopup("SelectClass"))
+			{
+				if (ImGui::InputText("##Class", buffer, sizeof(buffer), ImGuiInputTextFlags_EnterReturnsTrue))
+				{
+					component.ClassName = buffer;
+					scriptClassExists = ScriptEngine::EntityClassExists(component.ClassName);
+					ImGui::CloseCurrentPopup();
+				}
+
+				for (const auto& sc : ScriptEngine::GetEntityClasses())
+				{
+					std::string label = sc.first;
+					std::string lowerLabel;
+					lowerLabel.resize(label.size(), 0);
+					std::string fromBuffer = buffer[0] == 0 ? "" : buffer;
+
+					std::transform(label.begin(), label.end(), lowerLabel.begin(), [](auto c) { return std::tolower(c); });
+					std::transform(fromBuffer.begin(), fromBuffer.end(), fromBuffer.begin(), [](auto c) { return std::tolower(c); });
+					
+					ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+
+					if (fromBuffer.empty())
+					{
+						if (ImGui::Button(label.c_str(), ImVec2(ImGui::GetWindowWidth() - 16.0f, 0)))
+						{
+							component.ClassName = label.c_str();
+							scriptClassExists = ScriptEngine::EntityClassExists(component.ClassName);
+							ImGui::CloseCurrentPopup();
+						}
+					}
+					else if (lowerLabel.find(fromBuffer) != std::string::npos)
+					{
+						if (ImGui::Button(label.c_str(), ImVec2(ImGui::GetWindowWidth() - 16.0f, 0)))
+						{
+							component.ClassName = label.c_str();
+							scriptClassExists = ScriptEngine::EntityClassExists(component.ClassName);
+							ImGui::CloseCurrentPopup();
+						}
+					}
+
+					ImGui::PopStyleVar();
+				}
+
+				ImGui::EndPopup();
+			}
+			ImGui::PopStyleColor();
+
+			ImGui::SameLine();
+			ImGui::Text("Class");
 
 			bool sceneRunning = scene->IsRunning();
 			if (sceneRunning)
@@ -493,9 +544,6 @@ namespace Wire {
 					}
 				}
 			}
-
-			if (!scriptClassExists)
-				ImGui::PopStyleColor();
 		});
 
 		DrawComponent<SpriteRendererComponent>("Sprite Renderer", entity, [this](auto& component)

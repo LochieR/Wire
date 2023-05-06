@@ -621,7 +621,6 @@ namespace Wire {
 	void EditorLayer::OnScenePlay()
 	{
 		m_SceneState = SceneState::Play;
-		AudioEngine::OnSceneStart();
 		m_ConsolePanel.OnSceneStart();
 		m_ActiveScene->OnSceneStart();
 	}
@@ -629,7 +628,6 @@ namespace Wire {
 	void EditorLayer::OnSceneStop()
 	{
 		m_SceneState = SceneState::Edit;
-		AudioEngine::OnSceneStop();
 		m_ActiveScene->OnSceneStop();
 	}
 

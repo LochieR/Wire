@@ -6,7 +6,6 @@
 
 #include "Wire/Renderer/Renderer.h"
 #include "Wire/Scripting/ScriptEngine.h"
-#include "Wire/Audio/AudioEngine.h"
 
 #include "Wire/Utils/PlatformUtils.h"
 
@@ -28,7 +27,6 @@ namespace Wire {
 
 		Renderer::Init();
 		ScriptEngine::Init();
-		AudioEngine::Init();
 
 		m_ImGuiLayer = new ImGuiLayer();
 		PushOverlay(m_ImGuiLayer);
@@ -38,9 +36,6 @@ namespace Wire {
 	{
 		WR_PROFILE_FUNCTION();
 
-		AudioEngine::OnSceneStop();
-
-		AudioEngine::Shutdown();
 		ScriptEngine::Shutdown();
 		Renderer::Shutdown();
 

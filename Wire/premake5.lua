@@ -37,7 +37,6 @@ project "Wire"
 		"%{IncludeDir.ImGui}",
 		"%{IncludeDir.glm}",
 		"%{IncludeDir.stb_image}",
-		"%{IncludeDir.rtaudio}",
 		"%{IncludeDir.entt}",
 		"%{IncludeDir.mono}",
 		"%{IncludeDir.yaml_cpp}",
@@ -50,7 +49,6 @@ project "Wire"
 		"GLFW",
 		"Glad",
 		"ImGui",
-		"rtaudio",
 		"yaml-cpp",
 
 		"%{Library.mono}"

@@ -25,7 +25,6 @@ group "Dependencies"
 	include "Wire/vendor/Glad"
 	include "Wire/vendor/imgui"
 	include "Wire/vendor/yaml-cpp"
-	include "Wire/vendor/rtaudio"
 group ""
 
 group "Core"
