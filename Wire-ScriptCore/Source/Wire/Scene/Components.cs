@@ -16,10 +16,7 @@ namespace Wire
 				InternalCalls.TransformComponent_GetTranslation(Entity.ID, out Vector3 translation);
 				return translation;
 			}
-			set
-			{
-				InternalCalls.TransformComponent_SetTranslation(Entity.ID, ref value);
-			}
+			set => InternalCalls.TransformComponent_SetTranslation(Entity.ID, ref value);
 		}
 
 		public Vector3 Rotation
@@ -29,10 +26,7 @@ namespace Wire
 				InternalCalls.TransformComponent_GetRotation(Entity.ID, out Vector3 rotation);
 				return rotation;
 			}
-			set
-			{
-				InternalCalls.TransformComponent_SetRotation(Entity.ID, ref value);
-			}
+			set => InternalCalls.TransformComponent_SetRotation(Entity.ID, ref value);
 		}
 
 		public Vector3 Scale
@@ -42,10 +36,7 @@ namespace Wire
 				InternalCalls.TransformComponent_GetScale(Entity.ID, out Vector3 scale);
 				return scale;
 			}
-			set
-			{
-				InternalCalls.TransformComponent_SetScale(Entity.ID, ref value);
-			}
+			set => InternalCalls.TransformComponent_SetScale(Entity.ID, ref value);
 		}
 	}
 
@@ -58,34 +49,19 @@ namespace Wire
 				InternalCalls.SpriteRendererComponent_GetColour(Entity.ID, out Vector4 colour);
 				return colour;
 			}
-			set
-			{
-				InternalCalls.SpriteRendererComponent_SetColour(Entity.ID, ref value);
-			}
+			set => InternalCalls.SpriteRendererComponent_SetColour(Entity.ID, ref value);
 		}
 
 		public string Texture
 		{
-			get
-			{
-				return InternalCalls.SpriteRendererComponent_GetTexturePath(Entity.ID);
-			}
-			set
-			{
-				InternalCalls.SpriteRendererComponent_SetTexturePath(Entity.ID, value);
-			}
+			get => InternalCalls.SpriteRendererComponent_GetTexturePath(Entity.ID);
+			set => InternalCalls.SpriteRendererComponent_SetTexturePath(Entity.ID, value);
 		}
 
 		public float TilingFactor
 		{
-			get
-			{
-				return InternalCalls.SpriteRendererComponent_GetTilingFactor(Entity.ID);
-			}
-			set
-			{
-				InternalCalls.SpriteRendererComponent_SetTilingFactor(Entity.ID, value);
-			}
+			get => InternalCalls.SpriteRendererComponent_GetTilingFactor(Entity.ID);
+			set => InternalCalls.SpriteRendererComponent_SetTilingFactor(Entity.ID, value);
 		}
 	}
 
@@ -95,110 +71,56 @@ namespace Wire
 
 		public bool Primary
 		{
-			get
-			{
-				return InternalCalls.CameraComponent_IsPrimary(Entity.ID);
-			}
-			set
-			{
-				InternalCalls.CameraComponent_SetPrimary(Entity.ID, value);
-			}
+			get => InternalCalls.CameraComponent_IsPrimary(Entity.ID);
+			set => InternalCalls.CameraComponent_SetPrimary(Entity.ID, value);
 		}
 
 		public ProjectionType Projection
 		{
-			get
-			{
-				return InternalCalls.CameraComponent_GetProjectionType(Entity.ID);
-			}
-			set
-			{
-				InternalCalls.CameraComponent_SetProjectionType(Entity.ID, value);
-			}
+			get => InternalCalls.CameraComponent_GetProjectionType(Entity.ID);
+			set => InternalCalls.CameraComponent_SetProjectionType(Entity.ID, value);
 		}
 
 		public float PerspectiveVerticalFOV
 		{
-			get
-			{
-				return InternalCalls.CameraComponent_GetPerspectiveVerticalFOV(Entity.ID);
-			}
-			set
-			{
-				InternalCalls.CameraComponent_SetPerspectiveVerticalFOV(Entity.ID, value);
-			}
+			get => InternalCalls.CameraComponent_GetPerspectiveVerticalFOV(Entity.ID); 
+			set => InternalCalls.CameraComponent_SetPerspectiveVerticalFOV(Entity.ID, value);
 		}
 
 		public float PerspectiveNear
 		{
-			get
-			{
-				return InternalCalls.CameraComponent_GetPerspectiveNear(Entity.ID);
-			}
-			set
-			{
-				InternalCalls.CameraComponent_SetPerspectiveNear(Entity.ID, value);
-			}
+			get => InternalCalls.CameraComponent_GetPerspectiveNear(Entity.ID); 
+			set => InternalCalls.CameraComponent_SetPerspectiveNear(Entity.ID, value);
 		}
 
 		public float PerspectiveFar
 		{
-			get
-			{
-				return InternalCalls.CameraComponent_GetPerspectiveFar(Entity.ID);
-			}
-			set
-			{
-				InternalCalls.CameraComponent_SetPerspectiveFar(Entity.ID, value);
-			}
+			get => InternalCalls.CameraComponent_GetPerspectiveFar(Entity.ID); 
+			set => InternalCalls.CameraComponent_SetPerspectiveFar(Entity.ID, value);
 		}
 
 		public float OrthographicSize
 		{
-			get
-			{
-				return InternalCalls.CameraComponent_GetOrthographicSize(Entity.ID);
-			}
-			set
-			{
-				InternalCalls.CameraComponent_SetOrthographicSize(Entity.ID, value);
-			}
+			get => InternalCalls.CameraComponent_GetOrthographicSize(Entity.ID); 
+			set => InternalCalls.CameraComponent_SetOrthographicSize(Entity.ID, value);
 		}
 
 		public float OrthographicNear
 		{
-			get
-			{
-				return InternalCalls.CameraComponent_GetOrthographicNear(Entity.ID);
-			}
-			set
-			{
-				InternalCalls.CameraComponent_SetOrthographicNear(Entity.ID, value);
-			}
+			get => InternalCalls.CameraComponent_GetOrthographicNear(Entity.ID); 
+			set => InternalCalls.CameraComponent_SetOrthographicNear(Entity.ID, value);
 		}
 
 		public float OrthographicFar
 		{
-			get
-			{
-				return InternalCalls.CameraComponent_GetOrthographicFar(Entity.ID);
-			}
-			set
-			{
-				InternalCalls.CameraComponent_SetOrthographicFar(Entity.ID, value);
-			}
+			get => InternalCalls.CameraComponent_GetOrthographicFar(Entity.ID); 
+			set => InternalCalls.CameraComponent_SetOrthographicFar(Entity.ID, value);
 		}
 
 		public bool FixedAspectRatio
 		{
-			get
-			{
-				return InternalCalls.CameraComponent_IsFixedAspectRatio(Entity.ID);
-			}
-			set
-			{
-				InternalCalls.CameraComponent_SetFixedAspectRatio(Entity.ID, value);
-			}
+			get => InternalCalls.CameraComponent_IsFixedAspectRatio(Entity.ID); 
+			set => InternalCalls.CameraComponent_SetFixedAspectRatio(Entity.ID, value);
 		}
 	}
 }

@@ -337,6 +337,12 @@ namespace Wire {
 		return s_Data->AppDomain;
 	}
 
+	MonoObject* ScriptEngine::GetManagedInstance(UUID uuid)
+	{
+		WR_CORE_ASSERT(s_Data->EntityInstances.find(uuid) != s_Data->EntityInstances.end());
+		return s_Data->EntityInstances.at(uuid)->GetManagedObject();
+	}
+
 	MonoObject* ScriptEngine::InstantiateClass(MonoClass* monoClass)
 	{
 		MonoObject* instance = mono_object_new(s_Data->AppDomain, monoClass);
@@ -372,7 +378,7 @@ namespace Wire {
 		return mono_class_get_method_from_name(m_MonoClass, methodName.c_str(), parameterCount);
 	}
 
-	MonoObject* Wire::ScriptClass::InvokeMethod(MonoObject* instance, MonoMethod* method, void** params)
+	MonoObject* ScriptClass::InvokeMethodInternal(MonoObject* instance, MonoMethod* method, void** params)
 	{
 		return mono_runtime_invoke(method, instance, params, nullptr);
 	}
@@ -386,8 +392,7 @@ namespace Wire {
 		m_OnCreateMethod = m_ScriptClass->GetMethod("OnCreate", 0);
 		m_OnUpdateMethod = m_ScriptClass->GetMethod("OnUpdate", 1);
 
-		void* param = &entity.GetUUID();
-		m_ScriptClass->InvokeMethod(m_Instance, m_Constructor, &param);
+		m_ScriptClass->InvokeMethod(m_Instance, m_Constructor, entity.GetUUID());
 	}
 
 	void ScriptInstance::InvokeOnCreate()
@@ -400,8 +405,7 @@ namespace Wire {
 	{
 		if (m_OnUpdateMethod)
 		{
-			void* param = &ts;
-			m_ScriptClass->InvokeMethod(m_Instance, m_OnUpdateMethod, &param);
+			m_ScriptClass->InvokeMethod(m_Instance, m_OnUpdateMethod, ts);
 		}
 	}
 

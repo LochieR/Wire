@@ -13,6 +13,12 @@ namespace Wire
 		#region Entity
 		[MethodImpl(MethodImplOptions.InternalCall)]
 		internal static extern bool Entity_HasComponent(ulong entityID, Type componentType);
+
+		[MethodImpl(MethodImplOptions.InternalCall)]
+		internal static extern ulong Entity_FindEntityByName(string name);
+
+		[MethodImpl(MethodImplOptions.InternalCall)]
+		internal static extern object GetScriptInstance(ulong entityID);
 		#endregion Entity
 
 		#region TagComponent

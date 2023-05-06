@@ -78,9 +78,23 @@ namespace Wire {
 
 		MonoObject* Instantiate();
 		MonoMethod* GetMethod(const std::string& methodName, int parameterCount);
-		MonoObject* InvokeMethod(MonoObject* instance, MonoMethod* method, void** params = nullptr);
+		template<typename ... Args>
+		MonoObject* InvokeMethod(MonoObject* instance, MonoMethod* method, Args&&... args)
+		{
+			if constexpr (sizeof...(Args) == 0)
+			{
+				return InvokeMethodInternal(instance, method, nullptr);
+			}
+			else if constexpr (sizeof...(Args) > 0)
+			{
+				void* ptr[sizeof...(Args)] = { &args... };
+				return InvokeMethodInternal(instance, method, ptr);
+			}
+		}
 
 		const std::map<std::string, ScriptField>& GetFields() const { return m_Fields; }
+	private:
+		MonoObject* InvokeMethodInternal(MonoObject* instance, MonoMethod* method, void** params);
 	private:
 		std::string m_Namespace;
 		std::string m_ClassName;
@@ -122,6 +136,8 @@ namespace Wire {
 
 			SetFieldValueInternal(name, &value);
 		}
+
+		MonoObject* GetManagedObject() { return m_Instance; }
 	private:
 		bool GetFieldValueInternal(const std::string& name, void* buffer);
 		bool SetFieldValueInternal(const std::string& name, const void* value);
@@ -163,6 +179,8 @@ namespace Wire {
 
 		static MonoImage* GetCoreAssemblyImage();
 		static MonoDomain* GetAppDomain();
+
+		static MonoObject* GetManagedInstance(UUID uuid);
 
 		static void OnOpenProject(const Ref<Project>& project);
 	private:

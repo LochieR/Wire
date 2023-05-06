@@ -37,6 +37,28 @@ namespace Wire {
 		WR_CORE_ASSERT(s_EntityHasComponentFuncs.find(managedType) != s_EntityHasComponentFuncs.end());
 		return s_EntityHasComponentFuncs.at(managedType)(entity);
 	}
+
+	static uint64_t Entity_FindEntityByName(MonoString* name)
+	{
+		char* cstr = mono_string_to_utf8(name);
+
+		Scene* scene = ScriptEngine::GetSceneContext();
+		WR_CORE_ASSERT(scene);
+		Entity entity = scene->FindEntityByName(cstr);
+		mono_free(cstr);
+
+		if (!entity)
+			return 0;
+
+		return entity.GetUUID();
+	}
+
+	static MonoObject* GetScriptInstance(UUID entityID)
+	{
+		return ScriptEngine::GetManagedInstance(entityID);
+	}
+	#pragma endregion
+
 	#pragma region TagComponent
 	static MonoString* TagComponent_GetTag(UUID entityID)
 	{
@@ -373,6 +395,10 @@ namespace Wire {
 
 		#pragma region Entity
 		WR_ADD_INTERNAL_CALL(Entity_HasComponent);
+		WR_ADD_INTERNAL_CALL(Entity_FindEntityByName);
+		WR_ADD_INTERNAL_CALL(GetScriptInstance);
+		#pragma endregion
+
 		#pragma region TagComponent
 		WR_ADD_INTERNAL_CALL(TagComponent_GetTag);
 		WR_ADD_INTERNAL_CALL(TagComponent_SetTag);
