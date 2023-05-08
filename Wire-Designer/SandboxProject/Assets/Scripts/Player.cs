@@ -38,7 +38,7 @@ namespace Sandbox
 					camera.DistanceFromPlayer -= 2.0f * Speed * ts;
 			}
 
-			velocity *= Speed;
+			velocity *= Input.IsKeyDown(KeyCode.LeftShift) ? Speed * 0.5f : Speed;
 			Vector3 translation = Translation;
 			translation += velocity * ts;
 			Translation = translation;

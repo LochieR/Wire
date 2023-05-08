@@ -286,6 +286,14 @@ namespace Wire {
 				ImGui::EndMenu();
 			}
 
+			if (ImGui::BeginMenu("Scripts"))
+			{
+				if (ImGui::MenuItem("Reload Assembly", "Ctrl+R", nullptr))
+					ScriptEngine::ReloadAssembly();
+
+				ImGui::EndMenu();
+			}
+
 			ImGui::EndMenuBar();
 		}
 
@@ -513,8 +521,15 @@ namespace Wire {
 			}
 			case Key::R:
 			{
-				if (!ImGuizmo::IsUsing())
-					m_GizmoType = ImGuizmo::OPERATION::SCALE;
+				if (control)
+				{
+					ScriptEngine::ReloadAssembly();
+				}
+				else
+				{
+					if (!ImGuizmo::IsUsing())
+						m_GizmoType = ImGuizmo::OPERATION::SCALE;
+				}
 				break;
 			}
 		}

@@ -18,7 +18,7 @@ namespace Sandbox
 
 		void OnUpdate(float ts)
 		{
-			if (m_Player != null )
+			if (m_Player != null)
 				Translation = new Vector3(m_Player.Translation.X, m_Player.Translation.Y, m_Player.Translation.Z + DistanceFromPlayer);
 		}
 	}
