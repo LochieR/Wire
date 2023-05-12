@@ -86,4 +86,14 @@ namespace Wire {
 		WR_REFRESH_WINDOW(hwnd);
 	}
 
+	void Mouse::SetMouseIcon(MouseIcon icon)
+	{
+		switch (icon)
+		{
+			case MouseIcon::Arrow: SetCursor(LoadCursor(0, IDC_ARROW)); return;
+			case MouseIcon::Loading: SetCursor(LoadCursor(0, IDC_WAIT)); return;
+		}
+		WR_CORE_ASSERT(false);
+	}
+
 }

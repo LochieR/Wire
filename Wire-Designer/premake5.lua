@@ -21,6 +21,7 @@ project "Wire-Designer"
 		"%{IncludeDir.entt}",
 		"%{IncludeDir.imgui}",
 		"%{IncludeDir.ImGuizmo}",
+		"%{IncludeDir.filewatch}"
 	}
 
 	links

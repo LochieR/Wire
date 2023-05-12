@@ -89,19 +89,19 @@ namespace Wire {
 			{
 				case GLFW_PRESS:
 				{
-					KeyPressedEvent event(key, false);
+					KeyPressedEvent event((KeyCode)key, false);
 					data.EventCallback(event);
 					break;
 				}
 				case GLFW_RELEASE:
 				{
-					KeyReleasedEvent event(key);
+					KeyReleasedEvent event((KeyCode)key);
 					data.EventCallback(event);
 					break;
 				}
 				case GLFW_REPEAT:
 				{
-					KeyPressedEvent event(key, true);
+					KeyPressedEvent event((KeyCode)key, true);
 					data.EventCallback(event);
 					break;
 				}
@@ -124,13 +124,13 @@ namespace Wire {
 			{
 				case GLFW_PRESS:
 				{
-					MouseButtonPressedEvent event(static_cast<MouseCode>(button));
+					MouseButtonPressedEvent event(static_cast<MouseButton>(button));
 					data.EventCallback(event);
 					break;
 				}
 				case GLFW_RELEASE:
 				{
-					MouseButtonReleasedEvent event(static_cast<MouseCode>(button));
+					MouseButtonReleasedEvent event(static_cast<MouseButton>(button));
 					data.EventCallback(event);
 					break;
 				}

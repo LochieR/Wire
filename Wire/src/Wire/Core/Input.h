@@ -11,7 +11,7 @@ namespace Wire {
 	public:
 		static bool IsKeyPressed(KeyCode keycode);
 
-		static bool IsMouseButtonPressed(MouseCode button);
+		static bool IsMouseButtonPressed(MouseButton button);
 		static std::pair<float, float> GetMousePosition();
 		static float GetMouseX();
 		static float GetMouseY();

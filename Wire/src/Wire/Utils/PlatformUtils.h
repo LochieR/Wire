@@ -26,4 +26,17 @@ namespace Wire {
 		static void SetWindowBorderColour(void* window, float r, float g, float b);
 	};
 
+	enum class MouseIcon
+	{
+		None = 0,
+		Arrow,
+		Loading
+	};
+
+	class Mouse
+	{
+	public:
+		static void SetMouseIcon(MouseIcon icon);
+	};
+
 }

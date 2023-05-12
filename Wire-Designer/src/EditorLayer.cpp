@@ -288,8 +288,12 @@ namespace Wire {
 
 			if (ImGui::BeginMenu("Scripts"))
 			{
-				if (ImGui::MenuItem("Reload Assembly", "Ctrl+R", nullptr))
+				if (ImGui::MenuItem("Reload Assembly", "Ctrl+R"))
+				{
+					Mouse::SetMouseIcon(MouseIcon::Loading);
 					ScriptEngine::ReloadAssembly();
+					Mouse::SetMouseIcon(MouseIcon::Arrow);
+				}
 
 				ImGui::EndMenu();
 			}
@@ -384,7 +388,7 @@ namespace Wire {
 				auto& tc = selectedEntity.GetComponent<TransformComponent>();
 				glm::mat4 transform = tc.GetTransform();
 
-				bool snap = Input::IsKeyPressed(Key::LeftControl);
+				bool snap = Input::IsKeyPressed(KeyCode::LeftControl);
 				float snapValue = 0.5f;
 				if (m_GizmoType == ImGuizmo::OPERATION::ROTATE)
 					snapValue = 45.0f;
@@ -472,19 +476,19 @@ namespace Wire {
 		if (e.IsRepeat())
 			return false;
 
-		bool control = Input::IsKeyPressed(Key::LeftControl) || Input::IsKeyPressed(Key::RightControl);
-		bool shift = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
+		bool control = Input::IsKeyPressed(KeyCode::LeftControl) || Input::IsKeyPressed(KeyCode::RightControl);
+		bool shift = Input::IsKeyPressed(KeyCode::LeftShift) || Input::IsKeyPressed(KeyCode::RightShift);
 
 		switch (e.GetKeyCode())
 		{
-			case Key::N:
+			case KeyCode::N:
 			{
 				if (control)
 					NewScene();
 
 				break;
 			}
-			case Key::O:
+			case KeyCode::O:
 			{
 				if (control); // Open project
 				else if (control && shift)
@@ -492,7 +496,7 @@ namespace Wire {
 
 				break;
 			}
-			case Key::S:
+			case KeyCode::S:
 			{
 				if (control && shift)
 					SaveSceneAs();
@@ -501,29 +505,31 @@ namespace Wire {
 			}
 
 			// Gizmos
-			case Key::Q:
+			case KeyCode::Q:
 			{
 				if (!ImGuizmo::IsUsing())
 					m_GizmoType = -1;
 				break;
 			}
-			case Key::W:
+			case KeyCode::W:
 			{
 				if (!ImGuizmo::IsUsing())
 					m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
 				break;
 			}
-			case Key::E:
+			case KeyCode::E:
 			{
 				if (!ImGuizmo::IsUsing())
 					m_GizmoType = ImGuizmo::OPERATION::ROTATE;
 				break;
 			}
-			case Key::R:
+			case KeyCode::R:
 			{
 				if (control)
 				{
+					Mouse::SetMouseIcon(MouseIcon::Loading);
 					ScriptEngine::ReloadAssembly();
+					Mouse::SetMouseIcon(MouseIcon::Arrow);
 				}
 				else
 				{
@@ -539,8 +545,8 @@ namespace Wire {
 
 	bool EditorLayer::OnMouseButtonPressed(MouseButtonPressedEvent& e)
 	{
-		if (e.GetMouseButton() == MouseCode::ButtonLeft)
-			if (m_ViewportHovered && !ImGuizmo::IsOver() && !Input::IsKeyPressed(Key::LeftAlt))
+		if (e.GetMouseButton() == MouseButton::ButtonLeft)
+			if (m_ViewportHovered && !ImGuizmo::IsOver() && !Input::IsKeyPressed(KeyCode::LeftAlt))
 				m_SceneHierarchyPanel.SetSelectedEntity(m_HoveredEntity);
 
 		return false;
