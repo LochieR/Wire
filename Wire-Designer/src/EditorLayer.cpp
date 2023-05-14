@@ -32,6 +32,7 @@ namespace Wire {
 		m_IconPlay = Texture2D::Create("Resources/Icons/UIToolbar/PlayButton.png");
 		m_IconPause = Texture2D::Create("Resources/Icons/UIToolbar/PauseButton.png");
 		m_IconStop = Texture2D::Create("Resources/Icons/UIToolbar/StopButton.png");
+		m_IconStep = Texture2D::Create("Resources/Icons/UIToolbar/StepButton.png");
 
 		FramebufferSpecification fbSpec;
 		fbSpec.Attachments = { FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::RED_INTEGER, FramebufferTextureFormat::Depth };
@@ -323,6 +324,7 @@ namespace Wire {
 		ImGui::Text("Quads: %d", stats.QuadCount);
 		ImGui::Text("Vertices: %d", stats.GetTotalVertexCount());
 		ImGui::Text("Indices: %d", stats.GetTotalIndexCount());
+
 		ImGui::End();
 
 		if (m_ShowPreferencesWindow)
@@ -434,19 +436,31 @@ namespace Wire {
 
 		ImGui::Begin("##toolbar", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 		
+		bool isPaused = m_ActiveScene->IsPaused();
+
 		float size = ImGui::GetWindowHeight() - 4.0f;
-		Ref<Texture2D> icon = m_SceneState == SceneState::Edit ? m_IconPlay : m_IconPause;
-		ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.5f) - size);
+		Ref<Texture2D> icon = m_SceneState == SceneState::Edit || isPaused ? m_IconPlay : m_IconPause;
+		ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.5f) - (size * (isPaused ? 1.5f : 1.0f)));
 		if (ImGui::ImageButton((ImTextureID)(uint64_t)icon->GetRendererID(), ImVec2{ size, size }, ImVec2{ 0, 0 }, ImVec2{ 1, 1 }, 0))
 		{
 			if (m_SceneState == SceneState::Edit)
 			{
 				OnScenePlay();
 			}
-			else if (m_SceneState == SceneState::Play)
+			else
 			{
-				// TODO: OnScenePause(); instead
-				OnSceneStop();
+				m_ActiveScene->SetPaused(!isPaused);
+			}
+		}
+		if (m_SceneState != SceneState::Edit)
+		{
+			if (isPaused)
+			{
+				ImGui::SameLine();
+				if (ImGui::ImageButton((ImTextureID)(uint64_t)m_IconStep->GetRendererID(), ImVec2{ size, size }, ImVec2{ 0, 0 }, ImVec2{ 1, 1 }, 0))
+				{
+					m_ActiveScene->Step();
+				}
 			}
 		}
 		ImGui::SameLine();
@@ -661,6 +675,14 @@ namespace Wire {
 	{
 		m_SceneState = SceneState::Edit;
 		m_ActiveScene->OnSceneStop();
+	}
+
+	void EditorLayer::OnScenePause()
+	{
+		if (m_SceneState == SceneState::Edit)
+			return;
+
+		m_ActiveScene->SetPaused(true);
 	}
 
 }

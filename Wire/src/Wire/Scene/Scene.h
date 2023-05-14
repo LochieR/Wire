@@ -33,13 +33,20 @@ namespace Wire {
 		Entity GetPrimaryCameraEntity();
 
 		bool IsRunning() const { return m_Running; }
+		bool IsPaused() const { return m_Paused; }
+
+		void SetPaused(bool paused) { m_Paused = paused; }
+
+		void Step(int frames = 1);
 	private:
 		template<typename T>
 		void OnComponentAdded(Entity entity, T& component);
 	private:
 		entt::registry m_Registry;
 		uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
-		bool m_Running = false;	
+		bool m_Running = false;
+		bool m_Paused = false;
+		int m_StepFrames = 0;
 
 		std::unordered_map<UUID, entt::entity> m_EntityMap;
 

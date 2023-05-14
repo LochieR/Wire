@@ -19,6 +19,7 @@ WireProfile-Runtime.json
 WireProfile-Shutdown.json
 WireProfile-Startup.json
 Wire.log
+MonoDebugger.log
 
 Wire/vendor/VulkanSDK
 Wire-Designer/assets/cache

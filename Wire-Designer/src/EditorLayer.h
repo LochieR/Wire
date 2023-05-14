@@ -41,6 +41,7 @@ namespace Wire {
 
 		void OnScenePlay();
 		void OnSceneStop();
+		void OnScenePause();
 
 		void UIToolbar();
 	private:
@@ -90,7 +91,7 @@ namespace Wire {
 		bool m_ShowPreferencesWindow = false;
 
 		// Icons
-		Ref<Texture2D> m_IconPlay, m_IconPause, m_IconStop;
+		Ref<Texture2D> m_IconPlay, m_IconPause, m_IconStop, m_IconStep;
 	};
 
 }

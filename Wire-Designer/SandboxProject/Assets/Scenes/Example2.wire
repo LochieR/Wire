@@ -27,7 +27,7 @@ Entities:
       Scale: [1, 1, 1]
     CameraComponent:
       Camera:
-        ProjectionType: 1
+        ProjectionType: 0
         PerspectiveFOV: 0.785398185
         PerspectiveNear: 0.00999999978
         PerspectiveFar: 1000
@@ -41,7 +41,7 @@ Entities:
       ScriptFields:
         - Name: DistanceFromPlayer
           Type: Float
-          Data: 5
+          Data: 10
   - Entity: 17879028744201264644
     TagComponent:
       Tag: Red Square
