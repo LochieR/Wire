@@ -353,6 +353,21 @@ namespace Wire {
 	{
 		return Input::IsKeyPressed(keycode);
 	}
+
+	static bool Input_IsMouseButtonPressed(MouseButton button)
+	{
+		return Input::IsMouseButtonPressed(button);
+	}
+
+	static float Input_GetMouseX()
+	{
+		return Input::GetMouseX();
+	}
+
+	static float Input_GetMouseY()
+	{
+		return Input::GetMouseY();
+	}
 	#pragma endregion
 
 	template<typename... Component>
@@ -446,6 +461,9 @@ namespace Wire {
 
 		#pragma region Input
 		WR_ADD_INTERNAL_CALL(Input_IsKeyDown);
+		WR_ADD_INTERNAL_CALL(Input_IsMouseButtonPressed);
+		WR_ADD_INTERNAL_CALL(Input_GetMouseX);
+		WR_ADD_INTERNAL_CALL(Input_GetMouseY);
 		#pragma endregion
 	}
 
