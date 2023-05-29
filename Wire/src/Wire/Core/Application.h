@@ -70,6 +70,16 @@ namespace Wire {
 		ApplicationCommandLineArgs GetCommandLineArgs() const { return m_CommandLineArgs; }
 
 		void SubmitToMainThread(const std::function<void()>& function);
+
+		void SetApplicationLogFunction(const std::function<void(int, const std::string&)>& function)
+		{
+			m_ApplicationLogFunction = function;
+		}
+
+		const std::function<void(int, const std::string&)>& GetApplicationLogFunction()
+		{
+			return m_ApplicationLogFunction;
+		}
 	private:
 		bool OnWindowClose(WindowCloseEvent& e);
 		bool OnWindowResize(WindowResizeEvent& e);
@@ -89,6 +99,8 @@ namespace Wire {
 
 		std::vector<std::function<void()>> m_MainThreadQueue;
 		std::mutex m_MainThreadQueueMutex;
+
+		std::function<void(int, const std::string&)> m_ApplicationLogFunction;
 	private:
 		static Application* s_Instance;
 	};

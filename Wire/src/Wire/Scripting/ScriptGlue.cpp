@@ -3,6 +3,7 @@
 
 #include "ScriptEngine.h"
 #include "Wire/Core/UUID.h"
+#include "Wire/Core/Application.h"
 #include "Wire/Scene/Scene.h"
 
 #include <mono/metadata/object.h>
@@ -21,7 +22,7 @@ namespace Wire {
 		std::string msg = std::string(cStr);
 		mono_free(cStr);
 
-		ScriptGlue::GetUILogFunc()(logLevel, msg);
+		Application::Get().GetApplicationLogFunction()(logLevel, msg);
 	}
 	#pragma endregion
 
@@ -395,8 +396,6 @@ namespace Wire {
 		RegisterComponent<Component...>();
 	}
 
-	ScriptGlue::LogFunc ScriptGlue::m_UILogFunc = nullptr;
-
 	void ScriptGlue::RegisterComponents()
 	{
 		s_EntityHasComponentFuncs.clear();
@@ -465,16 +464,6 @@ namespace Wire {
 		WR_ADD_INTERNAL_CALL(Input_GetMouseX);
 		WR_ADD_INTERNAL_CALL(Input_GetMouseY);
 		#pragma endregion
-	}
-
-	void ScriptGlue::SetUILogFunc(const LogFunc& func)
-	{
-		m_UILogFunc = func;
-	}
-
-	ScriptGlue::LogFunc ScriptGlue::GetUILogFunc()
-	{
-		return m_UILogFunc;
 	}
 
 }

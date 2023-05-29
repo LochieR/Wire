@@ -103,7 +103,7 @@ namespace Wire {
 			file.close();
 		}
 
-		ScriptGlue::SetUILogFunc([this](int level, const std::string& message) { m_ConsolePanel.Log((LogLevel)level, message); });
+		Application::Get().SetApplicationLogFunction([this](int level, const std::string& message) { m_ConsolePanel.Log((LogLevel)level, message); });
 
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 	}
