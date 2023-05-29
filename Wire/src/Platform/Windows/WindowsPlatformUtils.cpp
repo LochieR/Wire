@@ -86,12 +86,26 @@ namespace Wire {
 		WR_REFRESH_WINDOW(hwnd);
 	}
 
+#define WR_SET_CURSOR(icon, id) case MouseIcon::icon: SetCursor(LoadCursor(0, IDC_##id)); return;
+
 	void Mouse::SetMouseIcon(MouseIcon icon)
 	{
 		switch (icon)
 		{
-			case MouseIcon::Arrow: SetCursor(LoadCursor(0, IDC_ARROW)); return;
-			case MouseIcon::Loading: SetCursor(LoadCursor(0, IDC_WAIT)); return;
+			WR_SET_CURSOR(Arrow, ARROW);
+			WR_SET_CURSOR(Loading, WAIT)
+			WR_SET_CURSOR(ArrowLoading, APPSTARTING);
+			WR_SET_CURSOR(Crosshair, CROSS);
+			WR_SET_CURSOR(Hand, HAND);
+			WR_SET_CURSOR(Help, HELP);
+			WR_SET_CURSOR(TextCursor, IBEAM);
+			WR_SET_CURSOR(Unavailable, NO);
+			WR_SET_CURSOR(Move_A, SIZEALL);
+			WR_SET_CURSOR(Move_BL_TR, SIZENESW);
+			WR_SET_CURSOR(Move_T_B, SIZENS);
+			WR_SET_CURSOR(Move_TL_BR, SIZENWSE);
+			WR_SET_CURSOR(Move_L_R, SIZEWE);
+			WR_SET_CURSOR(UpArrow, UPARROW);
 		}
 		WR_CORE_ASSERT(false);
 	}
