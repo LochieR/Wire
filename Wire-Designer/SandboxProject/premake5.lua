@@ -1,9 +1,12 @@
+local WireRootDir = os.getenv("WIRE_ENV")
+
 workspace "Sandbox"
 	architecture "x86_64"
 	startproject "Wire-ScriptRuntime"
 
 	configurations
-	{		"Debug",
+	{		
+		"Debug",
 		"Release",
 		"Dist"
 	}
@@ -47,7 +50,7 @@ project "Wire-ScriptRuntime"
 
 group "Wire"
 
-include "../../Wire-ScriptCore"
+include (WireRootDir .. "/Wire-ScriptCore")
 
 group ""
 

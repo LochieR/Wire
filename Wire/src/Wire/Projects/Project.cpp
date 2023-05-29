@@ -6,6 +6,8 @@
 namespace Wire {
 
 	const std::string g_CSharpProjectTemplate =
+		"local WireRootDir = os.getenv(\"WIRE_ENV\")\n"
+		"\n"
 		"workspace \"{WR_PRJ_NAME}\"\n"
 		"	architecture \"x86_64\"\n"
 		"	startproject \"Wire-ScriptRuntime\"\n"
@@ -56,7 +58,7 @@ namespace Wire {
 		"\n"
 		"group \"Wire\"\n"
 		"\n"
-		"include \"../../Wire-ScriptCore\"\n"
+		"include WireRootDir .. \"/Wire-ScriptCore\"\n"
 		"\n"
 		"group \"\"\n";
 
