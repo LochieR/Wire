@@ -22,3 +22,6 @@
 [submodule "Wire/vendor/imgui"]
 	path = Wire/vendor/imgui
 	url = https://github.com/Loch9/imgui
+[submodule "Wire/vendor/msdf-atlas-gen"]
+	path = Wire/vendor/msdf-atlas-gen
+	url = https://github.com/TheCherno/msdf-atlas-gen
