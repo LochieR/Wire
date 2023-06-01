@@ -133,10 +133,24 @@ namespace Wire {
 		InitMono();
 		ScriptGlue::RegisterFunctions();
 
-		LoadAssembly("Resources/Scripts/Wire-ScriptCore.dll");
+		bool status = LoadAssembly("Resources/Scripts/Wire-ScriptCore.dll");
+		if (!status)
+		{
+			WR_CORE_ERROR("[ScriptEngine] Could not load Wire-ScriptCore assembly!");
+			// Must submit to main thread to make sure that this runs after this is set
+			Application::Get().SubmitToMainThread([]() { Application::Get().GetApplicationLogFunction()(2, "[ScriptEngine] Could not load Wire-ScriptCore assembly!"); });
+			return;
+		}
 		if (m_Project != nullptr)
 		{
-			LoadAppAssembly(m_Project->GetDir() / "Binaries" / "Wire-ScriptRuntime.dll");
+			bool status = LoadAppAssembly(m_Project->GetDir() / "Binaries" / "Wire-ScriptRuntime.dll");
+			if (!status)
+			{
+				WR_CORE_ERROR("[ScriptEngine] Could not load app assembly!");
+				// Must submit to main thread to make sure that this runs after this is set
+				Application::Get().SubmitToMainThread([]() { Application::Get().GetApplicationLogFunction()(2, "[ScriptEngine] Could not load app assembly!"); });
+				return;
+			}
 			LoadAssemblyClasses();
 		}
 		
@@ -189,7 +203,7 @@ namespace Wire {
 		s_Data->RootDomain = nullptr;
 	}
 
-	void ScriptEngine::LoadAssembly(const std::filesystem::path& filepath)
+	bool ScriptEngine::LoadAssembly(const std::filesystem::path& filepath)
 	{
 		// Create an App Domain
 		s_Data->AppDomain = mono_domain_create_appdomain("WireScriptRuntime", nullptr);
@@ -197,7 +211,12 @@ namespace Wire {
 
 		s_Data->CoreAssemblyFilePath = filepath;
 		s_Data->CoreAssembly = Utils::LoadMonoAssembly(filepath, s_Data->EnableDebugging);
+		if (s_Data->CoreAssembly == nullptr)
+			return false;
+
 		s_Data->CoreAssemblyImage = mono_assembly_get_image(s_Data->CoreAssembly);
+
+		return true;
 	}
 
 	static void OnAppAssemblyFileSystemEvent(const std::string& path, const filewatch::Event event)
@@ -216,15 +235,19 @@ namespace Wire {
 		}
 	}
 
-	void ScriptEngine::LoadAppAssembly(const std::filesystem::path& filepath)
+	bool ScriptEngine::LoadAppAssembly(const std::filesystem::path& filepath)
 	{
 		s_Data->AppAssemblyFilePath = filepath;
 		s_Data->AppAssembly = Utils::LoadMonoAssembly(filepath, s_Data->EnableDebugging);
-
+		if (s_Data->AppAssembly == nullptr)
+			return false;
+		
 		s_Data->AppAssemblyImage = mono_assembly_get_image(s_Data->AppAssembly);
 
 		s_Data->AppAssemblyFileWatcher = CreateScope<filewatch::FileWatch<std::string>>(filepath.string(), OnAppAssemblyFileSystemEvent);
 		s_Data->AssemblyReloadPending = false;
+
+		return true;
 	}
 
 	void ScriptEngine::ReloadAssembly()
@@ -233,8 +256,22 @@ namespace Wire {
 		
 		mono_domain_unload(s_Data->AppDomain);
 
-		LoadAssembly(s_Data->CoreAssemblyFilePath);
-		LoadAppAssembly(s_Data->AppAssemblyFilePath);
+		bool status = LoadAssembly(s_Data->CoreAssemblyFilePath);
+		if (!status)
+		{
+			WR_CORE_ERROR("[ScriptEngine] Could not load Wire-ScriptCore assembly!");
+			// Must submit to main thread to make sure that this runs after this is set
+			Application::Get().SubmitToMainThread([]() { Application::Get().GetApplicationLogFunction()(2, "[ScriptEngine] Could not load Wire-ScriptCore assembly!"); });
+			return;
+		}
+		status = LoadAppAssembly(s_Data->AppAssemblyFilePath);
+		if (!status)
+		{
+			WR_CORE_ERROR("[ScriptEngine] Could not load app assembly!");
+			// Must submit to main thread to make sure that this runs after this is set
+			Application::Get().SubmitToMainThread([]() { Application::Get().GetApplicationLogFunction()(2, "[ScriptEngine] Could not load app assembly!"); });
+			return;
+		}
 		LoadAssemblyClasses();
 
 		ScriptGlue::RegisterComponents();
@@ -284,11 +321,17 @@ namespace Wire {
 	void ScriptEngine::OnUpdateEntity(Entity entity, Timestep ts)
 	{
 		UUID entityUUID = entity.GetUUID();
+		if (s_Data->EntityInstances.find(entityUUID) != s_Data->EntityInstances.end())
+		{
 
-		WR_CORE_ASSERT(s_Data->EntityInstances.find(entityUUID) != s_Data->EntityInstances.end());
-
-		Ref<ScriptInstance> instance = s_Data->EntityInstances[entityUUID];
-		instance->InvokeOnUpdate(ts);
+			Ref<ScriptInstance> instance = s_Data->EntityInstances[entityUUID];
+			instance->InvokeOnUpdate(ts);
+		}
+		else
+		{
+			WR_CORE_ERROR("Could not find ScriptInstance for entity {}", entityUUID);
+			Application::Get().SubmitToMainThread([entityUUID]() { Application::Get().GetApplicationLogFunction()(2, fmt::format("Could not find ScriptInstance for entity {}", entityUUID)); });
+		}
 	}
 
 	Scene* ScriptEngine::GetSceneContext()
@@ -418,7 +461,14 @@ namespace Wire {
 	void ScriptEngine::OnOpenProject(const Ref<Project>& project)
 	{
 		m_Project = project;
-		LoadAppAssembly(m_Project->GetDir() / "Binaries" / "Wire-ScriptRuntime.dll");
+		bool status = LoadAppAssembly(m_Project->GetDir() / "Binaries" / "Wire-ScriptRuntime.dll");
+		if (!status)
+		{
+			WR_CORE_ERROR("[ScriptEngine] Could not load app assembly!");
+			// Must submit to main thread to make sure that this runs after this is set
+			Application::Get().SubmitToMainThread([]() { Application::Get().GetApplicationLogFunction()(2, "[ScriptEngine] Could not load app assembly!"); });
+			return;
+		}
 		LoadAssemblyClasses();
 	}
 
