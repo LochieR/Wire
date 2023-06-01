@@ -178,6 +178,7 @@ namespace Wire {
 		static Ref<ScriptClass> GetEntityClass(const std::string& name);
 		static std::unordered_map<std::string, Ref<ScriptClass>> GetEntityClasses();
 		static ScriptFieldMap& GetScriptFieldMap(Entity entity);
+		static void AddToScriptFieldMap(Entity entity, const std::string& name, const ScriptFieldInstance& fieldInstance);
 
 		static MonoImage* GetCoreAssemblyImage();
 		static MonoDomain* GetAppDomain();

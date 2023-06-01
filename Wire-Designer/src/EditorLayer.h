@@ -43,6 +43,8 @@ namespace Wire {
 		void OnSceneStop();
 		void OnScenePause();
 
+		void OnDuplicateEntity();
+
 		void UIToolbar();
 	private:
 		OrthographicCameraController m_CameraController;
@@ -52,7 +54,8 @@ namespace Wire {
 		Ref<Framebuffer> m_Framebuffer;
 
 		Ref<Scene> m_ActiveScene;
-		std::filesystem::path m_ActiveScenePath;
+		Ref<Scene> m_EditorScene;
+		std::filesystem::path m_EditorScenePath;
 		Entity m_SquareEntity;
 		Entity m_CameraEntity;
 		Entity m_SecondCamera;

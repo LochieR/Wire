@@ -23,13 +23,18 @@ namespace Wire {
 	{
 		if (*sceneHierarchyOpen)
 		{
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 8));
 			ImGui::Begin("Scene Hierarchy", sceneHierarchyOpen);
+
+			ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
 
 			m_Context->m_Registry.each([&](auto entityId)
 			{
 				Entity entity{ entityId, m_Context.get() };
 				DrawEntityNode(entity);
 			});
+
+			ImGui::PopStyleVar();
 
 			if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
 				m_SelectionContext = {};
@@ -49,6 +54,7 @@ namespace Wire {
 			}
 
 			ImGui::End();
+			ImGui::PopStyleVar();
 		}
 
 		if (*propertiesPanelOpen)

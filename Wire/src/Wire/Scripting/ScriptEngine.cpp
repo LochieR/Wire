@@ -326,6 +326,14 @@ namespace Wire {
 		return s_Data->EntityScriptFields[entityID];
 	}
 
+	void ScriptEngine::AddToScriptFieldMap(Entity entity, const std::string& name, const ScriptFieldInstance& fieldInstance)
+	{
+		WR_CORE_ASSERT(entity);
+
+		UUID entityID = entity.GetUUID();
+		s_Data->EntityScriptFields[entityID][name] = fieldInstance;
+	}
+
 	void ScriptEngine::LoadAssemblyClasses()
 	{
 		s_Data->EntityClasses.clear();

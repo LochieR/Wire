@@ -40,7 +40,8 @@ namespace Wire {
 		fbSpec.Height = 720;
 		m_Framebuffer = Framebuffer::Create(fbSpec);
 
-		m_ActiveScene = CreateRef<Scene>();
+		m_EditorScene = CreateRef<Scene>();
+		m_ActiveScene = m_EditorScene;
 
 		ApplicationCommandLineArgs commandLineArgs = Application::Get().GetCommandLineArgs();
 		if (commandLineArgs.Count > 1)
@@ -518,6 +519,14 @@ namespace Wire {
 				break;
 			}
 
+			case KeyCode::D:
+			{
+				if (control)
+					OnDuplicateEntity();
+
+				break;
+			}
+
 			// Gizmos
 			case KeyCode::Q:
 			{
@@ -551,6 +560,18 @@ namespace Wire {
 						m_GizmoType = ImGuizmo::OPERATION::SCALE;
 				}
 				break;
+			}
+			case KeyCode::Delete:
+			{
+				if (Application::Get().GetImGuiLayer()->GetActiveWidgetID() == 0)
+				{
+					Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+					if (selectedEntity)
+					{
+						m_SceneHierarchyPanel.SetSelectedEntity({});
+						m_ActiveScene->DestroyEntity(selectedEntity);
+					}
+				}
 			}
 		}
 
@@ -607,7 +628,7 @@ namespace Wire {
 		m_ActiveScene = CreateRef<Scene>();
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 
-		m_ActiveScenePath = std::filesystem::path();
+		m_EditorScenePath = std::filesystem::path();
 	}
 
 	void EditorLayer::OpenScene()
@@ -635,16 +656,18 @@ namespace Wire {
 		SceneSerializer serializer(newScene);
 		if (serializer.Deserialize(path.string()))
 		{
-			m_ActiveScene = newScene;
-			m_ActiveScenePath = path;
-			m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+			m_EditorScene = newScene;
+			m_SceneHierarchyPanel.SetContext(m_EditorScene);
+
+			m_ActiveScene = m_EditorScene;
+			m_EditorScenePath = path;
 		}
 	}
 
 	void EditorLayer::SaveScene()
 	{
-		if (!m_ActiveScenePath.empty())
-			SerializeScene(m_ActiveScene, m_ActiveScenePath);
+		if (!m_EditorScenePath.empty())
+			SerializeScene(m_ActiveScene, m_EditorScenePath);
 		else
 			SaveSceneAs();
 	}
@@ -655,6 +678,7 @@ namespace Wire {
 		if (!filepath.empty())
 		{
 			SerializeScene(m_ActiveScene, filepath);
+			m_EditorScenePath = filepath;
 		}
 	}
 
@@ -667,14 +691,25 @@ namespace Wire {
 	void EditorLayer::OnScenePlay()
 	{
 		m_SceneState = SceneState::Play;
-		m_ConsolePanel.OnSceneStart();
+
+		m_ActiveScene = Scene::Copy(m_EditorScene);
 		m_ActiveScene->OnSceneStart();
+
+		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+
+		m_ConsolePanel.OnSceneStart();
 	}
 
 	void EditorLayer::OnSceneStop()
 	{
-		m_SceneState = SceneState::Edit;
+		WR_CORE_ASSERT(m_SceneState == SceneState::Play);
+
 		m_ActiveScene->OnSceneStop();
+		m_SceneState = SceneState::Edit;
+
+		m_ActiveScene = m_EditorScene;
+
+		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 	}
 
 	void EditorLayer::OnScenePause()
@@ -683,6 +718,19 @@ namespace Wire {
 			return;
 
 		m_ActiveScene->SetPaused(true);
+	}
+
+	void EditorLayer::OnDuplicateEntity()
+	{
+		if (m_SceneState != SceneState::Edit)
+			return;
+
+		Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+		if (selectedEntity)
+		{
+			Entity newEntity = m_EditorScene->DuplicateEntity(selectedEntity);
+			m_SceneHierarchyPanel.SetSelectedEntity(newEntity);
+		}
 	}
 
 }
