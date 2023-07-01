@@ -1,4 +1,3 @@
-include "./vendor/premake/premake_customization/solution_items.lua"
 include "Dependencies.lua"
 
 workspace "Wire"
@@ -20,7 +19,6 @@ workspace "Wire"
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
 group "Dependencies"
-	include "vendor/premake"
 	include "Wire/vendor/GLFW"
 	include "Wire/vendor/Glad"
 	include "Wire/vendor/imgui"
