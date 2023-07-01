@@ -6,6 +6,7 @@
 #include "Wire/ImGui/ImGuiLayer.h"
 #include "Wire/Scripting/ScriptGlue.h"
 #include "Wire/Scripting/ScriptEngine.h"
+#include "Wire/Renderer/Font.h"
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
@@ -19,16 +20,18 @@ namespace Wire {
 
 	static bool s_PreferencesWindowHasSettings;
 
+	static Ref<Font> s_Font;
+
 	EditorLayer::EditorLayer()
-		: Layer("EditorLayer"), m_CameraController(1280.0f / 720.0f), m_SquareColour({ 0.2f, 0.3f, 0.8f, 1.0f })
+		: Layer("EditorLayer"), m_CameraController(1280.0f / 720.0f)
 	{
+		s_Font = Font::GetDefault();
 	}
 
 	void EditorLayer::OnAttach()
 	{
 		WR_PROFILE_FUNCTION();
 
-		m_CheckerboardTexture = Texture2D::Create("assets/textures/Checkerboard.png");
 		m_IconPlay = Texture2D::Create("Resources/Icons/UIToolbar/PlayButton.png");
 		m_IconPause = Texture2D::Create("Resources/Icons/UIToolbar/PauseButton.png");
 		m_IconStop = Texture2D::Create("Resources/Icons/UIToolbar/StopButton.png");
@@ -107,6 +110,8 @@ namespace Wire {
 		Application::Get().SetApplicationLogFunction([this](int level, const std::string& message) { m_ConsolePanel.Log((LogLevel)level, message); });
 
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+
+		Renderer2D::SetLineWidth(4.0f);
 	}
 
 	void EditorLayer::OnDetach()
@@ -175,6 +180,8 @@ namespace Wire {
 			int pixelData = m_Framebuffer->ReadPixel(1, mouseX, mouseY);
 			m_HoveredEntity = pixelData == -1 ? Entity{} : Entity{ (entt::entity)pixelData, m_ActiveScene.get() };
 		}
+
+		OnOverlayRender();
 
 		m_Framebuffer->Unbind();
 	}
@@ -325,6 +332,10 @@ namespace Wire {
 		ImGui::Text("Quads: %d", stats.QuadCount);
 		ImGui::Text("Vertices: %d", stats.GetTotalVertexCount());
 		ImGui::Text("Indices: %d", stats.GetTotalIndexCount());
+
+		ImGui::Separator();
+
+		ImGui::Image((void*)(uint64_t)s_Font->GetAtlasTexture()->GetRendererID(), { 512, 512 }, { 0, 1 }, { 1, 0 });
 
 		ImGui::End();
 
@@ -585,6 +596,30 @@ namespace Wire {
 				m_SceneHierarchyPanel.SetSelectedEntity(m_HoveredEntity);
 
 		return false;
+	}
+
+	void EditorLayer::OnOverlayRender()
+	{
+		if (m_SceneState == SceneState::Play)
+		{
+			Entity camera = m_ActiveScene->GetPrimaryCameraEntity();
+			if (!camera)
+				return;
+
+			Renderer2D::BeginScene(camera.GetComponent<CameraComponent>().Camera, camera.GetComponent<TransformComponent>().GetTransform());
+		}
+		else
+		{
+			Renderer2D::BeginScene(m_EditorCamera);
+		}
+
+		if (Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity())
+		{
+			const TransformComponent& transform = selectedEntity.GetComponent<TransformComponent>();
+			Renderer2D::DrawRect(transform.GetTransform(), glm::vec4(0.3f, 0.2f, 0.8f, 1.0f));
+		}
+
+		Renderer2D::EndScene();
 	}
 
 	void EditorLayer::NewProject()

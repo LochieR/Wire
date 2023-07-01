@@ -15,6 +15,9 @@ namespace Wire
 		internal static extern bool Entity_HasComponent(ulong entityID, Type componentType);
 
 		[MethodImpl(MethodImplOptions.InternalCall)]
+		internal static extern void Entity_AddComponent(ulong entityID, Type componentType);
+
+		[MethodImpl(MethodImplOptions.InternalCall)]
 		internal static extern ulong Entity_FindEntityByName(string name);
 
 		[MethodImpl(MethodImplOptions.InternalCall)]
@@ -124,6 +127,32 @@ namespace Wire
 		[MethodImpl(MethodImplOptions.InternalCall)]
 		internal static extern void CameraComponent_SetFixedAspectRatio(ulong entityID, bool value);
 		#endregion CameraComponent
+
+		#region TextComponent
+		[MethodImpl(MethodImplOptions.InternalCall)]
+		internal static extern string TextComponent_GetTextString(ulong entityID);
+
+		[MethodImpl(MethodImplOptions.InternalCall)]
+		internal static extern void TextComponent_SetTextString(ulong entityID, string value);
+
+		[MethodImpl(MethodImplOptions.InternalCall)]
+		internal static extern void TextComponent_GetColour(ulong entityID, out Vector4 value);
+
+		[MethodImpl(MethodImplOptions.InternalCall)]
+		internal static extern void TextComponent_SetColour(ulong entityID, ref Vector4 value);
+
+		[MethodImpl(MethodImplOptions.InternalCall)]
+		internal static extern float TextComponent_GetKerning(ulong entityID);
+
+		[MethodImpl(MethodImplOptions.InternalCall)]
+		internal static extern void TextComponent_SetKerning(ulong entityID, float value);
+
+		[MethodImpl(MethodImplOptions.InternalCall)]
+		internal static extern float TextComponent_GetLineSpacing(ulong entityID);
+
+		[MethodImpl(MethodImplOptions.InternalCall)]
+		internal static extern void TextComponent_SetLineSpacing(ulong entityID, float value);
+		#endregion
 
 		#region Input
 		[MethodImpl(MethodImplOptions.InternalCall)]

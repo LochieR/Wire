@@ -11,7 +11,20 @@
 
 namespace Wire {
 
+	namespace Utils {
+
+		std::string MonoStringToString(MonoString* string)
+		{
+			char* cStr = mono_string_to_utf8(string);
+			std::string str(cStr);
+			mono_free(cStr);
+			return str;
+		}
+
+	}
+
 	static std::unordered_map<MonoType*, std::function<bool(Entity)>> s_EntityHasComponentFuncs;
+	static std::unordered_map<MonoType*, std::function<void(Entity)>> s_EntityAddComponentFuncs;
 
 #define WR_ADD_INTERNAL_CALL(name) mono_add_internal_call("Wire.InternalCalls::" #name, name)
 
@@ -39,14 +52,24 @@ namespace Wire {
 		return s_EntityHasComponentFuncs.at(managedType)(entity);
 	}
 
+	static void Entity_AddComponent(UUID entityID, MonoReflectionType* componentType)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		WR_CORE_ASSERT(scene);
+		Entity entity = scene->GetEntityByUUID(entityID);
+		WR_CORE_ASSERT(entity);
+
+		MonoType* managedType = mono_reflection_type_get_type(componentType);
+		s_EntityAddComponentFuncs.at(managedType)(entity);
+	}
+
 	static uint64_t Entity_FindEntityByName(MonoString* name)
 	{
-		char* cstr = mono_string_to_utf8(name);
+		std::string str = Utils::MonoStringToString(name);
 
 		Scene* scene = ScriptEngine::GetSceneContext();
 		WR_CORE_ASSERT(scene);
-		Entity entity = scene->FindEntityByName(cstr);
-		mono_free(cstr);
+		Entity entity = scene->FindEntityByName(str);
 
 		if (!entity)
 			return 0;
@@ -70,7 +93,7 @@ namespace Wire {
 
 		std::string tag = entity.GetComponent<TagComponent>().Tag;
 
-		return mono_string_new(ScriptEngine::GetAppDomain(), tag.c_str());
+		return ScriptEngine::CreateString(tag.c_str());
 	}
 
 	static void TagComponent_SetTag(UUID entityID, MonoString* value)
@@ -80,9 +103,7 @@ namespace Wire {
 		Entity entity = scene->GetEntityByUUID(entityID);
 		WR_CORE_ASSERT(entity);
 
-		char* cStr = mono_string_to_utf8(value);
-		entity.GetComponent<TagComponent>().Tag = std::string(cStr);
-		mono_free(cStr);
+		entity.GetComponent<TagComponent>().Tag = Utils::MonoStringToString(value);
 	}
 	#pragma endregion
 
@@ -158,9 +179,7 @@ namespace Wire {
 		Scene* scene = ScriptEngine::GetSceneContext();
 		Entity entity = scene->GetEntityByUUID(entityID);
 
-		std::string path = entity.GetComponent<SpriteRendererComponent>().Texture->GetTexturePath();
-		MonoString* monoStr = mono_string_new(ScriptEngine::GetAppDomain(), path.c_str());
-		return monoStr;
+		return ScriptEngine::CreateString(entity.GetComponent<SpriteRendererComponent>().Texture->GetTexturePath().c_str());
 	}
 
 	static void SpriteRendererComponent_SetTexturePath(UUID entityID, MonoString* monoStr)
@@ -174,7 +193,7 @@ namespace Wire {
 
 		if (path.empty())
 		{
-			Ref<Texture2D> whiteTexture = Texture2D::Create(1, 1);
+			Ref<Texture2D> whiteTexture = Texture2D::Create(TextureSpecification());
 			uint32_t whiteTextureData = 0xffffffff;
 			whiteTexture->SetData(&whiteTextureData, sizeof(uint32_t));
 			entity.GetComponent<SpriteRendererComponent>().Texture = whiteTexture;
@@ -349,6 +368,72 @@ namespace Wire {
 	}
 	#pragma endregion
 
+	#pragma region TextComponent
+	static MonoString* TextComponent_GetTextString(UUID entityID)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		Entity entity = scene->GetEntityByUUID(entityID);
+
+		return ScriptEngine::CreateString(entity.GetComponent<TextComponent>().TextString.c_str());
+	}
+
+	static void TextComponent_SetTextString(UUID entityID, MonoString* value)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		Entity entity = scene->GetEntityByUUID(entityID);
+
+		entity.GetComponent<TextComponent>().TextString = Utils::MonoStringToString(value);
+	}
+
+	static void TextComponent_GetColour(UUID entityID, glm::vec4* outValue)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		Entity entity = scene->GetEntityByUUID(entityID);
+
+		*outValue = entity.GetComponent<TextComponent>().Colour;
+	}
+
+	static void TextComponent_SetColour(UUID entityID, glm::vec4* value)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		Entity entity = scene->GetEntityByUUID(entityID);
+
+		entity.GetComponent<TextComponent>().Colour = *value;
+	}
+
+	static float TextComponent_GetKerning(UUID entityID)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		Entity entity = scene->GetEntityByUUID(entityID);
+
+		return entity.GetComponent<TextComponent>().Kerning;
+	}
+
+	static void TextComponent_SetKerning(UUID entityID, float value)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		Entity entity = scene->GetEntityByUUID(entityID);
+
+		entity.GetComponent<TextComponent>().Kerning = value;
+	}
+
+	static float TextComponent_GetLineSpacing(UUID entityID)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		Entity entity = scene->GetEntityByUUID(entityID);
+
+		return entity.GetComponent<TextComponent>().LineSpacing;
+	}
+
+	static void TextComponent_SetLineSpacing(UUID entityID, float value)
+	{
+		Scene* scene = ScriptEngine::GetSceneContext();
+		Entity entity = scene->GetEntityByUUID(entityID);
+
+		entity.GetComponent<TextComponent>().LineSpacing = value;
+	}
+	#pragma endregion
+
 	#pragma region Input
 	static bool Input_IsKeyDown(KeyCode keycode)
 	{
@@ -387,6 +472,7 @@ namespace Wire {
 				return;
 			}
 			s_EntityHasComponentFuncs[managedType] = [](Entity entity) { return entity.HasComponent<Component>(); };
+			s_EntityAddComponentFuncs[managedType] = [](Entity entity) { entity.AddComponent<Component>(); };
 		}(), ...);
 	}
 
@@ -410,6 +496,7 @@ namespace Wire {
 
 		#pragma region Entity
 		WR_ADD_INTERNAL_CALL(Entity_HasComponent);
+		WR_ADD_INTERNAL_CALL(Entity_AddComponent);
 		WR_ADD_INTERNAL_CALL(Entity_FindEntityByName);
 		WR_ADD_INTERNAL_CALL(GetScriptInstance);
 		#pragma endregion
@@ -456,6 +543,17 @@ namespace Wire {
 		WR_ADD_INTERNAL_CALL(CameraComponent_SetOrthographicFar);
 		WR_ADD_INTERNAL_CALL(CameraComponent_IsFixedAspectRatio);
 		WR_ADD_INTERNAL_CALL(CameraComponent_SetFixedAspectRatio);
+		#pragma endregion
+
+		#pragma region TextComponent
+		WR_ADD_INTERNAL_CALL(TextComponent_GetTextString);
+		WR_ADD_INTERNAL_CALL(TextComponent_SetTextString);
+		WR_ADD_INTERNAL_CALL(TextComponent_GetColour);
+		WR_ADD_INTERNAL_CALL(TextComponent_SetColour);
+		WR_ADD_INTERNAL_CALL(TextComponent_GetKerning);
+		WR_ADD_INTERNAL_CALL(TextComponent_SetKerning);
+		WR_ADD_INTERNAL_CALL(TextComponent_GetLineSpacing);
+		WR_ADD_INTERNAL_CALL(TextComponent_SetLineSpacing);
 		#pragma endregion
 
 		#pragma region Input

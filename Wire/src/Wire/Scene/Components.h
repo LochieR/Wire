@@ -3,6 +3,7 @@
 #include "SceneCamera.h"
 #include "Wire/Core/UUID.h"
 #include "Wire/Renderer/Texture.h"
+#include "Wire/Renderer/Font.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -114,12 +115,22 @@ namespace Wire {
 		}
 	};
 
+	struct TextComponent
+	{
+		std::string TextString;
+		Ref<Font> FontAsset = Font::GetDefault();
+		glm::vec4 Colour{ 1.0 };
+		float Kerning = 0.0f;
+		float LineSpacing = 0.0f;
+	};
+
 	template<typename... Component>
 	struct ComponentGroup
 	{
 	};
 
 	using AllComponents = ComponentGroup<TransformComponent, SpriteRendererComponent,
-		CircleRendererComponent, CameraComponent, ScriptComponent, NativeScriptComponent>;
+		CircleRendererComponent, CameraComponent, ScriptComponent, NativeScriptComponent,
+		TextComponent>;
 
 }

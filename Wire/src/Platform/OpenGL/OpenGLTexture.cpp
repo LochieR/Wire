@@ -5,19 +5,47 @@
 
 namespace Wire {
 
-	OpenGLTexture2D::OpenGLTexture2D(uint32_t width, uint32_t height)
-		: m_Width(width), m_Height(height)
+	namespace Utils {
+
+		static GLenum WireImageFormatToGLDataFormat(ImageFormat format)
+		{
+			switch (format)
+			{
+				case ImageFormat::RGB8:  return GL_RGB;
+				case ImageFormat::RGBA8: return GL_RGBA;
+			}
+
+			WR_CORE_ASSERT(false);
+			return 0;
+		}
+
+		static GLenum WireImageFormatToGLInternalFormat(ImageFormat format)
+		{
+			switch (format)
+			{
+				case ImageFormat::RGB8:  return GL_RGB8;
+				case ImageFormat::RGBA8: return GL_RGBA8;
+			}
+
+			WR_CORE_ASSERT(false);
+			return 0;
+		}
+
+	}
+
+	OpenGLTexture2D::OpenGLTexture2D(const TextureSpecification& specification)
+		: m_Specification(specification), m_Width(specification.Width), m_Height(specification.Height)
 	{
 		WR_PROFILE_FUNCTION();
 
-		m_InternalFormat = GL_RGBA8;
-		m_DataFormat = GL_RGBA;
+		m_InternalFormat = Utils::WireImageFormatToGLInternalFormat(specification.Format);
+		m_DataFormat = Utils::WireImageFormatToGLDataFormat(specification.Format);
 
 		glCreateTextures(GL_TEXTURE_2D, 1, &m_RendererID);
 		glTextureStorage2D(m_RendererID, 1, m_InternalFormat, m_Width, m_Height);
 
 		glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 		glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_S, GL_REPEAT);
 		glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_T, GL_REPEAT);

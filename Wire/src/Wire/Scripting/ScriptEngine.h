@@ -15,6 +15,7 @@ extern "C" {
 	typedef struct _MonoImage MonoImage;
 	typedef struct _MonoDomain MonoDomain;
 	typedef struct _MonoClassField MonoClassField;
+	typedef struct _MonoString MonoString;
 }
 
 namespace Wire {
@@ -184,6 +185,8 @@ namespace Wire {
 		static MonoDomain* GetAppDomain();
 
 		static MonoObject* GetManagedInstance(UUID uuid);
+
+		static MonoString* CreateString(const char* string);
 
 		static void OnOpenProject(const Ref<Project>& project);
 	private:

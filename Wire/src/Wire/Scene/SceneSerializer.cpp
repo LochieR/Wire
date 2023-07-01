@@ -286,6 +286,21 @@ namespace Wire {
 			out << YAML::EndMap; // CircleRendererComponent
 		}
 
+		if (entity.HasComponent<TextComponent>())
+		{
+			out << YAML::Key << "TextComponent";
+			out << YAML::BeginMap; // TextComponent
+
+			auto& textComponent = entity.GetComponent<TextComponent>();
+			out << YAML::Key << "TextString" << YAML::Value << textComponent.TextString;
+			// TODO: textComponent.FontAsset
+			out << YAML::Key << "Colour" << YAML::Value << textComponent.Colour;
+			out << YAML::Key << "Kerning" << YAML::Value << textComponent.Kerning;
+			out << YAML::Key << "LineSpacing" << YAML::Value << textComponent.LineSpacing;
+
+			out << YAML::EndMap; // TextComponent
+		}
+
 		out << YAML::EndMap;
 	}
 
@@ -455,6 +470,17 @@ namespace Wire {
 					crc.Colour = circleRendererComponent["Colour"].as<glm::vec4>();
 					crc.Thickness = circleRendererComponent["Thickness"].as<float>();
 					crc.Fade = circleRendererComponent["Fade"].as<float>();
+				}
+
+				auto textComponent = entity["TextComponent"];
+				if (textComponent)
+				{
+					auto& tc = deserializedEntity.AddComponent<TextComponent>();
+					tc.TextString = textComponent["TextString"].as<std::string>();
+					// tc.FontAsset // TODO
+					tc.Colour = textComponent["Colour"].as<glm::vec4>();
+					tc.Kerning = textComponent["Kerning"].as<float>();
+					tc.LineSpacing = textComponent["LineSpacing"].as<float>();
 				}
 			}
 		}

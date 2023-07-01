@@ -5,8 +5,13 @@
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
+#include <imgui/misc/cpp/imgui_stdlib.h>
 
 namespace Wire {
+
+	SceneHierarchyPanel::SceneHierarchyPanel()
+	{
+	}
 
 	SceneHierarchyPanel::SceneHierarchyPanel(const Ref<Scene>& context)
 	{
@@ -41,6 +46,7 @@ namespace Wire {
 
 			ImGuiPopupFlags popupFlags = ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems;
 
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 8));
 			if (ImGui::BeginPopupContextWindow("SceneHierarchyPopupMenu", popupFlags))
 			{
 				if (ImGui::MenuItem("Create Empty Entity"))
@@ -52,6 +58,7 @@ namespace Wire {
 
 				ImGui::EndPopup();
 			}
+			ImGui::PopStyleVar();
 
 			ImGui::End();
 			ImGui::PopStyleVar();
@@ -350,6 +357,7 @@ namespace Wire {
 			DisplayAddComponentEntry<ScriptComponent>("Script");
 			DisplayAddComponentEntry<SpriteRendererComponent>("Sprite Renderer");
 			DisplayAddComponentEntry<CircleRendererComponent>("Circle Renderer");
+			DisplayAddComponentEntry<TextComponent>("Text Component");
 
 			ImGui::EndPopup();
 		}
@@ -432,11 +440,21 @@ namespace Wire {
 
 			static char buffer[64];
 
+			if (scene->IsRunning())
+			{
+				ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+				ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+			}
 			if (ImGui::Button(component.ClassName.empty() ? "Select Class..." : component.ClassName.c_str()))
 			{
 				memset(buffer, 0, sizeof(buffer));
 				buffer[0] = 0;
 				ImGui::OpenPopup("SelectClass");
+			}
+			if (scene->IsRunning())
+			{
+				ImGui::PopItemFlag();
+				ImGui::PopStyleVar();
 			}
 
 			ImGui::PushStyleColor(ImGuiCol_PopupBg, ImGui::GetStyle().Colors[ImGuiCol_MenuBarBg]);
@@ -576,6 +594,14 @@ namespace Wire {
 			ImGui::ColorEdit4("Colour", glm::value_ptr(component.Colour));
 			ImGui::DragFloat("Thickness", &component.Thickness, 0.025f, 0.0f, 1.0f);
 			ImGui::DragFloat("Fade", &component.Fade, 0.00025f, 0.0f, 1.0f);
+		});
+
+		DrawComponent<TextComponent>("Text Component", entity, [](auto& component)
+		{
+			ImGui::InputTextMultiline("Text String", &component.TextString);
+			ImGui::ColorEdit4("Colour", glm::value_ptr(component.Colour));
+			ImGui::DragFloat("Kerning", &component.Kerning, 0.025f);
+			ImGui::DragFloat("Line Spacing", &component.LineSpacing, 0.025f);
 		});
 	}
 

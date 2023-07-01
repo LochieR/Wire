@@ -197,7 +197,6 @@ namespace Wire {
 		if (mainCamera)
 		{
 			Renderer2D::BeginScene(*mainCamera, cameraTransform);
-
 			// Draw sprites
 			{
 				auto group = m_Registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
@@ -217,6 +216,17 @@ namespace Wire {
 					auto [transform, circle] = view.get<TransformComponent, CircleRendererComponent>(entity);
 
 					Renderer2D::DrawCircle(transform.GetTransform(), circle.Colour, circle.Thickness, circle.Fade, (int)entity);
+				}
+			}
+
+			// Draw text
+			{
+				auto view = m_Registry.view<TransformComponent, TextComponent>();
+				for (auto entity : view)
+				{
+					auto [transform, text] = view.get<TransformComponent, TextComponent>(entity);
+
+					Renderer2D::DrawString(text.TextString, transform.GetTransform(), text, (int)entity);
 				}
 			}
 
@@ -248,6 +258,17 @@ namespace Wire {
 				auto [transform, circle] = view.get<TransformComponent, CircleRendererComponent>(entity);
 
 				Renderer2D::DrawCircle(transform.GetTransform(), circle.Colour, circle.Thickness, circle.Fade, (int)entity);
+			}
+		}
+
+		// Draw text
+		{
+			auto view = m_Registry.view<TransformComponent, TextComponent>();
+			for (auto entity : view)
+			{
+				auto [transform, text] = view.get<TransformComponent, TextComponent>(entity);
+
+				Renderer2D::DrawString(text.TextString, transform.GetTransform(), text, (int)entity);
 			}
 		}
 
@@ -362,6 +383,11 @@ namespace Wire {
 
 	template<>
 	void Scene::OnComponentAdded<NativeScriptComponent>(Entity entity, NativeScriptComponent& component)
+	{
+	}
+
+	template<>
+	void Scene::OnComponentAdded<TextComponent>(Entity entity, TextComponent& component)
 	{
 	}
 

@@ -54,6 +54,7 @@ namespace Wire {
 			{
 				const char* errorMessage = mono_image_strerror(status);
 				// Log some error message using the errorMessage data
+				Application::Get().GetApplicationLogFunction()(2, errorMessage);
 				return nullptr;
 			}
 
@@ -323,7 +324,6 @@ namespace Wire {
 		UUID entityUUID = entity.GetUUID();
 		if (s_Data->EntityInstances.find(entityUUID) != s_Data->EntityInstances.end())
 		{
-
 			Ref<ScriptInstance> instance = s_Data->EntityInstances[entityUUID];
 			instance->InvokeOnUpdate(ts);
 		}
@@ -449,6 +449,11 @@ namespace Wire {
 	{
 		WR_CORE_ASSERT(s_Data->EntityInstances.find(uuid) != s_Data->EntityInstances.end());
 		return s_Data->EntityInstances.at(uuid)->GetManagedObject();
+	}
+
+	MonoString* ScriptEngine::CreateString(const char* string)
+	{
+		return mono_string_new(s_Data->AppDomain, string);
 	}
 
 	MonoObject* ScriptEngine::InstantiateClass(MonoClass* monoClass)

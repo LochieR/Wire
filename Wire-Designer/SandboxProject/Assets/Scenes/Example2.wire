@@ -1,23 +1,34 @@
 Scene: Untitled
 Entities:
-  - Entity: 9476630318428448073
+  - Entity: 263515740062652543
     TagComponent:
-      Tag: Camera B
+      Tag: Player
     TransformComponent:
-      Translation: [0, 0, 17.5]
+      Translation: [1.70033574, 0.5, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    CameraComponent:
-      Camera:
-        ProjectionType: 0
-        PerspectiveFOV: 0.785398185
-        PerspectiveNear: 0.00999999978
-        PerspectiveFar: 1000
-        OrthographicSize: 10
-        OrthographicNear: -1
-        OrthographicFar: 1
-      Primary: false
-      FixedAspectRatio: false
+    ScriptComponent:
+      Class: Sandbox.Player
+      ScriptFields:
+        - Name: AccelerationSpeed
+          Type: Float
+          Data: 20
+        - Name: Speed
+          Type: Float
+          Data: 4
+    SpriteRendererComponent:
+      Colour: [0, 1, 0, 1]
+      TilingFactor: 1
+  - Entity: 17879028744201264644
+    TagComponent:
+      Tag: Red Square
+    TransformComponent:
+      Translation: [3.4000001, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Colour: [1, 0, 0, 1]
+      TilingFactor: 1
   - Entity: 15961371396191291635
     TagComponent:
       Tag: Camera A
@@ -42,29 +53,15 @@ Entities:
         - Name: DistanceFromPlayer
           Type: Float
           Data: 10
-  - Entity: 17879028744201264644
+  - Entity: 14365182883215211877
     TagComponent:
-      Tag: Red Square
+      Tag: Empty Entity
     TransformComponent:
-      Translation: [3.4000001, 0, 0]
+      Translation: [0, 1.24519348, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
-    SpriteRendererComponent:
-      Colour: [1, 0, 0, 1]
-      TilingFactor: 1
-  - Entity: 263515740062652543
-    TagComponent:
-      Tag: Player
-    TransformComponent:
-      Translation: [1.70033574, 0.5, 0]
-      Rotation: [0, 0, 0]
-      Scale: [1, 1, 1]
-    ScriptComponent:
-      Class: Sandbox.Player
-      ScriptFields:
-        - Name: Speed
-          Type: Float
-          Data: 4
-    SpriteRendererComponent:
-      Colour: [0, 1, 0, 1]
-      TilingFactor: 1
+    TextComponent:
+      TextString: Wire
+      Colour: [0.180319294, 0.222608209, 0.864864886, 1]
+      Kerning: 0
+      LineSpacing: 0

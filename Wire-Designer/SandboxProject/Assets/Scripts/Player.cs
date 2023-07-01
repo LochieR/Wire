@@ -1,5 +1,6 @@
 ﻿using System;
-
+using System.Linq;
+using System.Runtime.InteropServices;
 using Wire;
 
 namespace Sandbox
@@ -7,8 +8,10 @@ namespace Sandbox
 	public class Player : Entity
 	{
 		public float Speed;
+		public float AccelerationSpeed;
 
 		private Entity m_Camera;
+		private float m_Acceleration = 0.0f;
 
 		void OnCreate()
 		{
@@ -19,14 +22,25 @@ namespace Sandbox
 		{
 			Vector3 velocity = Vector3.Zero;
 
-			if (Input.IsKeyDown(KeyCode.W))
-				velocity.Y = 1.0f;
-			else if (Input.IsKeyDown(KeyCode.S))
-				velocity.Y = -1.0f;
-			if (Input.IsKeyDown(KeyCode.A))
-				velocity.X = -1.0f;
-			else if (Input.IsKeyDown(KeyCode.D))
-				velocity.X = 1.0f;
+			bool[] keys = new[] { false, false, false, false };
+
+			if (keys[0] = Input.IsKeyDown(KeyCode.W))
+				velocity.Y = 1.0f * m_Acceleration;
+			else if (keys[1] = Input.IsKeyDown(KeyCode.S))
+				velocity.Y = -1.0f * m_Acceleration;
+			if (keys[2] = Input.IsKeyDown(KeyCode.D))
+				velocity.X = 1.0f * m_Acceleration;
+			else if (keys[3] = Input.IsKeyDown(KeyCode.A))
+				velocity.X = -1.0f * m_Acceleration;
+
+			bool pressed = false;
+
+			foreach (bool key in keys)
+				if (key)
+					pressed = true;
+
+			if (!pressed)
+				m_Acceleration = 0.0f;
 
 			if (m_Camera != null)
 			{
@@ -42,6 +56,8 @@ namespace Sandbox
 			Vector3 translation = Translation;
 			translation += velocity * ts;
 			Translation = translation;
+
+			m_Acceleration += m_Acceleration < 3.0f ? (AccelerationSpeed * ts) : 0.0f;
 		}
 	}
 }

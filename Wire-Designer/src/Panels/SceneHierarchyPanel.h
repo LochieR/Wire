@@ -20,7 +20,7 @@ namespace Wire {
 			float ResetValue = 0.0f;
 		};
 	public:
-		SceneHierarchyPanel() = default;
+		SceneHierarchyPanel();
 		SceneHierarchyPanel(const Ref<Scene>& context);
 
 		void SetContext(const Ref<Scene>& context);

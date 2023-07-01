@@ -123,4 +123,38 @@ namespace Wire
 			set => InternalCalls.CameraComponent_SetFixedAspectRatio(Entity.ID, value);
 		}
 	}
+
+	public class TextComponent : Component
+	{
+		public string Text
+		{
+			get => InternalCalls.TextComponent_GetTextString(Entity.ID);
+			set => InternalCalls.TextComponent_SetTextString(Entity.ID, value);
+		}
+
+		public Vector4 Colour
+		{
+			get
+			{
+				InternalCalls.TextComponent_GetColour(Entity.ID, out Vector4 value);
+				return value;
+			}
+			set
+			{
+				InternalCalls.TextComponent_SetColour(Entity.ID, ref value);
+			}
+		}
+
+		public float Kerning
+		{
+			get => InternalCalls.TextComponent_GetKerning(Entity.ID);
+			set => InternalCalls.TextComponent_SetKerning(Entity.ID, value);
+		}
+
+		public float LineSpacing
+		{
+			get => InternalCalls.TextComponent_GetLineSpacing(Entity.ID);
+			set => InternalCalls.TextComponent_SetLineSpacing(Entity.ID, value);
+		}
+	}
 }

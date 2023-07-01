@@ -75,6 +75,16 @@ namespace Wire
 			return new T() { Entity = this };
 		}
 
+		public T AddComponent<T>() where T : Component, new()
+		{
+			if (HasComponent<T>())
+				return GetComponent<T>();
+
+			InternalCalls.Entity_AddComponent(ID, typeof(T));
+
+			return new T() { Entity = this };
+		}
+
 		public Entity FindEntityByName(string name)
 		{
 			ulong entityID = InternalCalls.Entity_FindEntityByName(name);

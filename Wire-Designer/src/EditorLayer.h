@@ -27,6 +27,8 @@ namespace Wire {
 		bool OnKeyPressed(KeyPressedEvent& e);
 		bool OnMouseButtonPressed(MouseButtonPressedEvent& e);
 
+		void OnOverlayRender();
+
 		void NewProject();
 		void NewProject(const std::filesystem::path& path);
 		void OpenProject();
@@ -49,16 +51,11 @@ namespace Wire {
 	private:
 		OrthographicCameraController m_CameraController;
 
-		Ref<VertexArray> m_SquareVA;
-		Ref<Shader> m_FlatColourShader;
 		Ref<Framebuffer> m_Framebuffer;
 
 		Ref<Scene> m_ActiveScene;
 		Ref<Scene> m_EditorScene;
 		std::filesystem::path m_EditorScenePath;
-		Entity m_SquareEntity;
-		Entity m_CameraEntity;
-		Entity m_SecondCamera;
 
 		Ref<Project> m_Project;
 
@@ -68,13 +65,9 @@ namespace Wire {
 
 		EditorCamera m_EditorCamera;
 
-		Ref<Texture2D> m_CheckerboardTexture;
-
 		bool m_ViewportFocused = false, m_ViewportHovered = false;
 		glm::vec2 m_ViewportSize = { 1280.0f, 720.0f };
 		glm::vec2 m_ViewportBounds[2];
-
-		glm::vec4 m_SquareColour = { 0.2f, 0.3f, 0.8f, 1.0f };
 
 		int m_GizmoType = -1;
 
