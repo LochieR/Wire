@@ -5,6 +5,7 @@
 #include "Input.h"
 
 #include "Wire/Renderer/Renderer.h"
+#include "Wire/Audio/Audio.h"
 #include "Wire/Scripting/ScriptEngine.h"
 
 #include "Wire/Utils/PlatformUtils.h"
@@ -26,6 +27,7 @@ namespace Wire {
 		m_Window->SetEventCallback(WR_BIND_EVENT_FN(Application::OnEvent));
 
 		Renderer::Init();
+		Audio::Init();
 		ScriptEngine::Init();
 
 		m_ImGuiLayer = new ImGuiLayer();

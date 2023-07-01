@@ -7,6 +7,7 @@
 #include "Wire/Scripting/ScriptGlue.h"
 #include "Wire/Scripting/ScriptEngine.h"
 #include "Wire/Renderer/Font.h"
+#include "Wire/Audio/Audio.h"
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
@@ -112,6 +113,12 @@ namespace Wire {
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 
 		Renderer2D::SetLineWidth(4.0f);
+		
+		AudioSource source = Audio::LoadAudioSource("SandboxProject/Assets/Audio/BackgroundMusic.mp3");
+		source.SetLoop(true);
+		source.SetSpatial(true);
+		source.SetPosition(glm::vec3(1.4f, 0.0f, 0.0f));
+		Audio::Play(source);
 	}
 
 	void EditorLayer::OnDetach()

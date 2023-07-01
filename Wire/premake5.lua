@@ -20,12 +20,15 @@ project "Wire"
 		"%{prj.location}/vendor/glm/glm/**.inl",
 		"%{prj.location}/vendor/ImGuizmo/ImGuizmo.h",
 		"%{prj.location}/vendor/ImGuizmo/ImGuizmo.cpp",
+		"%{prj.location}/vendor/alhelpers/alhelpers.h",
+		"%{prj.location}/vendor/alhelpers/alhelpers.cpp",
 	}
 
 	defines
 	{
 		"_CRT_SECURE_NO_WARNINGS",
-		"GLFW_INCLUDE_NONE"
+		"GLFW_INCLUDE_NONE",
+		"AL_LIBTYPE_STATIC"
 	}
 
 	includedirs
@@ -44,6 +47,13 @@ project "Wire"
 		"%{IncludeDir.filewatch}",
 		"%{IncludeDir.yaml_cpp}",
 		"%{IncludeDir.ImGuizmo}",
+		"%{IncludeDir.OpenAL_Soft1}",
+		"%{IncludeDir.OpenAL_Soft2}",
+		"%{IncludeDir.OpenAL_Soft3}",
+		"%{IncludeDir.alhelpers}",
+		"%{IncludeDir.libogg}",
+		"%{IncludeDir.Vorbis}",
+		"%{IncludeDir.minimp3}",
 		"%{IncludeDir.VulkanSDK}"
 	}
 
@@ -54,11 +64,16 @@ project "Wire"
 		"ImGui",
 		"msdf-atlas-gen",
 		"yaml-cpp",
+		"OpenAL-Soft",
+		"Vorbis",
 
 		"%{Library.mono}"
 	}
 
 	filter "files:vendor/ImGuizmo/**.cpp"
+		flags { "NoPCH" }
+
+	filter "files:vendor/alhelpers/**.cpp"
 		flags { "NoPCH" }
 
 	filter "system:windows"

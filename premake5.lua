@@ -24,6 +24,11 @@ group "Dependencies"
 	include "Wire/vendor/imgui"
 	include "Wire/vendor/yaml-cpp"
 	include "Wire/vendor/msdf-atlas-gen"
+	
+	group "Dependencies/Audio"
+		include "Wire/vendor/libogg"
+		include "Wire/vendor/OpenAL-Soft"
+		include "Wire/vendor/Vorbis"
 group ""
 
 group "Core"
