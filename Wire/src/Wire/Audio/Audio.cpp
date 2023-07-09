@@ -99,6 +99,16 @@ namespace Wire {
 		alSourcePlay(source.m_SourceHandle);
 	}
 
+	void Audio::Stop(const AudioSource& source)
+	{
+		alSourceStop(source.m_SourceHandle);
+	}
+
+	void Audio::Pause(const AudioSource& source)
+	{
+		alSourcePause(source.m_SourceHandle);
+	}
+
 	AudioSource Audio::LoadAudioSourceOgg(const std::filesystem::path& filename)
 	{
 		FILE* f = fopen(filename.string().c_str(), "rb");

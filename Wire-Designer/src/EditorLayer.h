@@ -2,9 +2,13 @@
 
 #include <Wire.h>
 
+#include "Panels/Panel.h"
+
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/ContentBrowserPanel.h"
 #include "Panels/ConsolePanel.h"
+#include "Panels/AudioGraphPanel.h"
+#include "Panels/PropertiesPanel.h"
 
 namespace Wire {
 
@@ -21,8 +25,20 @@ namespace Wire {
 		virtual void OnImGuiRender() override;
 		void OnEvent(Event& e) override;
 
-		ContentBrowserPanel* GetContentBrowserPanel() { return &m_ContentBrowserPanel; }
-		ConsolePanel* GetConsolePanel() { return &m_ConsolePanel; }
+		template<typename T>
+		void AddPanel()
+		{
+			m_PanelStack.Add<T>(new T());
+		}
+
+		template<typename T>
+		T* GetPanel()
+		{
+			return dynamic_cast<T*>(m_PanelStack.Get<T>());
+		}
+
+		ContentBrowserPanel* GetContentBrowserPanel() { return GetPanel<ContentBrowserPanel>(); }
+		ConsolePanel* GetConsolePanel() { return GetPanel<ConsolePanel>(); }
 	private:
 		bool OnKeyPressed(KeyPressedEvent& e);
 		bool OnMouseButtonPressed(MouseButtonPressedEvent& e);
@@ -80,9 +96,7 @@ namespace Wire {
 		Timestep m_Timestep;
 
 		// Panels
-		SceneHierarchyPanel m_SceneHierarchyPanel;
-		ContentBrowserPanel m_ContentBrowserPanel;
-		ConsolePanel m_ConsolePanel;
+		PanelStack m_PanelStack;
 
 		bool m_ShowPreferencesWindow = false;
 

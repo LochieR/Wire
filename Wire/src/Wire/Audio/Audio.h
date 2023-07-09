@@ -10,6 +10,7 @@ namespace Wire {
 	class AudioSource
 	{
 	public:
+		AudioSource() = default;
 		~AudioSource();
 
 		bool IsLoaded() const { return m_Loaded; }
@@ -24,7 +25,6 @@ namespace Wire {
 
 		static AudioSource LoadFromFile(const std::filesystem::path& file, bool spatial = false);
 	private:
-		AudioSource() = default;
 		AudioSource(uint32_t handle, bool loaded, float length);
 	private:
 		uint32_t m_BufferHandle;
@@ -50,6 +50,8 @@ namespace Wire {
 
 		static AudioSource LoadAudioSource(const std::filesystem::path& filepath);
 		static void Play(const AudioSource& source);
+		static void Stop(const AudioSource& source);
+		static void Pause(const AudioSource& source);
 	private:
 		static AudioSource LoadAudioSourceOgg(const std::filesystem::path& filename);
 		static AudioSource LoadAudioSourceMP3(const std::filesystem::path& filename);

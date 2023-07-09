@@ -16,7 +16,14 @@ int APIENTRY WinMain(HINSTANCE hInst, HINSTANCE hInstPrev, PSTR cmdline, int cmd
 	Wire::Application* app = new Wire::Application("Wire Designer", { __argc, __argv });
 #endif
 
-	app->PushLayer(new Wire::EditorLayer());
+	Wire::EditorLayer* editor = new Wire::EditorLayer();
+	editor->AddPanel<Wire::SceneHierarchyPanel>();
+	editor->AddPanel<Wire::PropertiesPanel>();
+	editor->AddPanel<Wire::ContentBrowserPanel>();
+	editor->AddPanel<Wire::ConsolePanel>();
+	editor->AddPanel<Wire::AudioGraphPanel>();
+
+	app->PushLayer(editor);
 	app->Run();
 	
 	delete app;

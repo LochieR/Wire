@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Panel.h"
+
 #include "Wire/Core/Core.h"
 #include "Wire/Core/Log.h"
 #include "Wire/Scene/Scene.h"
@@ -10,38 +12,30 @@
 
 namespace Wire {
 
-	class SceneHierarchyPanel
+	class SceneHierarchyPanel : public Panel
 	{
-	public:
-		struct Vec3ControlData
-		{
-			std::string Label;
-			glm::vec3& Values;
-			float ResetValue = 0.0f;
-		};
 	public:
 		SceneHierarchyPanel();
 		SceneHierarchyPanel(const Ref<Scene>& context);
 
-		void SetContext(const Ref<Scene>& context);
+		virtual void OnImGuiRender() override;
+		virtual void SetContext(const Ref<Scene>& context) override;
 
-		void OnImGuiRender(bool* sceneHierarchyOpen, bool* propertiesPanelOpen);
+		virtual bool* GetOpen() override;
 
-		Entity GetSelectedEntity() const { return m_SelectionContext; }
+		Entity GetSelectedEntity() const;
 		void SetSelectedEntity(Entity entity);
 
 		void OnOpenProject(const Ref<Project>& project) { m_Project = project; }
 	private:
-		template<typename T>
-		void DisplayAddComponentEntry(const std::string& displayName);
-
 		void DrawEntityNode(Entity entity);
-		void DrawComponents(Entity entity);
 	private:
 		Ref<Scene> m_Context;
 		Entity m_SelectionContext;
 
 		Ref<Project> m_Project = Project::CreateNullProject();
+
+		bool m_Open;
 	};
 
 }

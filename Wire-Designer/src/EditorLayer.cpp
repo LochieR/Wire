@@ -23,6 +23,8 @@ namespace Wire {
 
 	static Ref<Font> s_Font;
 
+	//static AudioSource s_AudioSource;
+
 	EditorLayer::EditorLayer()
 		: Layer("EditorLayer"), m_CameraController(1280.0f / 720.0f)
 	{
@@ -108,24 +110,27 @@ namespace Wire {
 			file.close();
 		}
 
-		Application::Get().SetApplicationLogFunction([this](int level, const std::string& message) { m_ConsolePanel.Log((LogLevel)level, message); });
+		Application::Get().SetApplicationLogFunction([this](int level, const std::string& message) { GetConsolePanel()->Log((LogLevel)level, message); });
 
-		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+		for (Panel* panel : m_PanelStack)
+		{
+			panel->SetContext(m_ActiveScene);
+		}
 
 		Renderer2D::SetLineWidth(4.0f);
 		
-		AudioSource source = Audio::LoadAudioSource("SandboxProject/Assets/Audio/BackgroundMusic.mp3");
-		source.SetLoop(true);
-		source.SetSpatial(true);
-		source.SetPosition(glm::vec3(1.4f, 0.0f, 0.0f));
-		Audio::Play(source);
+		//s_AudioSource = Audio::LoadAudioSource("SandboxProject/Assets/Audio/BackgroundMusic.mp3");
+		//s_AudioSource.SetLoop(true);
+		//s_AudioSource.SetSpatial(false);
+		//s_AudioSource.SetPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+		//Audio::Play(s_AudioSource);
 	}
 
 	void EditorLayer::OnDetach()
 	{
 		WR_PROFILE_FUNCTION();
 
-		WR_INFO("Average frame rate was {0} fps", m_ContentBrowserPanel.GetAverageFrameRate());
+		WR_INFO("Average frame rate was {0} fps", GetPanel<ContentBrowserPanel>()->GetAverageFrameRate());
 	}
 
 	void EditorLayer::OnUpdate(Timestep ts)
@@ -321,10 +326,12 @@ namespace Wire {
 		static bool contentBrowserOpen = true;
 		static bool propertiesPanelOpen = true;
 		static bool consolePanelOpen = true;
+		static bool audioGraphPanelOpen = true;
 
-		m_SceneHierarchyPanel.OnImGuiRender(&sceneHierarchyOpen, &propertiesPanelOpen);
-		m_ContentBrowserPanel.OnImGuiRender(&contentBrowserOpen, m_Timestep);
-		m_ConsolePanel.OnImGuiRender(&consolePanelOpen);
+		for (Panel* panel : m_PanelStack)
+		{
+			panel->OnImGuiRender();
+		}
 
 		ImGui::Begin("Stats");
 
@@ -386,7 +393,7 @@ namespace Wire {
 				ImGui::EndDragDropTarget();
 			}
 
-			Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+			Entity selectedEntity = GetPanel<SceneHierarchyPanel>()->GetSelectedEntity();
 			if (selectedEntity && m_GizmoType != -1)
 			{
 				ImGuizmo::SetOrthographic(false);
@@ -439,6 +446,13 @@ namespace Wire {
 		UIToolbar();
 
 		ImGui::End();
+
+		/*if (Input::IsKeyPressed(KP3))
+			Audio::Stop(s_AudioSource);
+		if (Input::IsKeyPressed(KP5))
+			Audio::Pause(s_AudioSource);
+		if (Input::IsKeyPressed(KP7))
+			Audio::Play(s_AudioSource);*/
 	}
 
 	void EditorLayer::UIToolbar()
@@ -583,10 +597,10 @@ namespace Wire {
 			{
 				if (Application::Get().GetImGuiLayer()->GetActiveWidgetID() == 0)
 				{
-					Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+					Entity selectedEntity = GetPanel<SceneHierarchyPanel>()->GetSelectedEntity();
 					if (selectedEntity)
 					{
-						m_SceneHierarchyPanel.SetSelectedEntity({});
+						GetPanel<SceneHierarchyPanel>()->SetSelectedEntity({});
 						m_ActiveScene->DestroyEntity(selectedEntity);
 					}
 				}
@@ -600,7 +614,7 @@ namespace Wire {
 	{
 		if (e.GetMouseButton() == MouseButton::ButtonLeft)
 			if (m_ViewportHovered && !ImGuizmo::IsOver() && !Input::IsKeyPressed(KeyCode::LeftAlt))
-				m_SceneHierarchyPanel.SetSelectedEntity(m_HoveredEntity);
+				GetPanel<SceneHierarchyPanel>()->SetSelectedEntity(m_HoveredEntity);
 
 		return false;
 	}
@@ -620,7 +634,7 @@ namespace Wire {
 			Renderer2D::BeginScene(m_EditorCamera);
 		}
 
-		if (Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity())
+		if (Entity selectedEntity = GetPanel<SceneHierarchyPanel>()->GetSelectedEntity())
 		{
 			const TransformComponent& transform = selectedEntity.GetComponent<TransformComponent>();
 			Renderer2D::DrawRect(transform.GetTransform(), glm::vec4(0.3f, 0.2f, 0.8f, 1.0f));
@@ -643,8 +657,8 @@ namespace Wire {
 		m_Project = CreateRef<Project>(path.stem().string(), path);
 		std::filesystem::create_directories(m_Project->GetDir().string() + "assets");
 		m_EditorCamera = EditorCamera(30.0f, 16.0f / 9.0f, 0.1f, 1000.0f);
-		m_ContentBrowserPanel.OnOpenProject(m_Project);
-		m_SceneHierarchyPanel.OnOpenProject(m_Project);
+		GetPanel<ContentBrowserPanel>()->OnOpenProject(m_Project);
+		GetPanel<SceneHierarchyPanel>()->OnOpenProject(m_Project);
 	}
 
 	void EditorLayer::OpenProject()
@@ -660,15 +674,19 @@ namespace Wire {
 	{
 		m_Project = Project::OpenProject(path);
 		m_EditorCamera = EditorCamera(30.0f, 16.0f / 9.0f, 0.1f, 1000.0f);
-		m_ContentBrowserPanel.OnOpenProject(m_Project);
-		m_SceneHierarchyPanel.OnOpenProject(m_Project);
+
+		GetPanel<ContentBrowserPanel>()->OnOpenProject(m_Project);
+		GetPanel<SceneHierarchyPanel>()->OnOpenProject(m_Project);
 		ScriptEngine::OnOpenProject(m_Project);
 	}
 
 	void EditorLayer::NewScene()
 	{
 		m_ActiveScene = CreateRef<Scene>();
-		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+		for (Panel* panel : m_PanelStack)
+		{
+			panel->SetContext(m_ActiveScene);
+		}
 
 		m_EditorScenePath = std::filesystem::path();
 	}
@@ -690,7 +708,7 @@ namespace Wire {
 		if (path.extension().string() != ".wire")
 		{
 			WR_WARN("Could not load {0} - not a scene file.", path.filename().string());
-			m_ConsolePanel.Log(LogLevel::Warn, fmt::format("Could not load {0} - not a scene file.", path.filename().string()));
+			GetConsolePanel()->Log(LogLevel::Warn, fmt::format("Could not load {0} - not a scene file.", path.filename().string()));
 			return;
 		}
 
@@ -699,7 +717,10 @@ namespace Wire {
 		if (serializer.Deserialize(path.string()))
 		{
 			m_EditorScene = newScene;
-			m_SceneHierarchyPanel.SetContext(m_EditorScene);
+			for (Panel* panel : m_PanelStack)
+			{
+				panel->SetContext(m_ActiveScene);
+			}
 
 			m_ActiveScene = m_EditorScene;
 			m_EditorScenePath = path;
@@ -737,9 +758,12 @@ namespace Wire {
 		m_ActiveScene = Scene::Copy(m_EditorScene);
 		m_ActiveScene->OnSceneStart();
 
-		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+		for (Panel* panel : m_PanelStack)
+		{
+			panel->SetContext(m_ActiveScene);
+		}
 
-		m_ConsolePanel.OnSceneStart();
+		GetConsolePanel()->OnSceneStart();
 	}
 
 	void EditorLayer::OnSceneStop()
@@ -751,7 +775,10 @@ namespace Wire {
 
 		m_ActiveScene = m_EditorScene;
 
-		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+		for (Panel* panel : m_PanelStack)
+		{
+			panel->SetContext(m_ActiveScene);
+		}
 	}
 
 	void EditorLayer::OnScenePause()
@@ -767,11 +794,11 @@ namespace Wire {
 		if (m_SceneState != SceneState::Edit)
 			return;
 
-		Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+		Entity selectedEntity = GetPanel<SceneHierarchyPanel>()->GetSelectedEntity();
 		if (selectedEntity)
 		{
 			Entity newEntity = m_EditorScene->DuplicateEntity(selectedEntity);
-			m_SceneHierarchyPanel.SetSelectedEntity(newEntity);
+			GetPanel<SceneHierarchyPanel>()->SetSelectedEntity(newEntity);
 		}
 	}
 

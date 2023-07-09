@@ -19,7 +19,7 @@ project "Wire-Designer"
 		"%{wks.location}/Wire/vendor",
 		"%{IncludeDir.glm}",
 		"%{IncludeDir.entt}",
-		"%{IncludeDir.imgui}",
+		"%{IncludeDir.ImGui}",
 		"%{IncludeDir.ImGuizmo}",
 		"%{IncludeDir.filewatch}"
 	}

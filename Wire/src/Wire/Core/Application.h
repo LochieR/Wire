@@ -71,6 +71,8 @@ namespace Wire {
 
 		void SubmitToMainThread(const std::function<void()>& function);
 
+		Timestep GetTimestep() const { return m_Timestep; }
+
 		void SetApplicationLogFunction(const std::function<void(int, const std::string&)>& function)
 		{
 			m_ApplicationLogFunction = function;
@@ -101,6 +103,8 @@ namespace Wire {
 		std::mutex m_MainThreadQueueMutex;
 
 		std::function<void(int, const std::string&)> m_ApplicationLogFunction;
+
+		Timestep m_Timestep;
 	private:
 		static Application* s_Instance;
 	};

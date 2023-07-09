@@ -1,5 +1,7 @@
 #include "ContentBrowserPanel.h"
 
+#include "Wire/Core/Application.h"
+
 #include <imgui/imgui.h>
 #include <imgui/imgui_internal.h>
 
@@ -8,6 +10,8 @@ namespace Wire {
 	ContentBrowserPanel::ContentBrowserPanel()
 		: m_AssetPath("Assets"), m_CurrentDirectory(m_AssetPath), m_Project(nullptr)
 	{
+		m_Open = true;
+
 		m_DirectoryIcon = Texture2D::Create("Resources/Icons/ContentBrowser/DirectoryIcon.png");
 		m_FileIcon = Texture2D::Create("Resources/Icons/ContentBrowser/FileIcon.png");
 
@@ -19,11 +23,11 @@ namespace Wire {
 		return std::filesystem::relative(std::filesystem::absolute(path), std::filesystem::absolute(project->GetDir())).string();
 	}
 
-	void ContentBrowserPanel::OnImGuiRender(bool* open, Timestep ts)
+	void ContentBrowserPanel::OnImGuiRender()
 	{
-		if (*open)
+		if (m_Open)
 		{
-			ImGui::Begin("Content Browser", open);
+			ImGui::Begin("Content Browser", &m_Open);
 
 			static float width = ImGui::GetWindowWidth();
 			static float height = 30.0f;
@@ -146,6 +150,8 @@ namespace Wire {
 
 			ImGui::End();
 
+			Timestep ts = Application::Get().GetTimestep();
+
 			m_Ticks++;
 
 			m_TotalFrameRates += (int)(1000.0f / ts.GetMilliseconds());
@@ -157,6 +163,15 @@ namespace Wire {
 				if (m_Ticks % twoSeconds == 0 && m_Project != nullptr)
 					ReloadDirectoryEntries();
 		}
+	}
+
+	void ContentBrowserPanel::SetContext(const Ref<Scene>& context)
+	{
+	}
+
+	bool* ContentBrowserPanel::GetOpen()
+	{
+		return &m_Open;
 	}
 
 	void ContentBrowserPanel::ReloadDirectoryEntries()

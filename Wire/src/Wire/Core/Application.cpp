@@ -90,7 +90,7 @@ namespace Wire {
 			WR_PROFILE_SCOPE("RunLoop");
 
 			float time = Time::GetTime();
-			Timestep timestep = time - m_LastFrameTime;
+			m_Timestep = time - m_LastFrameTime;
 			m_LastFrameTime = time;
 
 			ExecuteMainThreadQueue();
@@ -101,7 +101,7 @@ namespace Wire {
 					WR_PROFILE_SCOPE("LayerStack OnUpdate");
 
 					for (Layer* layer : m_LayerStack)
-						layer->OnUpdate(timestep);
+						layer->OnUpdate(m_Timestep);
 				}
 			}
 

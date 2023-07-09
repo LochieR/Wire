@@ -20,6 +20,8 @@ project "Wire"
 		"%{prj.location}/vendor/glm/glm/**.inl",
 		"%{prj.location}/vendor/ImGuizmo/ImGuizmo.h",
 		"%{prj.location}/vendor/ImGuizmo/ImGuizmo.cpp",
+		"%{prj.location}/vendor/ImGuizmo/GraphEditor.h",
+		"%{prj.location}/vendor/ImGuizmo/GraphEditor.cpp",
 		"%{prj.location}/vendor/alhelpers/alhelpers.h",
 		"%{prj.location}/vendor/alhelpers/alhelpers.cpp",
 	}

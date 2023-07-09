@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Panel.h"
+
 #include <vector>
 #include <string>
 
@@ -19,12 +21,15 @@ namespace Wire {
 		std::string Message;
 	};
 
-	class ConsolePanel
+	class ConsolePanel : public Panel
 	{
 	public:
 		ConsolePanel();
 
-		void OnImGuiRender(bool* open);
+		virtual void OnImGuiRender() override;
+		virtual void SetContext(const Ref<Scene>& context) override;
+
+		virtual bool* GetOpen() override;
 
 		void Log(const ConsoleMessage& message);
 		void Log(LogLevel level, std::string message);
@@ -35,6 +40,8 @@ namespace Wire {
 		std::vector<ConsoleMessage> m_Messages;
 
 		bool m_ClearOnPlay = false;
+
+		bool m_Open;
 	};
 
 }

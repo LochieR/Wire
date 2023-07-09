@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Panel.h"
+
 #include "Wire/Renderer/Texture.h"
 #include "Wire/Core/Timestep.h"
 #include "Wire/Projects/Project.h"
@@ -8,12 +10,15 @@
 
 namespace Wire {
 
-	class ContentBrowserPanel
+	class ContentBrowserPanel : public Panel
 	{
 	public:
 		ContentBrowserPanel();
 
-		void OnImGuiRender(bool* open, Timestep ts);
+		virtual void OnImGuiRender() override;
+		virtual void SetContext(const Ref<Scene>& context) override;
+
+		virtual bool* GetOpen() override;
 		void ReloadDirectoryEntries();
 
 		void OnOpenProject(const Ref<Project>& project);
@@ -34,6 +39,8 @@ namespace Wire {
 
 		double m_TotalFrameRates = 0.0f;
 		float m_AverageFrameRate = 0.0f;
+
+		bool m_Open;
 	};
 
 }
