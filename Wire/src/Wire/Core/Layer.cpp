@@ -1,5 +1,5 @@
 #include "wrpch.h"
-#include "Wire/Core/Layer.h"
+#include "Layer.h"
 
 namespace Wire {
 
@@ -7,5 +7,5 @@ namespace Wire {
 		: m_DebugName(debugName)
 	{
 	}
-	
+
 }

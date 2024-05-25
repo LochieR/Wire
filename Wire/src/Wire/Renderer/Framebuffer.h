@@ -1,71 +1,46 @@
 #pragma once
 
-#include "Wire/Core/Core.h"
+#include "Buffer.h"
+#include "CommandBuffer.h"
+#include "IResource.h"
+
+#include <vector>
 
 namespace Wire {
 
-	enum class FramebufferTextureFormat
+	enum class AttachmentFormat
 	{
-		None = 0,
-
-		// Colour
-		RGBA8,
-		RED_INTEGER,
-
-		// Depth/stencil
-		DEPTH24STENCIL8,
-
-		// Defaults
-		Depth = DEPTH24STENCIL8
-	};
-
-	struct FramebufferTextureSpecification
-	{
-		FramebufferTextureSpecification() = default;
-		FramebufferTextureSpecification(FramebufferTextureFormat format)
-			: TextureFormat(format) {}
-
-		FramebufferTextureFormat TextureFormat = FramebufferTextureFormat::None;
-		// TODO: filtering/wrap
-	};
-
-	struct FramebufferAttachmentSpecification
-	{
-		FramebufferAttachmentSpecification() = default;
-		FramebufferAttachmentSpecification(std::initializer_list<FramebufferTextureSpecification> attachments)
-			: Attachments(attachments) {}
-
-		std::vector<FramebufferTextureSpecification> Attachments;
+		Default,
+		RGBA,
+		R32_SInt,
+		R32_UInt,
+		Depth
 	};
 
 	struct FramebufferSpecification
 	{
-		uint32_t Width = 0, Height = 0;
-		FramebufferAttachmentSpecification Attachments;
-		uint32_t Samples = 1;
-
-		bool SwapChainTarget = false;
+		uint32_t Width = 1, Height = 1;
+		std::vector<AttachmentFormat> Attachments;
 	};
 
-	class Framebuffer
+	class Framebuffer : public IResource
 	{
 	public:
 		virtual ~Framebuffer() = default;
 
-		virtual void Bind() = 0;
-		virtual void Unbind() = 0;
+		virtual void BeginRenderPass(rbRef<CommandBuffer> commandBuffer) = 0;
+		virtual void EndRenderPass(rbRef<CommandBuffer> commandBuffer) = 0;
 
 		virtual void Resize(uint32_t width, uint32_t height) = 0;
-		virtual int ReadPixel(uint32_t attachmentIndex, int x, int y) = 0;
 
-		virtual void ClearAttachment(uint32_t attachmentIndex, int value) = 0;
+		virtual uint32_t GetColorAttachmentCount() const = 0;
 
-		virtual uint32_t GetColourAttachmentRendererID(uint32_t index = 0) const = 0;
+		virtual void CopyAttachmentImageToBuffer(uint32_t attachmentIndex, rbRef<StagingBuffer> buffer) = 0;
 
-		virtual const FramebufferSpecification& GetSpecification() const = 0;
+		virtual void* GetRenderHandle() const = 0;
 
-		static Ref<Framebuffer> Create(const FramebufferSpecification& spec);
+		virtual uint32_t GetWidth() const = 0;
+		virtual uint32_t GetHeight() const = 0;
 	};
-
 
 }

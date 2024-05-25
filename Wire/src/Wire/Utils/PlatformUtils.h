@@ -1,10 +1,34 @@
 #pragma once
 
-#include <string>
-
+#include "Wire/Core/Base.h"
 #include "Wire/Core/Window.h"
 
+#define WR_RGB(r, g, b) (((uint32_t)(((uint8_t)(r) | ((uint16_t)((uint8_t)(g)) << 8)) | (((uint32_t)(uint8_t)(b)) << 16))))
+
+struct GLFWwindow;
+
 namespace Wire {
+
+#ifdef WR_PLATFORM_WINDOWS
+
+	namespace Utils::Win32 {
+
+		enum Attribute
+		{
+			None = 0,
+			BorderColor,	// Set with a uint32_t value (use WR_RGB macro)
+			DarkMode,		// Set with a bool value
+			TitleBarColor,	// Set with a uint32_t
+		};
+
+		void SetWindowAttribute(Window& window, Attribute attribute, uint32_t value);
+		void SetWindowAttribute(Window& window, Attribute attribute, bool value);
+
+		void SetWindowAttribute(GLFWwindow* window, Attribute attribute, uint32_t value);
+		void SetWindowAttribute(GLFWwindow* window, Attribute attribute, bool value);
+	}
+
+#endif
 
 	class FileDialogs
 	{
@@ -17,38 +41,6 @@ namespace Wire {
 	{
 	public:
 		static float GetTime();
-	};
-
-	class WindowUtils
-	{
-	public:
-		static void SetWindowAttributes(void* window);
-		static void SetWindowBorderColour(void* window, float r, float g, float b);
-	};
-
-	enum class MouseIcon
-	{
-		None = 0,
-		Arrow,			// Normal arrow
-		Loading,		// Loading icon
-		ArrowLoading,	// Arrow and loading at the same time
-		Crosshair,		// Crosshair
-		Hand,			// Used when clicking on button
-		Help,			// Normal arrow with question mark
-		TextCursor,		// Used when hovering over text/editing text
-		Unavailable,	// Used when something is unavailable/cannot be used
-		Move_A,			// Four arrows pointing up/right/left/down
-		Move_BL_TR,		// Two arrows pointing bottom left/top right
-		Move_T_B,		// Two arrows pointing top/bottom
-		Move_TL_BR,		// Two arrows pointing top left/bottom right
-		Move_L_R,		// Two arrows pointing left/right
-		UpArrow			// One arrow pointing up
-	};
-
-	class Mouse
-	{
-	public:
-		static void SetMouseIcon(MouseIcon icon);
 	};
 
 }

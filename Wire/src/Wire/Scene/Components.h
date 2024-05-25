@@ -1,9 +1,7 @@
 #pragma once
 
-#include "SceneCamera.h"
 #include "Wire/Core/UUID.h"
-#include "Wire/Renderer/Texture.h"
-#include "Wire/Renderer/Font.h"
+#include "Controls/NumberControls.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -11,24 +9,19 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
 
+#include <string>
+
 namespace Wire {
 
 	struct IDComponent
 	{
 		UUID ID;
+		std::string Name;
 
 		IDComponent() = default;
 		IDComponent(const IDComponent&) = default;
-	};
-
-	struct TagComponent
-	{
-		std::string Tag;
-
-		TagComponent() = default;
-		TagComponent(const TagComponent&) = default;
-		TagComponent(const std::string& tag)
-			: Tag(tag)
+		IDComponent(UUID uuid, const std::string& name = std::string())
+			: ID(uuid), Name(name)
 		{
 		}
 	};
@@ -36,7 +29,7 @@ namespace Wire {
 	struct TransformComponent
 	{
 		glm::vec3 Translation = { 0.0f, 0.0f, 0.0f };
-		glm::vec3 Rotation = { 0.0f, 0.0f, 0.0f };
+		glm::vec3 Rotation = { 0.0f, 0.0f, 0.0f };		// Rotation is probably not needed, but is here anyway.
 		glm::vec3 Scale = { 1.0f, 1.0f, 1.0f };
 
 		TransformComponent() = default;
@@ -56,81 +49,26 @@ namespace Wire {
 		}
 	};
 
-	struct SpriteRendererComponent
+	struct InputsComponent
 	{
-		glm::vec4 Colour{ 1.0f, 1.0f, 1.0f, 1.0f };
-		Ref<Texture2D> Texture;
-		float TilingFactor = 1.0f;
+		uint32_t InputCount = 0;
+		uint32_t InputsConnected = 0;
 
-		SpriteRendererComponent() = default;
-		SpriteRendererComponent(const SpriteRendererComponent&) = default;
-		SpriteRendererComponent(const glm::vec4& colour)
-			: Colour(colour)
+		InputsComponent() = default;
+		InputsComponent(const InputsComponent&) = default;
+		InputsComponent(InputsComponent&&) = default;
+		InputsComponent(uint32_t count = 0, uint32_t connected = 0)
+			: InputCount(count), InputsConnected(connected)
 		{
 		}
 	};
 
-	struct CircleRendererComponent
+	struct NumberControlsComponent
 	{
-		glm::vec4 Colour{ 1.0f, 1.0f, 1.0f, 1.0f };
-		float Thickness = 1.0f;
-		float Fade = 0.005f;
+		std::vector<Controls::INumberControl*> Controls;
 
-		CircleRendererComponent() = default;
-		CircleRendererComponent(const CircleRendererComponent&) = default;
+		NumberControlsComponent() = default;
+		NumberControlsComponent(const NumberControlsComponent&) = default;
 	};
-
-	struct CameraComponent
-	{
-		SceneCamera Camera;
-		bool Primary = true;
-		bool FixedAspectRatio = false;
-
-		CameraComponent() = default;
-		CameraComponent(const CameraComponent&) = default;
-	};
-
-	struct ScriptComponent
-	{
-		std::string ClassName;
-
-		ScriptComponent() = default;
-		ScriptComponent(const ScriptComponent&) = default;
-	};
-
-	class ScriptableEntity;
-
-	struct NativeScriptComponent
-	{
-		ScriptableEntity* Instance = nullptr;
-
-		ScriptableEntity* (*InstantiateScript)();
-		void (*DestroyScript)(NativeScriptComponent*);
-
-		template<typename T>
-		void Bind()
-		{
-			InstantiateScript = []() { return static_cast<ScriptableEntity*>(new T()); };
-			DestroyScript = [](NativeScriptComponent* nsc) { delete nsc->Instance; nsc->Instance = nullptr; };
-		}
-	};
-
-	struct TextComponent
-	{
-		std::string TextString;
-		Ref<Font> FontAsset = Font::GetDefault();
-		glm::vec4 Colour{ 1.0 };
-		float Kerning = 0.0f;
-		float LineSpacing = 0.0f;
-	};
-
-	template<typename... Component>
-	struct ComponentGroup
-	{
-	};
-
-	using AllComponents = ComponentGroup<TransformComponent, SpriteRendererComponent,
-		CircleRendererComponent, CameraComponent, ScriptComponent, NativeScriptComponent,
-		TextComponent>;
 
 }

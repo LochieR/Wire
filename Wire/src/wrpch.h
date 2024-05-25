@@ -11,17 +11,17 @@
 #include <algorithm>
 #include <functional>
 
-#include <string>
-#include <sstream>
 #include <array>
 #include <cstdint>
 #include <vector>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 
-#include "Wire/Core/Log.h"
+#include <sstream>
+#include <fstream>
 
-#include "Wire/Debug/Instrumentor.h"
+#include "Wire/Core/Log.h"
 
 #ifdef WR_PLATFORM_WINDOWS
 	#include <Windows.h>

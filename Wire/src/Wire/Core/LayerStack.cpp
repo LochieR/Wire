@@ -1,5 +1,5 @@
 #include "wrpch.h"
-#include "Wire/Core/LayerStack.h"
+#include "LayerStack.h"
 
 namespace Wire {
 

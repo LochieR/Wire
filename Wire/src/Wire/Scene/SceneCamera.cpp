@@ -1,6 +1,8 @@
 #include "wrpch.h"
 #include "SceneCamera.h"
 
+#include "Wire/Core/Base.h"
+
 #include <glm/gtc/matrix_transform.hpp>
 
 namespace Wire {
@@ -31,7 +33,7 @@ namespace Wire {
 
 	void SceneCamera::SetViewportSize(uint32_t width, uint32_t height)
 	{
-		WR_CORE_ASSERT(width > 0 && height > 0);
+		WR_ASSERT(width > 0 && height > 0);
 		m_AspectRatio = (float)width / (float)height;
 		RecalculateProjection();
 	}

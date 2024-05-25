@@ -1,17 +1,16 @@
 #pragma once
 
-#include "Wire/Renderer/OrthographicCamera.h"
+#include "OrthographicCamera.h"
 #include "Wire/Core/Timestep.h"
 
-#include "Wire/Events/ApplicationEvent.h"
-#include "Wire/Events/MouseEvent.h"
+#include "Wire/Core/Event.h"
 
 namespace Wire {
 
 	class OrthographicCameraController
 	{
 	public:
-		OrthographicCameraController(float aspectRatio, bool rotation = false);
+		OrthographicCameraController(float aspectRatio, float near = -1.0f, float far = 1.0f, bool rotation = false);
 
 		void OnUpdate(Timestep ts);
 		void OnEvent(Event& e);
@@ -32,9 +31,10 @@ namespace Wire {
 		OrthographicCamera m_Camera;
 
 		bool m_Rotation;
+		float m_Near, m_Far;
 
 		glm::vec3 m_CameraPosition = { 0.0f, 0.0f, 0.0f };
-		float m_CameraRotation = 0.0f; //In degrees, in the anti-clockwise direction
+		float m_CameraRotation = 0.0f;
 		float m_CameraTranslationSpeed = 5.0f, m_CameraRotationSpeed = 180.0f;
 	};
 

@@ -2,12 +2,14 @@
 
 #include "Buffer.h"
 
+#include <filesystem>
+
 namespace Wire {
 
 	class FileSystem
 	{
 	public:
-		static Buffer ReadFileBinary(const std::filesystem::path& filepath);
+		static Buffer ReadFileBytes(const std::filesystem::path& filepath);
 	};
 
 }

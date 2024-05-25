@@ -1,10 +1,12 @@
 #pragma once
 
-#include "Wire/Renderer/Camera.h"
+//#include "Wire/Renderer/Camera.h"
+
+#include <glm/glm.hpp>
 
 namespace Wire {
 
-	class SceneCamera : public Camera
+	class SceneCamera// : public Camera
 	{
 	public:
 		enum class ProjectionType { Perspective = 0, Orthographic = 1 };
@@ -37,6 +39,8 @@ namespace Wire {
 		void RecalculateProjection();
 	private:
 		ProjectionType m_ProjectionType = ProjectionType::Orthographic;
+
+		glm::mat4 m_Projection = glm::mat4(1.0f);
 
 		float m_PerspectiveFOV = glm::radians(45.0f);
 		float m_PerspectiveNear = 0.01f, m_PerspectiveFar = 1000.0f;

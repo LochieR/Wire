@@ -1,79 +1,67 @@
 #pragma once
 
-#include "Wire/Renderer/OrthographicCamera.h"
+#include "Texture2D.h"
+#include "Framebuffer.h"
+#include "OrthographicCamera.h"
 
-#include "Wire/Renderer/Texture.h"
-#include "Wire/Renderer/Font.h"
+#include "Font.h"
 
-#include "Wire/Renderer/Camera.h"
-#include "Wire/Renderer/EditorCamera.h"
+#include <glm/glm.hpp>
 
-#include "Wire/Scene/Components.h"
+#ifdef DrawText
+#undef DrawText
+#endif
 
 namespace Wire {
+
+	class Renderer;
 
 	class Renderer2D
 	{
 	public:
-		static void Init();
-		static void Shutdown();
+		Renderer2D() = default;
+		Renderer2D(Renderer* renderer);
+		~Renderer2D() = default;
 
-		static void BeginScene(const Camera& camera, const glm::mat4& transform);
-		static void BeginScene(const EditorCamera& camera);
-		static void BeginScene(const OrthographicCamera& camera); // TODO: Remove
-		static void EndScene();
-		static void Flush();
+		void Release();
 
-		// Primitives
-		static void DrawQuad(const glm::vec2& position, const glm::vec2& size, const glm::vec4& colour);
-		static void DrawQuad(const glm::vec3& position, const glm::vec2& size, const glm::vec4& colour);
-		static void DrawQuad(const glm::vec2& position, const glm::vec2& size, const Ref<Texture2D>& texture, float tilingFactor = 1.0f, const glm::vec4& tintColour = glm::vec4(1.0f));
-		static void DrawQuad(const glm::vec3& position, const glm::vec2& size, const Ref<Texture2D>& texture, float tilingFactor = 1.0f, const glm::vec4& tintColour = glm::vec4(1.0f));
+		void Begin(const OrthographicCamera& camera);
+		void Begin(const OrthographicCamera& camera, rbRef<Framebuffer> framebuffer);
+		void End();
 
-		static void DrawQuad(const glm::mat4& transform, const glm::vec4& colour, int entityID = -1);
-		static void DrawQuad(const glm::mat4& transform, const Ref<Texture2D>& texture, float tilingFactor = 1.0f, const glm::vec4& tintColour = glm::vec4(1.0f), int entityID = -1);
+		void DrawQuad(const glm::vec3& position, const glm::vec2& size, const glm::vec4& color);
+		void DrawQuad(const glm::vec3& position, const glm::vec2& size, const glm::vec4& color, rbRef<Texture2D> texture);
 
-		static void DrawRotatedQuad(const glm::vec2& position, const glm::vec2& size, float rotation, const glm::vec4& colour);
-		static void DrawRotatedQuad(const glm::vec3& position, const glm::vec2& size, float rotation, const glm::vec4& colour);
-		static void DrawRotatedQuad(const glm::vec2& position, const glm::vec2& size, float rotation, const Ref<Texture2D>& texture, float tilingFactor = 1.0f, const glm::vec4& tintColour = glm::vec4(1.0f));
-		static void DrawRotatedQuad(const glm::vec3& position, const glm::vec2& size, float rotation, const Ref<Texture2D>& texture, float tilingFactor = 1.0f, const glm::vec4& tintColour = glm::vec4(1.0f));
+		void DrawCircle(const glm::vec3& position, const glm::vec2& size, const glm::vec4& color, float thickness = 1.0f, float fade = 0.005f);
+		void DrawLine(const glm::vec3& p0, const glm::vec3& p1, const glm::vec4& color);
 
-		static void DrawCircle(const glm::mat4& transform, const glm::vec4& colour, float thickness = 1.0f, float fade = 0.005f, int entityID = -1);
+		void SetLineWidth(float lineWidth);
 
-		static void DrawLine(const glm::vec3& p0, const glm::vec3& p1, const glm::vec4& colour, int entityID = -1);
-
-		static void DrawRect(const glm::vec3& position, const glm::vec2& size, const glm::vec4& colour, int entityID = -1);
-		static void DrawRect(const glm::mat4& transform, const glm::vec4& colour, int entityID = -1);
-
-		static void DrawSprite(const glm::mat4& transform, SpriteRendererComponent& src, int entityID);
+		void DrawRoundedQuad(const glm::vec3& position, const glm::vec2& size, const glm::vec4& color, float cornerRadius, float fade = 0.005f);
 
 		struct TextParams
 		{
-			glm::vec4 Colour{ 1.0f };
+			glm::vec4 Color{ 1.0f };
 			float Kerning = 0.0f;
 			float LineSpacing = 0.0f;
 		};
-		static void DrawString(const std::string& string, Ref<Font> font, const glm::mat4& transform, const TextParams& textParams, int entityID = -1);
-		static void DrawString(const std::string& string, const glm::mat4& transform, const TextComponent& component, int entityID = -1);
+		void DrawText(const std::string& text, const glm::mat4& transform, const TextParams& textParams);
+		void DrawText(const std::string& text, const glm::mat4& transform, const TextParams& textParams, rbRef<Font> font);
+		void DrawText(const std::wstring& text, const glm::mat4& transform, const TextParams& textParams, rbRef<Font> font);
 
-		static float GetLineWidth();
-		static void SetLineWidth(float width);
+		rbRef<Font> GetDefaultFont() const;
 
-		// Stats
-		struct Statistics
-		{
-			uint32_t DrawCalls = 0;
-			uint32_t QuadCount = 0;
+		uint32_t ReadPixel(uint32_t attachmentIndex, uint32_t x, uint32_t y, rbRef<Framebuffer> framebuffer = nullptr);
 
-			uint32_t GetTotalVertexCount() const { return QuadCount * 4; }
-			uint32_t GetTotalIndexCount() const { return QuadCount * 6; }
-		};
-		static void ResetStats();
-		static Statistics GetStats();
-
+		void NewLayer() { NextBatch(); }
 	private:
-		static void StartBatch();
-		static void NextBatch();
+		void StartBatch();
+		void Flush();
+		void NextBatch();
+
+		void CreatePipelines(rbRef<Framebuffer> framebuffer);
+	private:
+		Renderer* m_Renderer = nullptr;
 	};
 
 }

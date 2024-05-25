@@ -3,17 +3,88 @@
 
 #include "Wire/Core/Application.h"
 
-#include <commdlg.h>
-#include <GLFW/glfw3.h>
+#include <glfw/glfw3.h>
 #define GLFW_EXPOSE_NATIVE_WIN32
-#include <GLFW/glfw3native.h>
-#include <winrt/Windows.UI.ViewManagement.h>
+#include <glfw/glfw3native.h>
+
+#include <commdlg.h>
 #include <dwmapi.h>
 #include <winuser.h>
 
 namespace Wire {
 
+#ifdef WR_PLATFORM_WINDOWS
+
 #define WR_REFRESH_WINDOW(window) SetWindowPos(window, NULL, NULL, NULL, NULL, NULL, SWP_NOMOVE | SWP_NOOWNERZORDER | SWP_NOSIZE)
+
+	namespace Utils::Win32 {
+
+		void SetWindowAttribute(Window& window, Attribute attribute, uint32_t value)
+		{
+			GLFWwindow* glfwWin = static_cast<GLFWwindow*>(window.GetNativeHandle());
+			SetWindowAttribute(glfwWin, attribute, value);
+		}
+
+		void SetWindowAttribute(Window& window, Attribute attribute, bool value)
+		{
+			GLFWwindow* glfwWin = static_cast<GLFWwindow*>(window.GetNativeHandle());
+			SetWindowAttribute(glfwWin, attribute, value);
+		}
+
+		void SetWindowAttribute(GLFWwindow* window, Attribute attribute, uint32_t value)
+		{
+			if (!window)
+				return;
+			HWND handle = glfwGetWin32Window(window);
+
+			switch (attribute)
+			{
+				case None:
+					WR_ASSERT(false && "Cannot set attribute None!");
+					break;
+				case BorderColor:
+					DwmSetWindowAttribute(handle, DWMWA_BORDER_COLOR, &value, sizeof(value));
+					break;
+				case DarkMode:
+					WR_ASSERT(false && "The DarkMode attribute is a bool value!");
+					break;
+				case TitleBarColor:
+					break;
+			}
+
+			WR_REFRESH_WINDOW(handle);
+		}
+
+		void SetWindowAttribute(GLFWwindow* window, Attribute attribute, bool value)
+		{
+			if (!window)
+				return;
+			HWND handle = glfwGetWin32Window(window);
+
+			switch (attribute)
+			{
+				case None:
+					WR_ASSERT(false && "Cannot set attribute None!");
+					break;
+				case BorderColor:
+					WR_ASSERT(false && "The BorderColor attribute is a uint32_t value!");
+					break;
+				case DarkMode:
+					BOOL dark;
+					if (value)
+						dark = TRUE;
+					else
+						dark = FALSE;
+					DwmSetWindowAttribute(handle, DWMWA_USE_IMMERSIVE_DARK_MODE, &dark, sizeof(dark));
+					break;
+			}
+
+			WR_REFRESH_WINDOW(handle);
+		}
+
+	}
+
+#endif
 
 	std::string FileDialogs::OpenFile(const char* filter)
 	{
@@ -21,7 +92,7 @@ namespace Wire {
 		CHAR szFile[260] = { 0 };
 		ZeroMemory(&ofn, sizeof(OPENFILENAME));
 		ofn.lStructSize = sizeof(OPENFILENAME);
-		ofn.hwndOwner = glfwGetWin32Window((GLFWwindow*)Application::Get().GetWindow().GetNativeWindow());
+		ofn.hwndOwner = glfwGetWin32Window((GLFWwindow*)Application::Get().GetWindow().GetNativeHandle());
 		ofn.lpstrFile = szFile;
 		ofn.nMaxFile = sizeof(szFile);
 		ofn.lpstrFilter = filter;
@@ -40,7 +111,7 @@ namespace Wire {
 		CHAR szFile[260] = { 0 };
 		ZeroMemory(&ofn, sizeof(OPENFILENAME));
 		ofn.lStructSize = sizeof(OPENFILENAME);
-		ofn.hwndOwner = glfwGetWin32Window((GLFWwindow*)Application::Get().GetWindow().GetNativeWindow());
+		ofn.hwndOwner = glfwGetWin32Window((GLFWwindow*)Application::Get().GetWindow().GetNativeHandle());
 		ofn.lpstrFile = szFile;
 		ofn.nMaxFile = sizeof(szFile);
 		ofn.lpstrFilter = filter;
@@ -55,59 +126,7 @@ namespace Wire {
 
 	float Time::GetTime()
 	{
-		return glfwGetTime();
-	}
-
-	void WindowUtils::SetWindowAttributes(void* window)
-	{
-		HWND hwnd = glfwGetWin32Window((GLFWwindow*)window);
-
-		BOOL dark;
-		winrt::Windows::UI::ViewManagement::UISettings settings;
-		auto background = settings.GetColorValue(winrt::Windows::UI::ViewManagement::UIColorType::Background);
-		if (background.R < 0.5f)
-			dark = TRUE;
-		else
-			dark = FALSE;
-
-		COLORREF colour = RGB(250, 36, 12);
-
-		DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &dark, sizeof(dark));
-		WR_REFRESH_WINDOW(hwnd);
-	}
-
-	void WindowUtils::SetWindowBorderColour(void* window, float r, float g, float b)
-	{
-		HWND hwnd = glfwGetWin32Window((GLFWwindow*)window);
-
-		COLORREF colour = RGB(r, g, b);
-
-		DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, &colour, sizeof(colour));
-		WR_REFRESH_WINDOW(hwnd);
-	}
-
-#define WR_SET_CURSOR(icon, id) case MouseIcon::icon: SetCursor(LoadCursor(0, IDC_##id)); return;
-
-	void Mouse::SetMouseIcon(MouseIcon icon)
-	{
-		switch (icon)
-		{
-			WR_SET_CURSOR(Arrow, ARROW);
-			WR_SET_CURSOR(Loading, WAIT)
-			WR_SET_CURSOR(ArrowLoading, APPSTARTING);
-			WR_SET_CURSOR(Crosshair, CROSS);
-			WR_SET_CURSOR(Hand, HAND);
-			WR_SET_CURSOR(Help, HELP);
-			WR_SET_CURSOR(TextCursor, IBEAM);
-			WR_SET_CURSOR(Unavailable, NO);
-			WR_SET_CURSOR(Move_A, SIZEALL);
-			WR_SET_CURSOR(Move_BL_TR, SIZENESW);
-			WR_SET_CURSOR(Move_T_B, SIZENS);
-			WR_SET_CURSOR(Move_TL_BR, SIZENWSE);
-			WR_SET_CURSOR(Move_L_R, SIZEWE);
-			WR_SET_CURSOR(UpArrow, UPARROW);
-		}
-		WR_CORE_ASSERT(false);
+		return static_cast<float>(glfwGetTime());
 	}
 
 }

@@ -1,63 +1,99 @@
 #include "wrpch.h"
 #include "Application.h"
 
-#include "Log.h"
-#include "Input.h"
-
-#include "Wire/Renderer/Renderer.h"
-#include "Wire/Audio/Audio.h"
+#include "Wire/Audio/AudioEngine.h"
 #include "Wire/Scripting/ScriptEngine.h"
+#include "Wire/Renderer/Renderer.h"
 
 #include "Wire/Utils/PlatformUtils.h"
+#include "Wire/ImGui/ImGuiLayer.h"
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include <imgui.h>
+#include <iostream>
 
 namespace Wire {
 
-	Application* Application::s_Instance = nullptr;
+	Application* Application::s_Instance;
 
-	Application::Application(const std::string& name, ApplicationCommandLineArgs args)
-		: m_CommandLineArgs(args)
+	Application::Application(const ApplicationSpecification& spec)
+		: m_Specification(spec)
 	{
-		WR_PROFILE_FUNCTION();
-
-		WR_CORE_ASSERT(!s_Instance, "Application already exists!");
+		WR_ASSERT(!s_Instance);
 		s_Instance = this;
-		m_Window = Window::Create(WindowProps(name));
-		m_Window->SetEventCallback(WR_BIND_EVENT_FN(Application::OnEvent));
 
-		Renderer::Init();
-		Audio::Init();
-		ScriptEngine::Init();
+		m_Window = std::make_shared<Window>(WindowSpecification{ spec.WindowSpec.Title, spec.WindowSpec.Width, spec.WindowSpec.Height, spec.WindowSpec.VSync, true });
+		m_Window->SetEventCallback(WR_BIND_EVENT_FN(OnEvent));
 
-		m_ImGuiLayer = new ImGuiLayer();
-		PushOverlay(m_ImGuiLayer);
+		//ScriptEngine::Init();
+		//AudioEngine::Init();
+		
+		m_Renderer = Renderer::Create(*m_Window);
+
+		Input::SetActiveWindow(m_Window->GetNativeHandle());
+
+		if (spec.EnableImGui)
+		{
+			m_ImGuiLayer = m_Renderer->CreateImGuiLayer();
+			PushOverlay(m_ImGuiLayer);
+		}
 	}
 
 	Application::~Application()
 	{
-		WR_PROFILE_FUNCTION();
+		m_LayerStack.reset();
 
-		ScriptEngine::Shutdown();
-		Renderer::Shutdown();
+		m_Renderer->Release();
 
-		s_Instance = nullptr;
+		//AudioEngine::Shutdown();
+		//ScriptEngine::Shutdown();
 	}
 
-	void Application::PushLayer(Layer* layer)
+	void Application::Run()
 	{
-		WR_PROFILE_FUNCTION();
+		m_Window->Show();
 
-		m_LayerStack.PushLayer(layer);
-		layer->OnAttach();
-	}
+		while (m_Running)
+		{
+			float time = Time::GetTime();
+			Timestep timestep = time - m_LastFrameTime;
+			m_LastFrameTime = time;
 
-	void Application::PushOverlay(Layer* layer)
-	{
-		WR_PROFILE_FUNCTION();
+			ExecuteMainThreadQueue();
 
-		m_LayerStack.PushOverlay(layer);
-		layer->OnAttach();
+			if (m_Renderer->BeginFrame())
+			{
+				if (!m_Minimized) 
+				{
+					for (Layer* layer : *m_LayerStack)
+						layer->OnUpdate(timestep);
+				}
+
+				if (m_Specification.EnableImGui)
+				{
+					m_ImGuiLayer->Begin();
+
+					for (Layer* layer : *m_LayerStack)
+						layer->OnImGuiRender();
+
+					m_ImGuiLayer->End();
+				}
+
+				m_Renderer->EndFrame();
+
+				for (Layer* layer : *m_LayerStack)
+					layer->PostRender();
+			}
+
+			if (m_Specification.EnableImGui)
+				m_ImGuiLayer->UpdateViewports();
+
+			m_Window->OnUpdate();
+		}
+
+		m_Window->Hide();
 	}
 
 	void Application::Close()
@@ -67,13 +103,11 @@ namespace Wire {
 
 	void Application::OnEvent(Event& e)
 	{
-		WR_PROFILE_FUNCTION();
-
 		EventDispatcher dispatcher(e);
-		dispatcher.Dispatch<WindowCloseEvent>(WR_BIND_EVENT_FN(Application::OnWindowClose));
-		dispatcher.Dispatch<WindowResizeEvent>(WR_BIND_EVENT_FN(Application::OnWindowResize));
+		dispatcher.Dispatch<WindowCloseEvent>(WR_BIND_EVENT_FN(OnWindowClose));
+		dispatcher.Dispatch<WindowEndResizeEvent>(WR_BIND_EVENT_FN(OnWindowResize));
 
-		for (auto it = m_LayerStack.end(); it != m_LayerStack.begin(); )
+		for (auto it = m_LayerStack->end(); it != m_LayerStack->begin(); )
 		{
 			(*--it)->OnEvent(e);
 			if (e.Handled)
@@ -81,70 +115,19 @@ namespace Wire {
 		}
 	}
 
-	void Application::Run()
+	void Application::PushLayer(Layer* layer)
 	{
-		WR_PROFILE_FUNCTION();
-
-		while (m_Running)
-		{
-			WR_PROFILE_SCOPE("RunLoop");
-
-			float time = Time::GetTime();
-			m_Timestep = time - m_LastFrameTime;
-			m_LastFrameTime = time;
-
-			ExecuteMainThreadQueue();
-
-			if (!m_Minimized)
-			{
-				{
-					WR_PROFILE_SCOPE("LayerStack OnUpdate");
-
-					for (Layer* layer : m_LayerStack)
-						layer->OnUpdate(m_Timestep);
-				}
-			}
-
-			m_ImGuiLayer->Begin();
-			{
-				WR_PROFILE_SCOPE("LayerStack OnImGuiRender");
-
-				ImGui::PushStyleVar(ImGuiStyleVar_PopupRounding, 4.59375f);
-
-				for (Layer* layer : m_LayerStack)
-					layer->OnImGuiRender();
-
-				ImGui::PopStyleVar();
-			}
-			m_ImGuiLayer->End();
-
-			m_Window->OnUpdate();
-		}
+		m_LayerStack->PushLayer(layer);
+		layer->OnAttach();
 	}
 
-	bool Application::OnWindowClose(WindowCloseEvent& e)
+	void Application::PushOverlay(Layer* layer)
 	{
-		m_Running = false;
-		return true;
+		m_LayerStack->PushOverlay(layer);
+		layer->OnAttach();
 	}
 
-	bool Application::OnWindowResize(WindowResizeEvent& e)
-	{
-		WR_PROFILE_FUNCTION();
-
-		if (e.GetWidth() == 0 || e.GetHeight() == 0)
-		{
-			m_Minimized = true;
-			return false;
-		}
-
-		m_Minimized = false;
-		Renderer::OnWindowResize(e.GetWidth(), e.GetHeight());
-
-		return false;
-	}
-
-	void Application::SubmitToMainThread(const std::function<void()>& function)
+	void Application::SubmitToMainThread(std::function<void()>&& function)
 	{
 		std::scoped_lock<std::mutex> lock(m_MainThreadQueueMutex);
 
@@ -159,6 +142,25 @@ namespace Wire {
 			func();
 
 		m_MainThreadQueue.clear();
+	}
+
+	bool Application::OnWindowClose(WindowCloseEvent& e)
+	{
+		m_Running = false;
+		return true;
+	}
+
+	bool Application::OnWindowResize(WindowEndResizeEvent& e)
+	{
+		if (e.GetWidth() == 0 || e.GetHeight() == 0)
+		{
+			m_Minimized = true;
+			return false;
+		}
+
+		m_Minimized = false;
+
+		return false;
 	}
 
 }

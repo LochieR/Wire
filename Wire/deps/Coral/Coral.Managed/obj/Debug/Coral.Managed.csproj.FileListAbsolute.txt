@@ -1,0 +1,11 @@
+E:\dev\Wire\Wire\deps\Coral\Coral.Managed\bin\Debug\Coral.Managed.deps.json
+E:\dev\Wire\Wire\deps\Coral\Coral.Managed\bin\Debug\Coral.Managed.dll
+E:\dev\Wire\Wire\deps\Coral\Coral.Managed\bin\Debug\Coral.Managed.pdb
+E:\dev\Wire\Wire\deps\Coral\Coral.Managed\obj\Debug\Coral.Managed.GeneratedMSBuildEditorConfig.editorconfig
+E:\dev\Wire\Wire\deps\Coral\Coral.Managed\obj\Debug\Coral.Managed.AssemblyInfoInputs.cache
+E:\dev\Wire\Wire\deps\Coral\Coral.Managed\obj\Debug\Coral.Managed.AssemblyInfo.cs
+E:\dev\Wire\Wire\deps\Coral\Coral.Managed\obj\Debug\Coral.Managed.csproj.CoreCompileInputs.cache
+E:\dev\Wire\Wire\deps\Coral\Coral.Managed\obj\Debug\Coral.Managed.dll
+E:\dev\Wire\Wire\deps\Coral\Coral.Managed\obj\Debug\refint\Coral.Managed.dll
+E:\dev\Wire\Wire\deps\Coral\Coral.Managed\obj\Debug\Coral.Managed.pdb
+E:\dev\Wire\Wire\deps\Coral\Coral.Managed\obj\Debug\ref\Coral.Managed.dll

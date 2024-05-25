@@ -1,0 +1,13 @@
+E:\dev\Coral\Coral.Managed\Build\Debug-windows\Coral.Managed.deps.json
+E:\dev\Coral\Coral.Managed\Build\Debug-windows\Coral.Managed.dll
+E:\dev\Coral\Coral.Managed\Build\Debug-windows\Coral.Managed.pdb
+E:\dev\Coral\Coral.Managed\Intermediates\Debug-windows\Coral.Managed.csproj.AssemblyReference.cache
+E:\dev\Coral\Coral.Managed\Intermediates\Debug-windows\Coral.Managed.GeneratedMSBuildEditorConfig.editorconfig
+E:\dev\Coral\Coral.Managed\Intermediates\Debug-windows\Coral.Managed.AssemblyInfoInputs.cache
+E:\dev\Coral\Coral.Managed\Intermediates\Debug-windows\Coral.Managed.AssemblyInfo.cs
+E:\dev\Coral\Coral.Managed\Intermediates\Debug-windows\Coral.Managed.csproj.CoreCompileInputs.cache
+E:\dev\Coral\Coral.Managed\Intermediates\Debug-windows\Coral.Managed.sourcelink.json
+E:\dev\Coral\Coral.Managed\Intermediates\Debug-windows\Coral.Managed.dll
+E:\dev\Coral\Coral.Managed\Intermediates\Debug-windows\refint\Coral.Managed.dll
+E:\dev\Coral\Coral.Managed\Intermediates\Debug-windows\Coral.Managed.pdb
+E:\dev\Coral\Coral.Managed\Intermediates\Debug-windows\ref\Coral.Managed.dll

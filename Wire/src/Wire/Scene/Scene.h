@@ -1,14 +1,23 @@
 #pragma once
 
-#include "Wire/Core/Timestep.h"
-#include "Wire/Core/UUID.h"
-#include "Wire/Renderer/EditorCamera.h"
+#include "SceneCamera.h"
 
-#include "entt.hpp"
+#include "Wire/Scripting/ScriptEngine.h"
+#include "Wire/Core/UUID.h"
+
+#include <entt.hpp>
+
+#include <string>
+
+namespace Coral {
+
+	class Type;
+
+}
 
 namespace Wire {
 
-	class Entity;
+	class Module;
 
 	class Scene
 	{
@@ -16,47 +25,27 @@ namespace Wire {
 		Scene();
 		~Scene();
 
-		static Ref<Scene> Copy(Ref<Scene> other);
+		Module CreateModule(const std::string& name = std::string());
+		Module CreateModuleWithUUID(UUID id, const std::string& name = std::string());
 
-		Entity CreateEntity(const std::string& name = std::string());
-		Entity CreateEntityWithUUID(UUID uuid, const std::string& name = std::string());
-		void DestroyEntity(Entity entity);
+		Module CreateModuleFromManagedClass(Coral::Type* type);
 
-		void OnSceneStart();
-		void OnSceneStop();
+		void DestroyModule(Module module);
 
-		void OnUpdateEditor(Timestep ts, EditorCamera& camera);
-		void OnUpdateRuntime(Timestep ts);
-		void OnViewportResize(uint32_t width, uint32_t height);
-
-		Entity DuplicateEntity(Entity entity);
-
-		Entity FindEntityByName(std::string_view name);
-		Entity GetEntityByUUID(UUID uuid);
-
-		Entity GetPrimaryCameraEntity();
-
-		bool IsRunning() const { return m_Running; }
-		bool IsPaused() const { return m_Paused; }
-
-		void SetPaused(bool paused) { m_Paused = paused; }
-
-		void Step(int frames = 1);
-	private:
-		template<typename T>
-		void OnComponentAdded(Entity entity, T& component);
+		std::unordered_map<UUID, entt::entity>::iterator begin() { return m_ModuleMap.begin(); }
+		std::unordered_map<UUID, entt::entity>::iterator end() { return m_ModuleMap.end(); }
+		std::unordered_map<UUID, entt::entity>::const_iterator begin() const { return m_ModuleMap.cbegin(); }
+		std::unordered_map<UUID, entt::entity>::const_iterator end() const { return m_ModuleMap.cend(); }
 	private:
 		entt::registry m_Registry;
-		uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
-		bool m_Running = false;
-		bool m_Paused = false;
-		int m_StepFrames = 0;
 
-		std::unordered_map<UUID, entt::entity> m_EntityMap;
+		std::unordered_map<UUID, entt::entity> m_ModuleMap;
 
-		friend class Entity;
-		friend class SceneSerializer;
-		friend class SceneHierarchyPanel;
+		SceneCamera m_SceneCamera;
+		glm::mat4 m_SceneCameraTransform{ 1.0f };
+
+		friend class Module;
+		friend class SceneRenderer;
 	};
 
 }

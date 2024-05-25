@@ -1,8 +1,7 @@
 #pragma once
 
-#include "Wire/Core/Core.h"
-#include "Wire/Core/Timestep.h"
-#include "Wire/Events/Event.h"
+#include "Event.h"
+#include "Timestep.h"
 
 namespace Wire {
 
@@ -16,10 +15,11 @@ namespace Wire {
 		virtual void OnDetach() {}
 		virtual void OnUpdate(Timestep ts) {}
 		virtual void OnImGuiRender() {}
-		virtual void OnEvent(Event& event) {}
+		virtual void PostRender() {}
+		virtual void OnEvent(Event& e) {}
 
 		inline const std::string& GetName() const { return m_DebugName; }
-	protected:
+	private:
 		std::string m_DebugName;
 	};
 

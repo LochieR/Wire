@@ -1,34 +1,25 @@
 #pragma once
 
-#include "Wire/Core/Layer.h"
+#include "FontLibrary.h"
+#include "Wire/Renderer/IResource.h"
 
-#include "Wire/Events/ApplicationEvent.h"
-#include "Wire/Events/KeyEvent.h"
-#include "Wire/Events/MouseEvent.h"
+#include "Wire/Core/Layer.h"
+#include "Wire/Core/Window.h"
+
+#include <imgui.h>
 
 namespace Wire {
 
-	class ImGuiLayer : public Layer
+	class ImGuiLayer : public Layer, public IResource
 	{
 	public:
-		ImGuiLayer();
-		~ImGuiLayer() = default;
+		virtual ~ImGuiLayer() = default;
 
-		virtual void OnAttach() override;
-		virtual void OnDetach() override;
-		virtual void OnEvent(Event& e) override;
+		virtual void Begin() = 0;
+		virtual void End() = 0;
+		virtual void UpdateViewports() = 0;
 
-		void Begin();
-		void End();
-
-		void BlockEvents(bool block) { m_BlockEvents = block; }
-
-		void SetDarkThemeColours();
-
-		uint32_t GetActiveWidgetID() const;
-	private:
-		bool m_BlockEvents = true;
-		float m_Time = 0.0f;
+		virtual FontLibrary& GetFontLibrary() const = 0;
 	};
 
 }

@@ -1,15 +1,14 @@
 #pragma once
 
-#include "Core.h"
-
+#include "Base.h"
 #include "Window.h"
+#include "Event.h"
 #include "LayerStack.h"
-#include "Wire/Events/Event.h"
-#include "Wire/Events/ApplicationEvent.h"
-
 #include "Timestep.h"
 
-#include "Wire/ImGui/ImGuiLayer.h"
+#include <vector>
+#include <string>
+#include <mutex>
 
 namespace Wire {
 
@@ -17,12 +16,6 @@ namespace Wire {
 	{
 		int Count = 0;
 		std::vector<char*> Args;
-
-		const char* operator[](int index) const
-		{
-			WR_CORE_ASSERT(index < Count);
-			return Args[index];
-		}
 
 		std::vector<char*>::iterator begin()
 		{
@@ -34,81 +27,93 @@ namespace Wire {
 			return Args.end();
 		}
 
+		std::vector<char*>::const_iterator begin() const
+		{
+			return Args.begin();
+		}
+
+		std::vector<char*>::const_iterator end() const
+		{
+			return Args.end();
+		}
+
+		std::string operator[](int index) const
+		{
+			return Args[index];
+		}
+
+		ApplicationCommandLineArgs() = default;
+
 		ApplicationCommandLineArgs(int count, char** args)
 			: Count(count)
 		{
 			Args = std::vector<char*>(args, args + count);
 		}
-
-		ApplicationCommandLineArgs()
-			: Count(0), Args()
-		{
-		}
 	};
+
+	struct ApplicationSpecification
+	{
+		std::string Name = "Wire Application";
+		ApplicationCommandLineArgs CommandLineArgs = ApplicationCommandLineArgs();
+
+		WindowSpecification WindowSpec = WindowSpecification();
+
+		bool EnableImGui = true;
+	};
+
+	class Renderer;
+	class ImGuiLayer;
 
 	class Application
 	{
 	public:
-		Application(const std::string& name = "Wire Designer", ApplicationCommandLineArgs args = ApplicationCommandLineArgs());
-		virtual ~Application();
+		Application(const ApplicationSpecification& spec);
+		~Application();
 
 		void Run();
+		void Close();
 
 		void OnEvent(Event& e);
 
 		void PushLayer(Layer* layer);
 		void PushOverlay(Layer* layer);
 
-		inline Window& GetWindow() { return *m_Window; }
+		Window& GetWindow() { return *m_Window; }
 
-		void Close();
+		ImGuiLayer* GetImGuiLayer() const { return m_ImGuiLayer; }
+		bool GetImGuiPaused() const { return m_ImGuiPaused; }
+		void SetImGuiPaused(bool paused) { m_ImGuiPaused = paused; }
 
-		ImGuiLayer* GetImGuiLayer() { return m_ImGuiLayer; }
+		void SubmitToMainThread(std::function<void()>&& function);
+
+		Renderer* GetRenderer() { return m_Renderer; }
 
 		static Application& Get() { return *s_Instance; }
-
-		ApplicationCommandLineArgs GetCommandLineArgs() const { return m_CommandLineArgs; }
-
-		void SubmitToMainThread(const std::function<void()>& function);
-
-		Timestep GetTimestep() const { return m_Timestep; }
-
-		void SetApplicationLogFunction(const std::function<void(int, const std::string&)>& function)
-		{
-			m_ApplicationLogFunction = function;
-		}
-
-		const std::function<void(int, const std::string&)>& GetApplicationLogFunction()
-		{
-			return m_ApplicationLogFunction;
-		}
 	private:
 		bool OnWindowClose(WindowCloseEvent& e);
-		bool OnWindowResize(WindowResizeEvent& e);
+		bool OnWindowResize(WindowEndResizeEvent& e);
 
 		void ExecuteMainThreadQueue();
 	private:
-		ApplicationCommandLineArgs m_CommandLineArgs;
-		Ref<Window> m_Window;
-		ImGuiLayer* m_ImGuiLayer;
+		ApplicationSpecification m_Specification;
+		std::shared_ptr<Window> m_Window;
 
-		bool m_Running = true;
+		Renderer* m_Renderer = nullptr;
+
+		ImGuiLayer* m_ImGuiLayer = nullptr;
+		bool m_ImGuiPaused = false;
+
 		bool m_Minimized = false;
+		bool m_Running = true;
 
-		LayerStack m_LayerStack;
-
+		std::unique_ptr<LayerStack> m_LayerStack = std::make_unique<LayerStack>();
 		float m_LastFrameTime = 0.0f;
 
 		std::vector<std::function<void()>> m_MainThreadQueue;
 		std::mutex m_MainThreadQueueMutex;
-
-		std::function<void(int, const std::string&)> m_ApplicationLogFunction;
-
-		Timestep m_Timestep;
 	private:
 		static Application* s_Instance;
 	};
-
-	Application* CreateApplication(ApplicationCommandLineArgs args);
+	Application* CreateApplication(const ApplicationCommandLineArgs& args);
 
 }

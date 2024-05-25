@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "dgSpecHash": "zLfG5o5WnZ3YzaFOhVojcmd65vsKKqoMHrX9zB2Z7ISKlRovYaeDkfya+oCCwcv0tsjHKXzpQkwrPjug/6Ca5w==",
+  "success": true,
+  "projectFilePath": "E:\\dev\\Wire\\Wire\\deps\\Coral\\Coral.Managed\\Coral.Managed.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\lochi\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\7.0.16\\microsoft.windowsdesktop.app.ref.7.0.16.nupkg.sha512",
+    "C:\\Users\\lochi\\.nuget\\packages\\microsoft.netcore.app.ref\\7.0.16\\microsoft.netcore.app.ref.7.0.16.nupkg.sha512",
+    "C:\\Users\\lochi\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\7.0.16\\microsoft.aspnetcore.app.ref.7.0.16.nupkg.sha512"
+  ],
+  "logs": []
+}

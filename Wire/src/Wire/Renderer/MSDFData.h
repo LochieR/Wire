@@ -3,7 +3,7 @@
 #include <vector>
 
 #undef INFINITE
-#include "msdf-atlas-gen.h"
+#include <msdf-atlas-gen.h>
 
 namespace Wire {
 
@@ -12,6 +12,5 @@ namespace Wire {
 		std::vector<msdf_atlas::GlyphGeometry> Glyphs;
 		msdf_atlas::FontGeometry FontGeometry;
 	};
-
 
 }

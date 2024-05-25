@@ -1,6 +1,0 @@
-E:\dev\Wire\Wire-Designer\Resources\Scripts\Intermediates\Debug\Wire-ScriptCore.csproj.AssemblyReference.cache
-E:\dev\Wire\Wire-Designer\Resources\Scripts\Intermediates\Debug\Wire-ScriptCore.csproj.CoreCompileInputs.cache
-E:\dev\Wire\Wire-Designer\Resources\Scripts\Intermediates\Debug\Wire-ScriptCore.dll
-E:\dev\Wire\Wire-Designer\Resources\Scripts\Intermediates\Debug\Wire-ScriptCore.pdb
-E:\dev\Wire\Wire-Designer\Resources\Scripts\Wire-ScriptCore.dll
-E:\dev\Wire\Wire-Designer\Resources\Scripts\Wire-ScriptCore.pdb

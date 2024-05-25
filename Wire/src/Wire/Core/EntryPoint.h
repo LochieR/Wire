@@ -1,26 +1,43 @@
 #pragma once
-#include "Wire/Core/Core.h"
-#include "Wire/Core/Application.h"
+
+#include "Base.h"
 
 #ifdef WR_PLATFORM_WINDOWS
 
-extern Wire::Application* Wire::CreateApplication(ApplicationCommandLineArgs args);
+#include <windows.h>
+
+#include "Application.h"
+
+namespace Wire {
+
+	int Main(int argc, char** argv)
+	{
+		Wire::Log::Init();
+
+		Application* app = CreateApplication({ argc, argv });
+		app->Run();
+
+		delete app;
+
+		return 0;
+	}
+
+}
+
+#ifdef WR_DIST
+
+int WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
+{
+	return Wire::Main(__argc, __argv);
+}
+
+#else
 
 int main(int argc, char** argv)
 {
-	Wire::Log::Init();
-
-	WR_PROFILE_BEGIN_SESSION("Startup", "WireProfile-Startup.json");
-	auto app = Wire::CreateApplication({ argc, argv });
-	WR_PROFILE_END_SESSION();
-
-	WR_PROFILE_BEGIN_SESSION("Runtime", "WireProfile-Runtime.json");
-	app->Run();
-	WR_PROFILE_END_SESSION();
-
-	WR_PROFILE_BEGIN_SESSION("Shutdown", "WireProfile-Shutdown.json");
-	delete app;
-	WR_PROFILE_END_SESSION();
+	return Wire::Main(argc, argv);
 }
+
+#endif
 
 #endif

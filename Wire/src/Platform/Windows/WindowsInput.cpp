@@ -1,45 +1,25 @@
 #include "wrpch.h"
-
-#include "Wire/Core/Application.h"
 #include "Wire/Core/Input.h"
 
 #include <glfw/glfw3.h>
 
 namespace Wire {
 
-	bool Input::IsKeyPressed(KeyCode keycode)
+	bool Input::IsKeyDown(KeyCode key)
 	{
-		auto window = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
-		auto state = glfwGetKey(window, static_cast<int>(keycode));
-		return state == GLFW_PRESS;
+		return glfwGetKey(static_cast<GLFWwindow*>(s_ActiveWindow), static_cast<int>(key)) == GLFW_PRESS;
 	}
 
-	bool Input::IsMouseButtonPressed(MouseButton button)
+	bool Input::IsMouseButtonDown(MouseButton button)
 	{
-		auto window = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
-		auto state = glfwGetMouseButton(window, static_cast<int>(button));
-		return state == GLFW_PRESS;
+		return glfwGetMouseButton(static_cast<GLFWwindow*>(s_ActiveWindow), static_cast<int>(button)) == GLFW_PRESS;
 	}
 
-	std::pair<float, float> Input::GetMousePosition()
+	glm::vec2 Input::GetMousePosition()
 	{
-		auto window = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
-		double xpos, ypos;
-		glfwGetCursorPos(window, &xpos, &ypos);
-
-		return { (float)xpos, (float)ypos };
-	}
-
-	float Input::GetMouseX()
-	{
-		auto[x, y] = GetMousePosition();
-		return x;
-	}
-
-	float Input::GetMouseY()
-	{
-		auto[x, y] = GetMousePosition();
-		return y;
+		double x, y;
+		glfwGetCursorPos(static_cast<GLFWwindow*>(s_ActiveWindow), &x, &y);
+		return { static_cast<float>(x), static_cast<float>(y) };
 	}
 
 }

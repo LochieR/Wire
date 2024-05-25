@@ -1,5 +1,12 @@
 #pragma once
 
+#include "CommandBuffer.h"
+#include "Wire/Core/Base.h"
+
+#include "IResource.h"
+
+#include <cstdint>
+
 namespace Wire {
 
 	enum class ShaderDataType
@@ -24,7 +31,7 @@ namespace Wire {
 			case ShaderDataType::Bool:     return 1;
 		}
 
-		WR_CORE_ASSERT(false, "Unknown ShaderDataType!");
+		WR_ASSERT(false && "Unknown ShaderDataType!");
 		return 0;
 	}
 
@@ -51,8 +58,8 @@ namespace Wire {
 				case ShaderDataType::Float2:  return 2;
 				case ShaderDataType::Float3:  return 3;
 				case ShaderDataType::Float4:  return 4;
-				case ShaderDataType::Mat3:    return 3; // 3* float3
-				case ShaderDataType::Mat4:    return 4; // 4* float4
+				case ShaderDataType::Mat3:    return 3;
+				case ShaderDataType::Mat4:    return 4;
 				case ShaderDataType::Int:     return 1;
 				case ShaderDataType::Int2:    return 2;
 				case ShaderDataType::Int3:    return 3;
@@ -60,9 +67,37 @@ namespace Wire {
 				case ShaderDataType::Bool:    return 1;
 			}
 
-			WR_CORE_ASSERT(false, "Unknown ShaderDataType!");
+			WR_ASSERT(false && "Unknown ShaderDataType!");
 			return 0;
 		}
+	};
+
+	enum class ShaderStage : uint8_t
+	{
+		Vertex = 0,
+		Fragment
+	};
+
+	struct PushConstantInfo
+	{
+		uint32_t Size;
+		uint32_t Offset;
+		ShaderStage Stage;
+	};
+
+	enum class ShaderResourceType
+	{
+		UniformBuffer,
+		CombinedImageSampler,
+		StorageBuffer
+	};
+
+	struct ShaderResourceInfo
+	{
+		ShaderResourceType ResourceType;
+		uint32_t Binding;
+		ShaderStage Stage;
+		uint32_t ResourceCount = 1;
 	};
 
 	class BufferLayout
@@ -98,37 +133,76 @@ namespace Wire {
 	private:
 		std::vector<BufferElement> m_Elements;
 		uint32_t m_Stride = 0;
+
+		friend struct InputLayout;
 	};
 
-	class VertexBuffer
+	struct InputLayout
+	{
+		BufferLayout VertexLayout;
+		std::vector<PushConstantInfo> PushConstants;
+		std::vector<ShaderResourceInfo> ShaderResources;
+
+		void CalculateOffsets()
+		{
+			VertexLayout.CalculateOffsetsAndStride();
+			
+			size_t offset = 0;
+			for (auto& pushConstant : PushConstants)
+			{
+				pushConstant.Offset = (uint32_t)offset;
+				offset += pushConstant.Size;
+			}
+		}
+	};
+
+	class VertexBuffer : public IResource
 	{
 	public:
 		virtual ~VertexBuffer() = default;
 
-		virtual void Bind() const = 0;
-		virtual void Unbind() const = 0;
+		virtual void Bind(rbRef<CommandBuffer> commandBuffer) const = 0;
 
-		virtual void SetData(const void* data, uint32_t size) = 0;
+		virtual void SetData(const void* vertexData, uint32_t size) = 0;
 
-		virtual const BufferLayout& GetLayout() const = 0;
-		virtual void SetLayout(const BufferLayout& layout) = 0;
-
-		static Ref<VertexBuffer> Create(uint32_t size);
-		static Ref<VertexBuffer> Create(float* vertices, uint32_t size);
+		virtual const InputLayout& GetLayout() const = 0;
+		virtual void SetLayout(const InputLayout& layout) = 0;
 	};
 
-	// Currently Wire only supports 32-bit index buffers
-	class IndexBuffer
+	class IndexBuffer : public IResource
 	{
 	public:
 		virtual ~IndexBuffer() = default;
 
-		virtual void Bind() const = 0;
-		virtual void Unbind() const = 0;
+		virtual void Bind(rbRef<CommandBuffer> commandBuffer) const = 0;
+	};
 
-		virtual uint32_t GetCount() const = 0;
+	class StorageBuffer : public IResource
+	{
+	public:
+		virtual ~StorageBuffer() = default;
 
-		static Ref<IndexBuffer> Create(uint32_t* indices, uint32_t count);
+		virtual void SetData(const void* data, size_t size) = 0;
+		virtual void SetData(int data, size_t size) = 0;
+
+		virtual void* Map(uint32_t size, uint32_t offset) = 0;
+		virtual void Unmap() = 0;
+
+		virtual size_t GetSize() const = 0;
+	};
+
+	class StagingBuffer : public IResource
+	{
+	public:
+		virtual ~StagingBuffer() = default;
+
+		virtual void SetData(const void* data, size_t size) = 0;
+		virtual void SetData(int data, size_t size) = 0;
+
+		virtual void* Map(uint32_t size) = 0;
+		virtual void Unmap() = 0;
+
+		virtual void CopyTo(rbRef<StorageBuffer> storageBuffer) = 0;
 	};
 
 }

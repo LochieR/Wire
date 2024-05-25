@@ -1,18 +1,19 @@
 #include "wrpch.h"
 #include "Font.h"
 
-#undef INFINITE
-#include "msdf-atlas-gen.h"
-#include "FontGeometry.h"
-#include "GlyphGeometry.h"
-
+#include "Renderer.h"
 #include "MSDFData.h"
+
+#undef INFINITE
+#include <msdf-atlas-gen.h>
+#include <FontGeometry.h>
+#include <GlyphGeometry.h>
 
 namespace Wire {
 
 	template<typename T, typename S, int N, msdf_atlas::GeneratorFunction<S, N> GenFunc>
-	static Ref<Texture2D> CreateAndCacheAtlas(const std::string& fontName, float fontSize, const std::vector<msdf_atlas::GlyphGeometry>& glyphs,
-		const msdf_atlas::FontGeometry& fontGeometry, uint32_t width, uint32_t height)
+	static rbRef<Texture2D> CreateAndCacheAtlas(Renderer* renderer, const std::string& fontName, float fontSize,
+		const std::vector<msdf_atlas::GlyphGeometry>& glyphs, const msdf_atlas::FontGeometry& fontGeometry, uint32_t width, uint32_t height)
 	{
 		msdf_atlas::GeneratorAttributes attributes;
 		attributes.config.overlapSupport = true;
@@ -25,29 +26,23 @@ namespace Wire {
 
 		msdfgen::BitmapConstRef<T, N> bitmap = (msdfgen::BitmapConstRef<T, N>)generator.atlasStorage();
 
-		TextureSpecification spec;
-		spec.Width = bitmap.width;
-		spec.Height = bitmap.height;
-		spec.Format = ImageFormat::RGB8;
-		spec.GenerateMips = false;
+		rbRef<Texture2D> texture = renderer->CreateTexture2D((uint32_t*)bitmap.pixels, bitmap.width, bitmap.height);
 
-		Ref<Texture2D> texture = Texture2D::Create(spec);
-		texture->SetData((void*)bitmap.pixels, bitmap.width * bitmap.height * 3);
 		return texture;
 	}
 
-	Font::Font(const std::filesystem::path& filepath)
-		: m_Data(new MSDFData())
+	Font::Font(Renderer* renderer, std::string_view path, uint32_t minChar, uint32_t maxChar)
+		: m_Renderer(renderer), m_Data(new MSDFData())
 	{
 		msdfgen::FreetypeHandle* ft = msdfgen::initializeFreetype();
-		WR_CORE_ASSERT(ft);
+		WR_ASSERT(ft);
 
-		std::string fileString = filepath.string();
- 
+		std::string fileString = path.data();
+
 		msdfgen::FontHandle* font = msdfgen::loadFont(ft, fileString.c_str());
 		if (!font)
 		{
-			WR_CORE_ERROR("Failed to load font: {}", fileString);
+			WR_ERROR("Failed to load font ", fileString);
 			return;
 		}
 
@@ -56,10 +51,8 @@ namespace Wire {
 			uint32_t Begin, End;
 		};
 
-		// From imgui_draw.cpp
-		static const CharsetRange charsetRanges[] =
-		{
-			{ 0x0020, 0x00FF }
+		CharsetRange charsetRanges[] = {
+			{ minChar, maxChar }
 		};
 
 		msdf_atlas::Charset charset;
@@ -72,18 +65,17 @@ namespace Wire {
 		double fontScale = 1.0;
 		m_Data->FontGeometry = msdf_atlas::FontGeometry(&m_Data->Glyphs);
 		int glyphsLoaded = m_Data->FontGeometry.loadCharset(font, fontScale, charset);
-		WR_CORE_INFO("Loaded {} glyphs from font (out of {})", glyphsLoaded, charset.size());
+
+		WR_INFO("Loaded ", glyphsLoaded, " glyphs from font (out of ", charset.size(), ")");
 
 		double emSize = 40.0;
 
 		msdf_atlas::TightAtlasPacker atlasPacker;
-		// atlasPacker.setDimensionsConstraint()
 		atlasPacker.setPixelRange(2.0);
 		atlasPacker.setMiterLimit(1.0);
 		atlasPacker.setPadding(0);
 		atlasPacker.setScale(emSize);
 		int remaining = atlasPacker.pack(m_Data->Glyphs.data(), (int)m_Data->Glyphs.size());
-		WR_CORE_ASSERT(remaining == 0);
 
 		int width, height;
 		atlasPacker.getDimensions(width, height);
@@ -93,22 +85,21 @@ namespace Wire {
 #define LCG_MULTIPLIER 6364136223846793005ull
 #define LCG_INCREMENT 1442695040888963407ull
 #define THREAD_COUNT 8
-		// if MSDF || MTSDF
 
-		uint64_t colouringSeed = 0;
-		bool expensiveColouring = false;
-		if (expensiveColouring)
+		uint64_t coloringSeed = 0;
+		bool expensizeColoring = false;
+		if (expensizeColoring)
 		{
-			msdf_atlas::Workload([&glyphs = m_Data->Glyphs, &colouringSeed](int i, int threadNo) -> bool
+			msdf_atlas::Workload([&glyphs = m_Data->Glyphs, &coloringSeed](int i, int threadNo) -> bool
 			{
-				unsigned long long glyphSeed = (LCG_MULTIPLIER * (colouringSeed ^ i) + LCG_INCREMENT) * !!colouringSeed;
+				uint64_t glyphSeed = (LCG_MULTIPLIER * (coloringSeed ^ i) + LCG_INCREMENT) * !!coloringSeed;
 				glyphs[i].edgeColoring(msdfgen::edgeColoringInkTrap, DEFAULT_ANGLE_THRESHOLD, glyphSeed);
 				return true;
 			}, m_Data->Glyphs.size()).finish(THREAD_COUNT);
 		}
 		else
 		{
-			unsigned long long glyphSeed = colouringSeed;
+			uint64_t glyphSeed = coloringSeed;
 			for (msdf_atlas::GlyphGeometry& glyph : m_Data->Glyphs)
 			{
 				glyphSeed *= LCG_MULTIPLIER;
@@ -116,7 +107,14 @@ namespace Wire {
 			}
 		}
 
-		m_AtlasTexture = CreateAndCacheAtlas<uint8_t, float, 3, msdf_atlas::msdfGenerator>("Test", (float)emSize, m_Data->Glyphs, m_Data->FontGeometry, width, height);
+		m_AtlasTexture = CreateAndCacheAtlas<uint8_t, float, 4, msdf_atlas::mtsdfGenerator>(
+			renderer,
+			std::string("Font"),
+			(float)emSize,
+			m_Data->Glyphs,
+			m_Data->FontGeometry,
+			(uint32_t)width, (uint32_t)height
+		);
 
 		msdfgen::destroyFont(font);
 		msdfgen::deinitializeFreetype(ft);
@@ -124,17 +122,8 @@ namespace Wire {
 
 	Font::~Font()
 	{
+		//delete m_AtlasTexture;
 		delete m_Data;
-	}
-
-
-	Ref<Font> Font::GetDefault()
-	{
-		static Ref<Font> DefaultFont;
-		if (!DefaultFont)
-			DefaultFont = CreateRef<Font>("assets/fonts/opensans/OpenSans-Regular.ttf");
-
-		return DefaultFont;
 	}
 
 }

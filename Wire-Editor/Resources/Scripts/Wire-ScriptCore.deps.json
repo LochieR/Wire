@@ -1,0 +1,36 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v7.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v7.0": {
+      "Wire-ScriptCore/1.0.0": {
+        "dependencies": {
+          "Coral.Managed": "1.0.0"
+        },
+        "runtime": {
+          "Wire-ScriptCore.dll": {}
+        }
+      },
+      "Coral.Managed/1.0.0": {
+        "runtime": {
+          "Coral.Managed.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Wire-ScriptCore/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "Coral.Managed/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

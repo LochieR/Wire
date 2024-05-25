@@ -1,7 +1,6 @@
 #pragma once
 
-#include "Wire/Core/Core.h"
-#include "Wire/Core/Layer.h"
+#include "Layer.h"
 
 #include <vector>
 
@@ -22,7 +21,7 @@ namespace Wire {
 		std::vector<Layer*>::iterator end() { return m_Layers.end(); }
 	private:
 		std::vector<Layer*> m_Layers;
-		unsigned int m_LayerInsertIndex = 0;
+		uint32_t m_LayerInsertIndex = 0;
 	};
 
 }

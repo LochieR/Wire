@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <cstring>
 
+#include <glm/glm.hpp>
+
 namespace Wire {
 
 	struct Buffer
@@ -54,7 +56,7 @@ namespace Wire {
 
 		operator bool() const
 		{
-			return (bool)Data;
+			return Data;
 		}
 	};
 
@@ -87,6 +89,92 @@ namespace Wire {
 		operator bool() const { return m_Buffer; }
 	private:
 		Buffer m_Buffer;
+	};
+
+	struct ICircularBuffer
+	{
+		virtual ~ICircularBuffer() = default;
+
+		virtual void AddPoint(float x, float y) = 0;
+		virtual void Reset() = 0;
+
+		virtual size_t GetCurrentPosition() const = 0;
+	};
+
+	template<size_t capacity>
+	struct CircularBuffer : public ICircularBuffer
+	{
+		CircularBuffer()
+		{
+			m_XBuffer.fill(0);
+			m_YBuffer.fill(0);
+		}
+
+		virtual ~CircularBuffer() = default;
+
+		/*CircularBuffer(std::initializer_list<glm::vec2> init)
+			: m_Buffer(init)
+		{
+		}*/
+
+		void AddPoint(float x, float y) override
+		{
+			AddPoint({ x, y });
+		}
+
+		void AddPoint(const glm::vec2& pos)
+		{
+			m_XBuffer[m_CurrentPosition] = pos.x;
+			m_YBuffer[m_CurrentPosition] = pos.y;
+			m_CurrentPosition++;
+
+			if (m_CurrentPosition == capacity)
+			{
+				m_CurrentPosition = 0;
+			}
+		}
+
+		void Reset() override
+		{
+			m_XBuffer.fill(0);
+			m_YBuffer.fill(0);
+		}
+
+		static constexpr size_t Capacity() { return capacity; }
+
+		float* XData()
+		{
+			return m_XBuffer.data();
+		}
+
+		float* YData()
+		{
+			return m_YBuffer.data();
+		}
+
+		size_t GetCurrentPosition() const override { return m_CurrentPosition; }
+
+		std::array<float, capacity>& GetXBuffer() { return m_XBuffer; }
+		const std::array<float, capacity>& GetXBuffer() const { return m_XBuffer; }
+		std::array<float, capacity>& GetYBuffer() { return m_YBuffer; }
+		const std::array<float, capacity>& GetYBuffer() const { return m_YBuffer; }
+
+		/*float& operator[](uint8_t xy, int index)
+		{
+			if (xy == 0)
+				return m_XBuffer[index];
+			else if (xy == 1)
+				return m_YBuffer[index];
+			else
+				WR_ASSERT(false);
+
+			return m_XBuffer[0];
+		}*/
+	private:
+		std::array<float, capacity> m_XBuffer;
+		std::array<float, capacity> m_YBuffer;
+
+		size_t m_CurrentPosition = 0;
 	};
 
 }

@@ -1,61 +1,145 @@
 #pragma once
 
-#include "Wire/Core/Core.h"
+#include <vector>
+#include <string>
+#include <ostream>
+#include <sstream>
 
-#define GLM_ENABLE_EXPERIMENTAL
-#include "glm/gtx/string_cast.hpp"
+namespace Coral {
 
-// This ignores all warnings raised inside External headers
-#pragma warning(push, 0)
-#include <spdlog/spdlog.h>
-#include <spdlog/fmt/ostr.h>
-#pragma warning(pop)
+	class String;
 
+}
 
 namespace Wire {
+
+	class Logger
+	{
+	public:
+		Logger(const std::string& name, std::ostream& stream);
+		Logger(const std::string& name, std::ostream& stream, std::ostream& error);
+
+		void LogStr(const std::string& message);
+		void LogErrorStr(const std::string& message);
+		template<typename... Args>
+		void Log(Args&&... args)
+		{
+			std::string str;
+			((str += ToStr(args)), ...);
+			if (str[str.size() - 1] == '\n')
+				str.pop_back();
+			LogStr(str);
+		}
+		template<typename... Args>
+		void LogError(Args&&... args)
+		{
+			std::string str;
+			((str += ToStr(args)), ...);
+			if (str[str.size() - 1] == '\n')
+				str.pop_back();
+			LogErrorStr(str);
+		}
+
+		const std::string& GetName() const { return m_Name; }
+	private:
+		template<typename T>
+		static typename std::enable_if<true == std::is_convertible<T, std::string>::value, std::string>::type ToStr(const T& value)
+		{
+			std::ostringstream oss;
+			oss << value;
+			std::string val = oss.str();
+			return val;
+		}
+	private:
+		std::string m_Name;
+		std::ostream& m_Stream;
+		std::ostream& m_Error;
+	};
 
 	class Log
 	{
 	public:
 		static void Init();
 
-		static Ref<spdlog::logger>& GetCoreLogger() { return s_CoreLogger; }
-		static Ref<spdlog::logger>& GetClientLogger() { return s_ClientLogger; }
+		static Logger* GetLogger() { return s_Logger.get(); }
+
+		static void LogInfoStr(const std::string& message);
+		static void LogWarningStr(const std::string& message);
+		static void LogErrorStr(const std::string& message);
+
+		template<typename... Args>
+		static void LogInfo(Args&&... args)
+		{
+			std::string str;
+			((str += ToStr(args)), ...);
+			if (str[str.size() - 1] == '\n')
+				str.pop_back();
+			LogInfoStr(str);
+		}
+
+		template<typename... Args>
+		static void LogWarning(Args&&... args)
+		{
+			std::string str;
+			((str += ToStr(args)), ...);
+			if (str[str.size() - 1] == '\n')
+				str.pop_back();
+			LogWarningStr(str);
+		}
+
+		template<typename... Args>
+		static void LogError(Args&&... args)
+		{
+			std::string str;
+			((str += ToStr(args)), ...);
+			if (str[str.size() - 1] == '\n')
+				str.pop_back();
+			LogErrorStr(str);
+		}
+
+		static void PushTag(const std::string& tag);
+		static void PopTag();
+
+		static void CacheAndClearTags();
+		static void PushAndClearCache();
+
+		static const std::vector<std::string>& GetTags() { return s_Tags; }
 	private:
-		static Ref<spdlog::logger> s_CoreLogger;
-		static Ref<spdlog::logger> s_ClientLogger;
+		static std::string GetFormat();
+
+		template<typename T>
+		static std::string ToStr(const T& value)
+		{
+			std::ostringstream oss;
+			oss << value;
+			std::string val = oss.str();
+			return val;
+		}
+	private:
+		static std::shared_ptr<Logger> s_Logger;
+		
+		static std::vector<std::string> s_Tags;
+		static std::vector<std::string> s_TagCache;
 	};
 
+	class Tag
+	{
+	public:
+		Tag(const std::string& name);
+		Tag(const std::string& name, int);
+		~Tag();
+	private:
+		bool m_IsTemp;
+	};
+
+	std::ostream& operator<<(std::ostream& stream, const Coral::String& coralString);
+
 }
 
-template<typename OStream, glm::length_t L, typename T, glm::qualifier Q>
-inline OStream& operator<<(OStream& os, const glm::vec<L, T, Q>& vector)
-{
-	return os << glm::to_string(vector);
-}
-
-template<typename OStream, glm::length_t C, glm::length_t R, typename T, glm::qualifier Q>
-inline OStream& operator<<(OStream& os, const glm::mat<C, R, T, Q>& matrix)
-{
-	return os << glm::to_string(matrix);
-}
-
-template<typename OStream, typename T, glm::qualifier Q>
-inline OStream& operator<<(OStream& os, glm::qua<T, Q> quaternion)
-{
-	return os << glm::to_string(quaternion);
-}
-
-// Core log macros
-#define WR_CORE_TRACE(...)    ::Wire::Log::GetCoreLogger()->trace(__VA_ARGS__)
-#define WR_CORE_INFO(...)     ::Wire::Log::GetCoreLogger()->info(__VA_ARGS__)
-#define WR_CORE_WARN(...)     ::Wire::Log::GetCoreLogger()->warn(__VA_ARGS__)
-#define WR_CORE_ERROR(...)    ::Wire::Log::GetCoreLogger()->error(__VA_ARGS__)
-#define WR_CORE_CRITICAL(...) ::Wire::Log::GetCoreLogger()->critical(__VA_ARGS__)
-
-// Client log macros
-#define WR_TRACE(...)         ::Wire::Log::GetClientLogger()->trace(__VA_ARGS__)
-#define WR_INFO(...)          ::Wire::Log::GetClientLogger()->info(__VA_ARGS__)
-#define WR_WARN(...)          ::Wire::Log::GetClientLogger()->warn(__VA_ARGS__)
-#define WR_ERROR(...)         ::Wire::Log::GetClientLogger()->error(__VA_ARGS__)
-#define WR_CRITICAL(...)      ::Wire::Log::GetClientLogger()->critical(__VA_ARGS__)
+#define COMBINE1(x, y) x##y
+#define COMBINE(x, y) COMBINE1(x, y)
+#define WR_TAG(tagName) ::Wire::Tag COMBINE(tagL, __LINE__)(tagName)
+#define WR_TEMP_TAG(tagName) ::Wire::Tag COMBINE(tagTL, __LINE__)(tagName, 0)
+#define WR_INFO(...) ::Wire::Log::LogInfo(__VA_ARGS__)
+#define WR_WARNING(...) ::Wire::Log::LogWarning(__VA_ARGS__)
+#define WR_ERROR(...) ::Wire::Log::LogError(__VA_ARGS__)
