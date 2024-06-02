@@ -39,6 +39,8 @@ namespace Wire {
 
 		void DrawRoundedQuad(const glm::vec3& position, const glm::vec2& size, const glm::vec4& color, float cornerRadius, float fade = 0.005f);
 
+		rbRef<CommandBuffer>& GetCurrentCommandBuffer() const;
+
 		struct TextParams
 		{
 			glm::vec4 Color{ 1.0f };

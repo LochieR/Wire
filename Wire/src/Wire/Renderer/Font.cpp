@@ -95,7 +95,7 @@ namespace Wire {
 				uint64_t glyphSeed = (LCG_MULTIPLIER * (coloringSeed ^ i) + LCG_INCREMENT) * !!coloringSeed;
 				glyphs[i].edgeColoring(msdfgen::edgeColoringInkTrap, DEFAULT_ANGLE_THRESHOLD, glyphSeed);
 				return true;
-			}, m_Data->Glyphs.size()).finish(THREAD_COUNT);
+			}, (int)m_Data->Glyphs.size()).finish(THREAD_COUNT);
 		}
 		else
 		{

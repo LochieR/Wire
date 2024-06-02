@@ -21,6 +21,7 @@ namespace Wire {
 	{
 		uint32_t Width = 1, Height = 1;
 		std::vector<AttachmentFormat> Attachments;
+		bool MultiSample = false;
 	};
 
 	class Framebuffer : public IResource
@@ -41,6 +42,8 @@ namespace Wire {
 
 		virtual uint32_t GetWidth() const = 0;
 		virtual uint32_t GetHeight() const = 0;
+
+		virtual bool IsMultiSampled() const = 0;
 	};
 
 }

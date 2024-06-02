@@ -23,6 +23,30 @@ namespace Wire {
 			}
 		}
 
+		static VkSampleCountFlagBits GetMaxUsableSampleCount(VulkanRenderer* renderer)
+		{
+			auto& vkd = renderer->GetVulkanData();
+
+			VkPhysicalDeviceProperties physicalDeviceProperties;
+			vkGetPhysicalDeviceProperties(vkd.PhysicalDevice, &physicalDeviceProperties);
+
+			VkSampleCountFlags counts = physicalDeviceProperties.limits.framebufferColorSampleCounts & physicalDeviceProperties.limits.framebufferDepthSampleCounts;
+			if (counts & VK_SAMPLE_COUNT_64_BIT)
+				return VK_SAMPLE_COUNT_64_BIT;
+			if (counts & VK_SAMPLE_COUNT_32_BIT)
+				return VK_SAMPLE_COUNT_32_BIT;
+			if (counts & VK_SAMPLE_COUNT_16_BIT)
+				return VK_SAMPLE_COUNT_16_BIT;
+			if (counts & VK_SAMPLE_COUNT_8_BIT)
+				return VK_SAMPLE_COUNT_8_BIT;
+			if (counts & VK_SAMPLE_COUNT_4_BIT)
+				return VK_SAMPLE_COUNT_4_BIT;
+			if (counts & VK_SAMPLE_COUNT_2_BIT)
+				return VK_SAMPLE_COUNT_2_BIT;
+
+			return VK_SAMPLE_COUNT_1_BIT;
+		}
+
 	}
 
 	VulkanFramebuffer::VulkanFramebuffer(VulkanRenderer* renderer, const FramebufferSpecification& spec)
@@ -31,6 +55,11 @@ namespace Wire {
 		auto& vkd = renderer->GetVulkanData();
 
 		m_ImageCount = (uint32_t)vkd.SwapchainImages.size();
+
+		if (spec.MultiSample)
+			m_MSAASampleCount = Utils::GetMaxUsableSampleCount(renderer);
+		else
+			m_MSAASampleCount = VK_SAMPLE_COUNT_1_BIT;
 
 		m_Images.resize(m_ImageCount);
 		m_ImageMemorys.resize(m_ImageCount);
@@ -81,7 +110,7 @@ namespace Wire {
 					renderer->CreateImage(
 						spec.Width,
 						spec.Height,
-						VK_SAMPLE_COUNT_1_BIT,
+						m_MSAASampleCount,
 						format,
 						VK_IMAGE_TILING_OPTIMAL,
 						VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
@@ -132,6 +161,23 @@ namespace Wire {
 			}
 		}
 
+		/*{
+			VkFormat colorFormat = vkd.SwapchainImageFormat;
+
+			renderer->CreateImage(
+				spec.Width,
+				spec.Height,
+				m_MSAASampleCount,
+				colorFormat,
+				VK_IMAGE_TILING_OPTIMAL,
+				VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+				m_ColorImage,
+				m_ColorImageMemory
+			);
+			m_ColorImageView = renderer->CreateImageView(m_ColorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+		}*/
+
 		{
 			std::vector<VkAttachmentDescription> attachments;
 			std::vector<VkAttachmentReference> colorRefs;
@@ -156,7 +202,7 @@ namespace Wire {
 
 				VkAttachmentDescription attachment{};
 				attachment.format = format;
-				attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+				attachment.samples = m_MSAASampleCount;
 				attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 				attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 				attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -182,13 +228,44 @@ namespace Wire {
 					depthRef = attachmentRef;
 			}
 
+			std::vector<VkAttachmentReference> resolveRefs;
+			if (spec.MultiSample)
+			{
+				for (uint32_t i = 0; i < colorRefs.size(); i++)
+				{
+					uint32_t attachment = colorRefs[i].attachment;
+					VkAttachmentDescription resolve{};
+					resolve.format = attachments[attachment].format;
+					resolve.samples = VK_SAMPLE_COUNT_1_BIT;
+					resolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+					resolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+					resolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+					resolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+					resolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+					resolve.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+					attachments.push_back(resolve);
+
+					VkAttachmentReference resolveRef{};
+					resolveRef.attachment = (uint32_t)attachments.size() - 1;
+					resolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+					resolveRefs.push_back(resolveRef);
+				}
+			}
+
 			VkSubpassDescription subpass{};
 			subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 			subpass.colorAttachmentCount = (uint32_t)colorRefs.size();
 			subpass.pColorAttachments = colorRefs.data();
 			subpass.pDepthStencilAttachment = &depthRef;
 
-			std::array<VkSubpassDependency, 2> dependencies;
+			if (spec.MultiSample)
+			{
+				subpass.pResolveAttachments = resolveRefs.data();
+			}
+
+			std::array<VkSubpassDependency, 2> dependencies{};
 
 			dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
 			dependencies[0].dstSubpass = 0;
@@ -217,28 +294,66 @@ namespace Wire {
 
 			VkResult result = vkCreateRenderPass(vkd.Device, &renderPassInfo, vkd.Allocator, &m_RenderPass);
 			VK_CHECK(result, "Failed to create Vulkan render pass!");
+
+			m_ColorImages.resize(resolveRefs.size());
+			m_ColorImageMemorys.resize(resolveRefs.size());
+			m_ColorImageViews.resize(resolveRefs.size());
+			for (uint32_t i = 0; i < resolveRefs.size(); i++)
+			{
+				uint32_t attachment = resolveRefs[i].attachment;
+				VkFormat format = attachments[attachment].format;
+
+				renderer->CreateImage(
+					spec.Width,
+					spec.Height,
+					m_MSAASampleCount,
+					format,
+					VK_IMAGE_TILING_OPTIMAL,
+					VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
+					VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+					m_ColorImages[i],
+					m_ColorImageMemorys[i]
+				);
+
+				m_ColorImageViews[i] = renderer->CreateImageView(m_ColorImages[i], format, VK_IMAGE_ASPECT_COLOR_BIT);
+			}
 		}
 
 		for (uint32_t i = 0; i < m_ImageCount; i++)
 		{
+			std::vector<VkImageView> toAdd;
 			std::vector<VkImageView> attachments;
 
-			for (uint32_t j = 0, k = 0; j < spec.Attachments.size(); j++)
+			if (spec.MultiSample)
 			{
-				if (j == 0)
-				{
-					attachments.push_back(m_ImageViews[i]);
-				}
-				else if (spec.Attachments[j] == AttachmentFormat::Depth)
+				attachments.push_back(m_ColorImageViews[0]);
+				toAdd.push_back(m_ImageViews[i]);
+			}
+			else
+				attachments.push_back(m_ImageViews[i]);
+
+			uint32_t nonDepthAttachmentIndex = 0;
+			for (uint32_t attachmentIndex = 1; attachmentIndex < spec.Attachments.size(); attachmentIndex++)
+			{
+				if (spec.Attachments[attachmentIndex] == AttachmentFormat::Depth)
 				{
 					attachments.push_back(m_DepthImageView);
 				}
 				else
 				{
-					attachments.push_back(m_AttachmentImageViews[k][i]);
-					k++;
+					if (spec.MultiSample)
+					{
+						attachments.push_back(m_ColorImageViews[nonDepthAttachmentIndex + 1]);
+						toAdd.push_back(m_AttachmentImageViews[nonDepthAttachmentIndex][i]);
+					}
+					else
+						attachments.push_back(m_AttachmentImageViews[nonDepthAttachmentIndex][i]);
+					nonDepthAttachmentIndex++;
 				}
 			}
+
+			for (VkImageView view : toAdd)
+				attachments.push_back(view);
 
 			VkFramebufferCreateInfo createInfo{};
 			createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -289,6 +404,7 @@ namespace Wire {
 		[imageCount = m_ImageCount, framebuffers = m_Framebuffers, views = m_ImageViews, 
 			images = m_Images, memorys = m_ImageMemorys, renderPass = m_RenderPass, sampler = m_Sampler,
 			depthImage = m_DepthImage, depthView = m_DepthImageView, depthMemory = m_DepthImageMemory,
+			colorImages = m_ColorImages, colorViews = m_ColorImageViews, colorMemorys = m_ColorImageMemorys,
 			attachments = m_AttachmentImages, attachmentMemorys = m_AttachmentImageMemorys, attachmentViews = m_AttachmentImageViews](VulkanRenderer* renderer)
 		{
 			auto& vkd = renderer->GetVulkanData();
@@ -303,6 +419,13 @@ namespace Wire {
 					vkFreeMemory(vkd.Device, attachmentMemorys[i][j], vkd.Allocator);
 					vkDestroyImageView(vkd.Device, attachmentViews[i][j], vkd.Allocator);
 				}
+			}
+
+			for (uint32_t i = 0; i < colorImages.size(); i++)
+			{
+				vkDestroyImageView(vkd.Device, colorViews[i], vkd.Allocator);
+				vkDestroyImage(vkd.Device, colorImages[i], vkd.Allocator);
+				vkFreeMemory(vkd.Device, colorMemorys[i], vkd.Allocator);
 			}
 
 			vkDestroyImageView(vkd.Device, depthView, vkd.Allocator);
@@ -422,11 +545,21 @@ namespace Wire {
 
 			tempAttachmentViews.push_back(tempImageAttachment);
 		}
+		std::vector<VkImage> tempColorImages;
+		for (VkImage colorImage : m_ColorImages)
+			tempColorImages.push_back(colorImage);
+		std::vector<VkDeviceMemory> tempColorMemorys;
+		for (VkDeviceMemory memory : m_ColorImageMemorys)
+			tempColorMemorys.push_back(memory);
+		std::vector<VkImageView> tempColorImageViews;
+		for (VkImageView view : m_ColorImageViews)
+			tempColorImageViews.push_back(view);
 
 		m_Renderer->SubmitResourceFree(
 		[imageCount = m_ImageCount, framebuffers = tempFramebuffers,
 		images = tempImages, views = tempImageViews, memorys = tempDeviceMemorys, descriptors = tempDescriptors,
 		depthImage = m_DepthImage, depthView = m_DepthImageView, depthMemory = m_DepthImageMemory,
+		colorImages = tempColorImages, colorViews = tempColorImageViews, colorMemorys = tempColorMemorys,
 		attachments = tempAttachments, attachmentMemorys = tempAttachmentMemorys, attachmentViews = tempAttachmentViews](VulkanRenderer* renderer)
 		{
 			auto& vkd = renderer->GetVulkanData();
@@ -441,6 +574,13 @@ namespace Wire {
 					vkFreeMemory(vkd.Device, attachmentMemorys[i][j], vkd.Allocator);
 					vkDestroyImageView(vkd.Device, attachmentViews[i][j], vkd.Allocator);
 				}
+			}
+
+			for (uint32_t i = 0; i < colorImages.size(); i++)
+			{
+				vkDestroyImageView(vkd.Device, colorViews[i], vkd.Allocator);
+				vkDestroyImage(vkd.Device, colorImages[i], vkd.Allocator);
+				vkFreeMemory(vkd.Device, colorMemorys[i], vkd.Allocator);
 			}
 
 			vkDestroyImageView(vkd.Device, depthView, vkd.Allocator);
@@ -464,13 +604,26 @@ namespace Wire {
 		m_ImageViews.clear();
 		m_Images.clear();
 		m_ImageMemorys.clear();
-		m_Framebuffers.resize((size_t)m_ImageCount);
-		m_ImageViews.resize((size_t)m_ImageCount);
-		m_Images.resize((size_t)m_ImageCount);
-		m_ImageMemorys.resize((size_t)m_ImageCount);
+		m_ColorImages.clear();
+		m_ColorImageViews.clear();
+		m_ColorImageMemorys.clear();
+		m_Descriptors.clear();
+		m_DepthImage = nullptr;
+		m_DepthImageView = nullptr;
+		m_DepthImageMemory = nullptr;
 
-		m_Specification.Width = width;
-		m_Specification.Height = height;
+		m_ImageCount = (uint32_t)vkd.SwapchainImages.size();
+
+		if (m_Specification.MultiSample)
+			m_MSAASampleCount = Utils::GetMaxUsableSampleCount(m_Renderer);
+		else
+			m_MSAASampleCount = VK_SAMPLE_COUNT_1_BIT;
+
+		m_Images.resize(m_ImageCount);
+		m_ImageMemorys.resize(m_ImageCount);
+		m_ImageViews.resize(m_ImageCount);
+		m_Framebuffers.resize(m_ImageCount);
+		m_Descriptors.resize(m_ImageCount);
 
 		uint32_t attachmentCount = 0;
 		for (uint32_t i = 0; i < m_Specification.Attachments.size(); i++)
@@ -491,8 +644,6 @@ namespace Wire {
 			m_AttachmentImageMemorys[i].resize(m_ImageCount);
 			m_AttachmentImageViews[i].resize(m_ImageCount);
 		}
-
-		m_DepthImage = nullptr;
 
 		for (uint32_t i = 0; i < m_ImageCount; i++)
 		{
@@ -517,7 +668,7 @@ namespace Wire {
 					m_Renderer->CreateImage(
 						m_Specification.Width,
 						m_Specification.Height,
-						VK_SAMPLE_COUNT_1_BIT,
+						m_MSAASampleCount,
 						format,
 						VK_IMAGE_TILING_OPTIMAL,
 						VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
@@ -536,8 +687,7 @@ namespace Wire {
 				if (j == 0)
 				{
 					m_Renderer->CreateImage(
-						m_Specification.Width,
-						m_Specification.Height,
+						m_Specification.Width, m_Specification.Height,
 						VK_SAMPLE_COUNT_1_BIT,
 						format,
 						VK_IMAGE_TILING_OPTIMAL,
@@ -569,62 +719,157 @@ namespace Wire {
 			}
 		}
 
+		{
+			std::vector<VkAttachmentDescription> attachments;
+			std::vector<VkAttachmentReference> colorRefs;
+			VkAttachmentReference depthRef{};
+
+			for (uint32_t i = 0; i < m_Specification.Attachments.size(); i++)
+			{
+				AttachmentFormat attachmentFormat = m_Specification.Attachments[i];
+
+				bool depth = false;
+
+				VkFormat format = Utils::AttachmentFormatToVkFormat(attachmentFormat);
+				if (format == (VkFormat)0 && attachmentFormat != AttachmentFormat::Depth)
+				{
+					format = vkd.SwapchainImageFormat;
+				}
+				else if (attachmentFormat == AttachmentFormat::Depth)
+				{
+					format = m_Renderer->FindDepthFormat();
+					depth = true;
+				}
+
+				VkAttachmentDescription attachment{};
+				attachment.format = format;
+				attachment.samples = m_MSAASampleCount;
+				attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+				attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+				attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+				attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+				attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+				if (i == 0)
+					attachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				else if (depth)
+					attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+				else
+					attachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+				attachments.push_back(attachment);
+
+				VkAttachmentReference attachmentRef{};
+				attachmentRef.attachment = i;
+				attachmentRef.layout = depth ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+				if (!depth)
+					colorRefs.push_back(attachmentRef);
+				else
+					depthRef = attachmentRef;
+			}
+
+			std::vector<VkAttachmentReference> resolveRefs;
+			if (m_Specification.MultiSample)
+			{
+				for (uint32_t i = 0; i < colorRefs.size(); i++)
+				{
+					uint32_t attachment = colorRefs[i].attachment;
+					VkAttachmentDescription resolve{};
+					resolve.format = attachments[attachment].format;
+					resolve.samples = VK_SAMPLE_COUNT_1_BIT;
+					resolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+					resolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+					resolve.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+					resolve.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+					resolve.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+					resolve.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+					attachments.push_back(resolve);
+
+					VkAttachmentReference resolveRef{};
+					resolveRef.attachment = (uint32_t)attachments.size() - 1;
+					resolveRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+					resolveRefs.push_back(resolveRef);
+				}
+			}
+
+			m_ColorImages.resize(resolveRefs.size());
+			m_ColorImageMemorys.resize(resolveRefs.size());
+			m_ColorImageViews.resize(resolveRefs.size());
+			for (uint32_t i = 0; i < resolveRefs.size(); i++)
+			{
+				uint32_t attachment = resolveRefs[i].attachment;
+				VkFormat format = attachments[attachment].format;
+
+				m_Renderer->CreateImage(
+					m_Specification.Width,
+					m_Specification.Height,
+					m_MSAASampleCount,
+					format,
+					VK_IMAGE_TILING_OPTIMAL,
+					VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
+					VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+					m_ColorImages[i],
+					m_ColorImageMemorys[i]
+				);
+
+				m_ColorImageViews[i] = m_Renderer->CreateImageView(m_ColorImages[i], format, VK_IMAGE_ASPECT_COLOR_BIT);
+			}
+		}
+
 		for (uint32_t i = 0; i < m_ImageCount; i++)
 		{
+			std::vector<VkImageView> toAdd;
 			std::vector<VkImageView> attachments;
 
-			for (uint32_t j = 0, k = 0; j < m_Specification.Attachments.size(); j++)
+			if (m_Specification.MultiSample)
 			{
-				if (j == 0)
-				{
-					attachments.push_back(m_ImageViews[i]);
-				}
-				else if (m_Specification.Attachments[j] == AttachmentFormat::Depth)
+				attachments.push_back(m_ColorImageViews[0]);
+				toAdd.push_back(m_ImageViews[i]);
+			}
+			else
+				attachments.push_back(m_ImageViews[i]);
+
+			uint32_t nonDepthAttachmentIndex = 0;
+			for (uint32_t attachmentIndex = 1; attachmentIndex < m_Specification.Attachments.size(); attachmentIndex++)
+			{
+				if (m_Specification.Attachments[attachmentIndex] == AttachmentFormat::Depth)
 				{
 					attachments.push_back(m_DepthImageView);
 				}
 				else
 				{
-					attachments.push_back(m_AttachmentImageViews[k][i]);
-					k++;
+					if (m_Specification.MultiSample)
+					{
+						attachments.push_back(m_ColorImageViews[nonDepthAttachmentIndex + 1]);
+						toAdd.push_back(m_AttachmentImageViews[nonDepthAttachmentIndex][i]);
+					}
+					else
+						attachments.push_back(m_AttachmentImageViews[nonDepthAttachmentIndex][i]);
+					nonDepthAttachmentIndex++;
 				}
 			}
+
+			for (VkImageView view : toAdd)
+				attachments.push_back(view);
 
 			VkFramebufferCreateInfo createInfo{};
 			createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 			createInfo.renderPass = m_RenderPass;
 			createInfo.attachmentCount = (uint32_t)attachments.size();
 			createInfo.pAttachments = attachments.data();
-			createInfo.width = width;
-			createInfo.height = height;
+			createInfo.width = m_Specification.Width;
+			createInfo.height = m_Specification.Height;
 			createInfo.layers = 1;
 
 			VkResult result = vkCreateFramebuffer(vkd.Device, &createInfo, vkd.Allocator, &m_Framebuffers[i]);
 			VK_CHECK(result, "Failed to create Vulkan framebuffer!");
+		}
 
-			rbRef<CommandBuffer> commandBuffer = m_Renderer->BeginSingleTimeCommands();
-
-			VkImageMemoryBarrier imageMemoryBarrier{};
-			imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-			imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-			imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			imageMemoryBarrier.image = m_Images[i];
-			imageMemoryBarrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-			imageMemoryBarrier.srcAccessMask = 0;
-			imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-			vkCmdPipelineBarrier(
-				((VulkanCommandBuffer*)commandBuffer.Get())->m_CommandBuffer,
-				VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-				0,
-				0, nullptr,
-				0, nullptr,
-				1, &imageMemoryBarrier
-			);
-
-			m_Renderer->EndSingleTimeCommands(commandBuffer);
-
+		for (uint32_t i = 0; i < m_ImageCount; i++)
+		{
 			m_Descriptors[i] = ImGui_ImplVulkan_AddTexture(m_Sampler, m_ImageViews[i], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		}
 	}
@@ -650,29 +895,59 @@ namespace Wire {
 
 		attachmentIndex--; // account for first color attachment
 
-		VkImageMemoryBarrier barrier{};
-		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.image = m_AttachmentImages[attachmentIndex][m_ImageIndex];
-		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		barrier.subresourceRange.baseMipLevel = 0;
-		barrier.subresourceRange.levelCount = 1;
-		barrier.subresourceRange.baseArrayLayer = 0;
-		barrier.subresourceRange.layerCount = 1;
-		barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+		if (!m_Specification.MultiSample)
+		{
+			VkImageMemoryBarrier barrier{};
+			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.image = m_AttachmentImages[attachmentIndex][m_ImageIndex];
+			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			barrier.subresourceRange.baseMipLevel = 0;
+			barrier.subresourceRange.levelCount = 1;
+			barrier.subresourceRange.baseArrayLayer = 0;
+			barrier.subresourceRange.layerCount = 1;
+			barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 
-		vkCmdPipelineBarrier(
-			((VulkanCommandBuffer*)commandBuffer.Get())->m_CommandBuffer,
-			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-			0,
-			0, nullptr,
-			0, nullptr,
-			1, &barrier
-		);
+			vkCmdPipelineBarrier(
+				((VulkanCommandBuffer*)commandBuffer.Get())->m_CommandBuffer,
+				VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+				0,
+				0, nullptr,
+				0, nullptr,
+				1, &barrier
+			);
+		}
+		else
+		{
+			VkImageMemoryBarrier barrier{};
+			barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			barrier.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			barrier.image = m_AttachmentImages[attachmentIndex][m_ImageIndex];
+			barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			barrier.subresourceRange.baseMipLevel = 0;
+			barrier.subresourceRange.levelCount = 1;
+			barrier.subresourceRange.baseArrayLayer = 0;
+			barrier.subresourceRange.layerCount = 1;
+			barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+			barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+			vkCmdPipelineBarrier(
+				((VulkanCommandBuffer*)commandBuffer.Get())->m_CommandBuffer,
+				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+				VK_PIPELINE_STAGE_TRANSFER_BIT,
+				0,
+				0, nullptr,
+				0, nullptr,
+				1, &barrier
+			);
+		}
 
 		VkImageSubresourceLayers subresource{};
 		subresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;

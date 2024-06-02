@@ -10,6 +10,27 @@ namespace Wire {
 		glm::vec4 Color;
 	};
 
+	namespace Utils {
+
+		static std::vector<LineVertex> GenerateBezierCurve(const glm::vec2& p0, const glm::vec2& p1, const glm::vec2& p2, uint32_t numSegments)
+		{
+			std::vector<LineVertex> vertices;
+			vertices.reserve((size_t)numSegments + 1);
+
+			for (uint32_t i = 0; i <= numSegments; i++)
+			{
+				float t = (float)i / (float)numSegments;
+				float u = 1.0f - t;
+
+				glm::vec2 point = (u * u * p0) + (2 * u * t * p1) + (t * t * p2);
+				vertices.push_back({ glm::vec3(point, 0.0f), { 1.0f, 1.0f, 1.0f, 1.0f } });
+			}
+
+			return vertices;
+		}
+
+	}
+
 	GraphRenderer::GraphRenderer(Renderer* renderer, rbRef<Framebuffer> framebuffer)
 		: m_Renderer(renderer), m_Framebuffer(framebuffer)
 	{
@@ -31,27 +52,22 @@ namespace Wire {
 
 		m_Shader = renderer->CreateShader("Resources/Shaders/LineShader.glsl");
 		if (!framebuffer)
-			m_Pipeline = m_Shader->CreatePipeline(layout, PrimitiveTopology::LineStrip);
+			m_Pipeline = m_Shader->CreatePipeline(layout, PrimitiveTopology::LineStrip, false);
 		else
-			m_Pipeline = m_Shader->CreatePipeline(layout, PrimitiveTopology::LineStrip, framebuffer);
+			m_Pipeline = m_Shader->CreatePipeline(layout, PrimitiveTopology::LineStrip, framebuffer->IsMultiSampled(), framebuffer);
 
 		for (uint32_t i = 0; i < renderer->GetMaxFramesInFlight(); i++)
 		{
 			m_CommandBuffers.push_back(renderer->AllocateCommandBuffer());
 		}
 
-		std::vector<LineVertex> vertices(1000);
-		float x = -4.0f;
-		for (uint32_t i = 0; i < 1000; i++)
-		{
-			vertices[i].Position.x = x;
-			vertices[i].Position.y = x * x - 1.0f;
-			vertices[i].Color = { 1.0f, 1.0f, 1.0f, 1.0f };
-
-			x += 8.0f / 1000.0f;
-		}
+		static glm::vec2 p0 = { -2.0f, -2.0f };
+		static glm::vec2 p1 = { -1.8f, 0.8f };
+		static glm::vec2 p2 = { 1.0f, 3.0f };
 
 		m_VertexCount = 1000;
+
+		std::vector<LineVertex> vertices = Utils::GenerateBezierCurve(p0, p1, p2, m_VertexCount);
 
 		m_VertexBuffer->SetData(vertices.data(), sizeof(LineVertex) * vertices.size());
 	}
@@ -62,18 +78,19 @@ namespace Wire {
 
 	void GraphRenderer::Draw(const OrthographicCamera& camera, std::string_view expression)
 	{
-		if (std::string(expression) == m_Expression)
+		static glm::vec2 p0 = { -2.0f, -2.0f };
+		static glm::vec2 p1 = { -1.8f, 0.8f };
+		static glm::vec2 p2 = { 1.0f, 3.0f };
+
+		if (std::string(expression) != m_Expression)
 		{
 			m_Expression = std::string(expression);
 		}
 
-		auto commandBuffer = m_CommandBuffers[m_Renderer->GetFrameIndex()];
+		auto& renderer2D = m_Renderer->GetRenderer2D();
+		renderer2D.Begin(camera, m_Framebuffer);
 
-		commandBuffer->Begin();
-		if (m_Framebuffer)
-			m_Framebuffer->BeginRenderPass(commandBuffer);
-		else
-			m_Renderer->BeginRenderPass(commandBuffer);
+		auto& commandBuffer = renderer2D.GetCurrentCommandBuffer();
 
 		m_Pipeline->Bind(commandBuffer);
 		m_Pipeline->PushConstants(commandBuffer, ShaderStage::Vertex, sizeof(glm::mat4), &camera.GetViewProjectionMatrix());
@@ -83,13 +100,11 @@ namespace Wire {
 
 		m_Renderer->Draw(commandBuffer, m_VertexCount);
 
-		if (m_Framebuffer)
-			m_Framebuffer->EndRenderPass(commandBuffer);
-		else
-			m_Renderer->EndRenderPass(commandBuffer);
-		commandBuffer->End();
-		
-		m_Renderer->SubmitCommandBuffer(commandBuffer);
+		renderer2D.DrawCircle(glm::vec3(p0, 0.0f), { 0.1f, 0.1f }, { 1.0f, 1.0f, 1.0f, 1.0f });
+		renderer2D.DrawCircle(glm::vec3(p1, 0.0f), { 0.1f, 0.1f }, { 1.0f, 1.0f, 1.0f, 1.0f });
+		renderer2D.DrawCircle(glm::vec3(p2, 0.0f), { 0.1f, 0.1f }, { 1.0f, 1.0f, 1.0f, 1.0f });
+
+		renderer2D.End();
 	}
 
 }

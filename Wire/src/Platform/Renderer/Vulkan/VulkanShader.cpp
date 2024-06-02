@@ -66,6 +66,30 @@ namespace Wire {
 			return (VkPrimitiveTopology)-1;
 		}
 
+		static VkSampleCountFlagBits GetMaxUsableSampleCount(VulkanRenderer* renderer)
+		{
+			auto& vkd = renderer->GetVulkanData();
+
+			VkPhysicalDeviceProperties physicalDeviceProperties;
+			vkGetPhysicalDeviceProperties(vkd.PhysicalDevice, &physicalDeviceProperties);
+
+			VkSampleCountFlags counts = physicalDeviceProperties.limits.framebufferColorSampleCounts & physicalDeviceProperties.limits.framebufferDepthSampleCounts;
+			if (counts & VK_SAMPLE_COUNT_64_BIT)
+				return VK_SAMPLE_COUNT_64_BIT;
+			if (counts & VK_SAMPLE_COUNT_32_BIT)
+				return VK_SAMPLE_COUNT_32_BIT;
+			if (counts & VK_SAMPLE_COUNT_16_BIT)
+				return VK_SAMPLE_COUNT_16_BIT;
+			if (counts & VK_SAMPLE_COUNT_8_BIT)
+				return VK_SAMPLE_COUNT_8_BIT;
+			if (counts & VK_SAMPLE_COUNT_4_BIT)
+				return VK_SAMPLE_COUNT_4_BIT;
+			if (counts & VK_SAMPLE_COUNT_2_BIT)
+				return VK_SAMPLE_COUNT_2_BIT;
+
+			return VK_SAMPLE_COUNT_1_BIT;
+		}
+
 	}
 
 	VulkanShader::VulkanShader(Renderer* renderer, std::string_view path)
@@ -85,7 +109,7 @@ namespace Wire {
 		});
 	}
 
-	rbRef<GraphicsPipeline> VulkanShader::CreatePipeline(const InputLayout& layout, PrimitiveTopology topology)
+	rbRef<GraphicsPipeline> VulkanShader::CreatePipeline(const InputLayout& layout, PrimitiveTopology topology, bool multiSample)
 	{
 		auto& vkd = m_Renderer->GetVulkanData();
 
@@ -289,7 +313,7 @@ namespace Wire {
 		return ref;
 	}
 
-	rbRef<GraphicsPipeline> VulkanShader::CreatePipeline(const InputLayout& layout, PrimitiveTopology topology, rbRef<Framebuffer> framebuffer)
+	rbRef<GraphicsPipeline> VulkanShader::CreatePipeline(const InputLayout& layout, PrimitiveTopology topology, bool multiSample, rbRef<Framebuffer> framebuffer)
 	{
 		auto& vkd = m_Renderer->GetVulkanData();
 
@@ -371,9 +395,18 @@ namespace Wire {
 
 		VkPipelineMultisampleStateCreateInfo multisampling{};
 		multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-		multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-		multisampling.sampleShadingEnable = VK_TRUE;
-		multisampling.minSampleShading = 0.2f;
+		if (multiSample)
+		{
+			multisampling.rasterizationSamples = Utils::GetMaxUsableSampleCount(m_Renderer);
+			multisampling.sampleShadingEnable = VK_TRUE;
+			multisampling.minSampleShading = 0.2f;
+		}
+		else
+		{
+			multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+			multisampling.sampleShadingEnable = VK_FALSE;
+			multisampling.minSampleShading = 0.0f;
+		}
 		multisampling.pSampleMask = nullptr;
 		multisampling.alphaToCoverageEnable = VK_FALSE;
 		multisampling.alphaToOneEnable = VK_FALSE;
