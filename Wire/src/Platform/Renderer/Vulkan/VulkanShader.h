@@ -19,8 +19,8 @@ namespace Wire {
 		virtual ~VulkanShader();
 
 		virtual void Reload() override;
-		virtual rbRef<GraphicsPipeline> CreatePipeline(const InputLayout& layout, PrimitiveTopology topology) override;
-		virtual rbRef<GraphicsPipeline> CreatePipeline(const InputLayout& layout, PrimitiveTopology topology, rbRef<Framebuffer> framebuffer) override;
+		virtual rbRef<GraphicsPipeline> CreatePipeline(const InputLayout& layout, PrimitiveTopology topology, bool multiSample) override;
+		virtual rbRef<GraphicsPipeline> CreatePipeline(const InputLayout& layout, PrimitiveTopology topology, bool multiSample, rbRef<Framebuffer> framebuffer) override;
 
 		virtual const std::filesystem::path& GetFilepath() const override { return m_Filepath; }
 	private:

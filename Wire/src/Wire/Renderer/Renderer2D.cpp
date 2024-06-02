@@ -183,7 +183,7 @@ namespace Wire {
 		quadLayout.ShaderResources.push_back(samplerInfo);
 
 		s_Data.QuadShader = renderer->CreateShader("Resources/Shaders/QuadShader.glsl");
-		s_Data.QuadPipelines.push_back(s_Data.QuadShader->CreatePipeline(quadLayout, PrimitiveTopology::TriangleList));
+		s_Data.QuadPipelines.push_back(s_Data.QuadShader->CreatePipeline(quadLayout, PrimitiveTopology::TriangleList, false));
 		s_Data.QuadVertexBuffer = renderer->CreateVertexBuffer(sizeof(QuadVertex) * s_Data.MaxVertices);
 		s_Data.QuadVertexBuffer->SetLayout(quadLayout);
 
@@ -201,7 +201,7 @@ namespace Wire {
 		circleLayout.PushConstants.push_back(cameraPushConstantInfo);
 
 		s_Data.CircleShader = renderer->CreateShader("Resources/Shaders/CircleShader.glsl");
-		s_Data.CirclePipelines.push_back(s_Data.CircleShader->CreatePipeline(circleLayout, PrimitiveTopology::TriangleList));
+		s_Data.CirclePipelines.push_back(s_Data.CircleShader->CreatePipeline(circleLayout, PrimitiveTopology::TriangleList, false));
 		s_Data.CircleVertexBuffer = renderer->CreateVertexBuffer(sizeof(CircleVertex) * s_Data.MaxVertices);
 		s_Data.CircleVertexBuffer->SetLayout(circleLayout);
 
@@ -216,7 +216,7 @@ namespace Wire {
 		lineLayout.PushConstants.push_back(cameraPushConstantInfo);
 
 		s_Data.LineShader = renderer->CreateShader("Resources/Shaders/LineShader.glsl");
-		s_Data.LinePipelines.push_back(s_Data.LineShader->CreatePipeline(lineLayout, PrimitiveTopology::LineList));
+		s_Data.LinePipelines.push_back(s_Data.LineShader->CreatePipeline(lineLayout, PrimitiveTopology::LineList, false));
 		s_Data.LineVertexBuffer = renderer->CreateVertexBuffer(sizeof(LineVertex) * s_Data.MaxVertices);
 		s_Data.LineVertexBuffer->SetLayout(lineLayout);
 
@@ -234,7 +234,7 @@ namespace Wire {
 		roundedQuadLayout.PushConstants.push_back(cameraPushConstantInfo);
 
 		s_Data.RoundedQuadShader = renderer->CreateShader("Resources/Shaders/RoundedQuadShader.glsl");
-		s_Data.RoundedQuadPipelines.push_back(s_Data.RoundedQuadShader->CreatePipeline(roundedQuadLayout, PrimitiveTopology::TriangleList));
+		s_Data.RoundedQuadPipelines.push_back(s_Data.RoundedQuadShader->CreatePipeline(roundedQuadLayout, PrimitiveTopology::TriangleList, false));
 		s_Data.RoundedQuadVertexBuffer = renderer->CreateVertexBuffer(sizeof(RoundedQuadVertex) * s_Data.MaxVertices);
 		s_Data.RoundedQuadVertexBuffer->SetLayout(roundedQuadLayout);
 
@@ -259,7 +259,7 @@ namespace Wire {
 		textLayout.ShaderResources.push_back(textResource);
 
 		s_Data.TextShader = renderer->CreateShader("Resources/Shaders/TextShader.glsl");
-		s_Data.TextPipelines.push_back(s_Data.TextShader->CreatePipeline(textLayout, PrimitiveTopology::TriangleList));
+		s_Data.TextPipelines.push_back(s_Data.TextShader->CreatePipeline(textLayout, PrimitiveTopology::TriangleList, false));
 		s_Data.TextVertexBuffer = renderer->CreateVertexBuffer(sizeof(TextVertex) * s_Data.MaxVertices);
 		s_Data.TextVertexBuffer->SetLayout(textLayout);
 
@@ -314,6 +314,15 @@ namespace Wire {
 
 		rbRef<CommandBuffer> commandBuffer = s_Data.CommandBuffers[m_Renderer->GetFrameIndex()];
 		commandBuffer->Begin();
+
+		if (s_Data.CurrentFramebuffer)
+		{
+			s_Data.CurrentFramebuffer->BeginRenderPass(commandBuffer);
+		}
+		else
+		{
+			m_Renderer->BeginRenderPass(commandBuffer);
+		}
 	}
 
 	void Renderer2D::Begin(const OrthographicCamera& camera, rbRef<Framebuffer> framebuffer)
@@ -341,6 +350,15 @@ namespace Wire {
 
 		rbRef<CommandBuffer> commandBuffer = s_Data.CommandBuffers[m_Renderer->GetFrameIndex()];
 		commandBuffer->Begin();
+
+		if (s_Data.CurrentFramebuffer)
+		{
+			s_Data.CurrentFramebuffer->BeginRenderPass(commandBuffer);
+		}
+		else
+		{
+			m_Renderer->BeginRenderPass(commandBuffer);
+		}
 	}
 
 	void Renderer2D::End()
@@ -376,15 +394,6 @@ namespace Wire {
 	void Renderer2D::Flush()
 	{
 		rbRef<CommandBuffer> commandBuffer = s_Data.CommandBuffers[m_Renderer->GetFrameIndex()];
-
-		if (s_Data.CurrentFramebuffer)
-		{
-			s_Data.CurrentFramebuffer->BeginRenderPass(commandBuffer);
-		}
-		else
-		{
-			m_Renderer->BeginRenderPass(commandBuffer);
-		}
 
 		if (s_Data.QuadIndexCount)
 		{
@@ -583,6 +592,11 @@ namespace Wire {
 		}
 
 		s_Data.RoundedQuadIndexCount += 6;
+	}
+
+	rbRef<CommandBuffer>& Renderer2D::GetCurrentCommandBuffer() const
+	{
+		return s_Data.CommandBuffers[m_Renderer->GetFrameIndex()];
 	}
 
 	void Renderer2D::DrawText(const std::string& text, const glm::mat4& transform, const TextParams& textParams)
@@ -890,7 +904,7 @@ namespace Wire {
 
 			quadLayout.ShaderResources.push_back(samplerInfo);
 
-			s_Data.QuadPipelines.push_back(s_Data.QuadShader->CreatePipeline(quadLayout, PrimitiveTopology::TriangleList, framebuffer));
+			s_Data.QuadPipelines.push_back(s_Data.QuadShader->CreatePipeline(quadLayout, PrimitiveTopology::TriangleList, framebuffer->IsMultiSampled(), framebuffer));
 		}
 
 		// Circle
@@ -906,7 +920,7 @@ namespace Wire {
 
 			circleLayout.PushConstants.push_back(cameraPushConstantInfo);
 
-			s_Data.CirclePipelines.push_back(s_Data.CircleShader->CreatePipeline(circleLayout, PrimitiveTopology::TriangleList, framebuffer));
+			s_Data.CirclePipelines.push_back(s_Data.CircleShader->CreatePipeline(circleLayout, PrimitiveTopology::TriangleList, framebuffer->IsMultiSampled(), framebuffer));
 		}
 
 		// Line
@@ -919,7 +933,7 @@ namespace Wire {
 
 			lineLayout.PushConstants.push_back(cameraPushConstantInfo);
 
-			s_Data.LinePipelines.push_back(s_Data.LineShader->CreatePipeline(lineLayout, PrimitiveTopology::LineList, framebuffer));
+			s_Data.LinePipelines.push_back(s_Data.LineShader->CreatePipeline(lineLayout, PrimitiveTopology::LineList, framebuffer->IsMultiSampled(), framebuffer));
 		}
 
 		// Rounded quad
@@ -935,7 +949,7 @@ namespace Wire {
 
 			roundedQuadLayout.PushConstants.push_back(cameraPushConstantInfo);
 
-			s_Data.RoundedQuadPipelines.push_back(s_Data.RoundedQuadShader->CreatePipeline(roundedQuadLayout, PrimitiveTopology::TriangleList, framebuffer));
+			s_Data.RoundedQuadPipelines.push_back(s_Data.RoundedQuadShader->CreatePipeline(roundedQuadLayout, PrimitiveTopology::TriangleList, framebuffer->IsMultiSampled(), framebuffer));
 		}
 
 		// Text
@@ -958,7 +972,7 @@ namespace Wire {
 
 			textLayout.ShaderResources.push_back(textResource);
 
-			s_Data.TextPipelines.push_back(s_Data.TextShader->CreatePipeline(textLayout, PrimitiveTopology::TriangleList, framebuffer));
+			s_Data.TextPipelines.push_back(s_Data.TextShader->CreatePipeline(textLayout, PrimitiveTopology::TriangleList, framebuffer->IsMultiSampled(), framebuffer));
 		}
 
 		for (uint32_t i = 0; i < s_Data.TextureSlots.size(); i++)

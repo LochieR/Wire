@@ -6,6 +6,8 @@
 
 #include <vector>
 
+enum VkSampleCountFlagBits;
+
 namespace Wire {
 
 	class VulkanFramebuffer : public Framebuffer
@@ -27,6 +29,8 @@ namespace Wire {
 		virtual uint32_t GetWidth() const override { return m_Specification.Width; }
 		virtual uint32_t GetHeight() const override { return m_Specification.Height; }
 
+		virtual bool IsMultiSampled() const override { return m_Specification.MultiSample; }
+
 		VkRenderPass GetRenderPass() const { return m_RenderPass; }
 	private:
 		VulkanRenderer* m_Renderer = nullptr;
@@ -43,9 +47,15 @@ namespace Wire {
 		std::vector<std::vector<VkDeviceMemory>> m_AttachmentImageMemorys;
 		std::vector<std::vector<VkImageView>> m_AttachmentImageViews;
 
+		std::vector<VkImage> m_ColorImages;
+		std::vector<VkDeviceMemory> m_ColorImageMemorys;
+		std::vector<VkImageView> m_ColorImageViews;
+
 		VkImage m_DepthImage = nullptr;
 		VkDeviceMemory m_DepthImageMemory = nullptr;
 		VkImageView m_DepthImageView = nullptr;
+
+		VkSampleCountFlagBits m_MSAASampleCount;
 
 		std::vector<VkFramebuffer> m_Framebuffers;
 		std::vector<VkDescriptorSet> m_Descriptors;

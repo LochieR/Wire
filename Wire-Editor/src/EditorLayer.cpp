@@ -25,11 +25,11 @@ namespace Wire {
 
 		FramebufferSpecification fbSpec{};
 		fbSpec.Width = 800;
-		fbSpec.Height = 600;
+		fbSpec.Height = 800;
 		fbSpec.Attachments = { AttachmentFormat::Default, AttachmentFormat::R32_SInt, AttachmentFormat::Depth };
+		fbSpec.MultiSample = true;
 
 		m_Framebuffer = renderer->CreateFramebuffer(fbSpec);
-		m_Texture = renderer->CreateTexture2D("image.png");
 		m_MathsFont = renderer->CreateFont("Resources/fonts/Maths/NewCM08-Regular.ttf", 0x0020, 0x0D50);
 
 		m_GraphRenderer = new GraphRenderer(renderer, m_Framebuffer);
@@ -62,11 +62,11 @@ namespace Wire {
 			}
 		}
 
-		//m_GraphRenderer->Draw(m_CameraController.GetCamera(), "hi");
+		m_GraphRenderer->Draw(m_CameraController.GetCamera(), "hi");
 
-		renderer2D.Begin(m_CameraController.GetCamera(), m_Framebuffer);
+		/*renderer2D.Begin(m_CameraController.GetCamera(), m_Framebuffer);
 		renderer2D.DrawText(L"\u222B", glm::mat4{ 1.0f }, {}, m_MathsFont);
-		renderer2D.End();
+		renderer2D.End();*/
 
 		m_CameraController.OnUpdate(ts);
 
@@ -81,6 +81,7 @@ namespace Wire {
 
 	void EditorLayer::OnImGuiRender()
 	{
+		ImGui::SetNextWindowSize({ 800, 800 });
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0, 0 });
 		ImGui::Begin("Viewport");
 		float width = ImGui::GetContentRegionAvail().x;
