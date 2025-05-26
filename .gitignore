@@ -1,0 +1,8 @@
+.vs/
+bin/
+bin-int/
+*.sln
+*.vcxproj*
+
+*.fontcache
+*.shadercache
