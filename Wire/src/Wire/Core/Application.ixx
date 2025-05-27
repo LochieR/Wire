@@ -2,6 +2,7 @@ module;
 
 #include <string>
 #include <cstdint>
+#include <functional>
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -43,8 +44,13 @@ namespace wire {
 		void run();
 
 		GLFWwindow* getWindow() const { return m_Window; }
+		void showWindow();
+		void hideWindow();
+
 		bool wasWindowResized() const { return m_Desc.m_WasWindowResized; };
 		void resetWindowResized() { m_Desc.m_WasWindowResized = false; }
+
+		void submitPostFrameTask(std::function<void(Application&)>&& func);
 
 		const ApplicationDesc& getDesc() const { return m_Desc; }
 
@@ -54,6 +60,8 @@ namespace wire {
 
 		GLFWwindow* m_Window;
 		Renderer* m_Renderer;
+
+		std::vector<std::function<void(Application&)>> m_PostFrameTasks;
 
 		inline static Application* s_App = nullptr;
 	};

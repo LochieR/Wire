@@ -19,6 +19,12 @@ namespace wire {
         Pixel
     };
 
+    export enum class ShaderConfiguration
+    {
+        Debug = 0,
+        Release
+    };
+
 	export struct ShaderObject
 	{
 		RendererAPI API;
@@ -31,6 +37,7 @@ namespace wire {
     {
         std::string Name;
         char SHA256[32];
+        ShaderConfiguration Config;
         std::vector<ShaderObject> Objects;
     };
 
@@ -69,6 +76,7 @@ namespace wire {
         static ShaderCache createOrGetShaderCache(const ShaderCacheDesc& desc);
         static ShaderCache combineShaderCaches(const ShaderCache& lhs, const ShaderCache& rhs);
     private:
+        uint32_t m_Version;
         std::vector<ShaderGroup> m_Groups;
     };
 

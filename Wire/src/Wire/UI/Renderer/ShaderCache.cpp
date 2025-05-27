@@ -27,7 +27,7 @@ namespace wire {
         // ID data
         const char AppID[4] = { 'W', 'I', 'R', 'E' };    // WIRE
         const char TypeID[4] = { 'S', 'C', 'C', 'H' };   // SCCH  (shader cache)
-        const uint32_t Version = HEADER_VER(1, 0, 0, 0); // 1.0.0.0
+        const uint32_t Version = HEADER_VER(1, 0, 1, 0); // 1.0.1.0
 
         // cache data
         size_t GroupCount;
@@ -35,7 +35,7 @@ namespace wire {
     };
 
     ShaderCache::ShaderCache(const std::vector<ShaderGroup>& groups)
-        : m_Groups(groups)
+        : m_Version(ShaderCacheHeader{}.Version), m_Groups(groups)
     {
     }
 
@@ -112,11 +112,27 @@ namespace wire {
         ShaderCacheHeader header;
         stream.readRaw(header);
 
-        std::vector<ShaderGroup>& groups = cache.m_Groups;
+        cache.m_Version = header.Version;
 
+        std::vector<ShaderGroup>& groups = cache.m_Groups;
         stream.readArray<ShaderGroup>(groups, ReadGroup, header.GroupCount);
 
+        file.close();
+
         return cache;
+    }
+
+    static ShaderCacheHeader getHeader(const std::filesystem::path& path)
+    {
+        std::ifstream file(path, std::ios::binary);
+        StreamReader stream(file);
+
+        ShaderCacheHeader header;
+        stream.readRaw(header);
+
+        file.close();
+
+        return header;
     }
 
     ShaderCache ShaderCache::createOrGetShaderCache(const ShaderCacheDesc& desc)
@@ -140,9 +156,10 @@ namespace wire {
             return cache;
         }
 
-        ShaderCache oldCache = createFromFile(desc.CachePath);
+        ShaderCacheHeader oldCacheHeader = getHeader(desc.CachePath);
+        ShaderCacheHeader currentHeader{};
 
-        if (oldCache.m_Groups.size() != desc.ShaderInfos.size())
+        if (oldCacheHeader.GroupCount != desc.ShaderInfos.size() || oldCacheHeader.Version != currentHeader.Version)
         {
             std::vector<std::filesystem::path> paths;
             std::vector<std::string> vertexEntryPoints;
@@ -160,6 +177,8 @@ namespace wire {
 
             return cache;
         }
+
+        ShaderCache oldCache = createFromFile(desc.CachePath);
 
         std::vector<uint32_t> toRecreate;
         std::vector<uint32_t> toRemove;
@@ -181,6 +200,19 @@ namespace wire {
             if (cacheIndex == -1) // shader was not in cache
             {
                 toRecreate.push_back(i);
+                continue;
+            }
+
+            constexpr ShaderConfiguration currentConfig =
+#ifdef WR_DEBUG
+                ShaderConfiguration::Debug;
+#else
+                ShaderConfiguration::Release;
+#endif
+            if (oldCache.m_Groups[cacheIndex].Config != currentConfig)
+            {
+                toRecreate.push_back(i);
+                toRemove.push_back(cacheIndex);
                 continue;
             }
 
@@ -269,6 +301,7 @@ namespace wire {
     {
         stream.writeString(group.Name);
         stream.writeRaw(group.SHA256);
+        stream.writeRaw((uint32_t)group.Config);
         stream.writeArray<ShaderObject>(group.Objects, WriteObject, true);
     }
 
@@ -284,6 +317,11 @@ namespace wire {
     {
         stream.readString(group.Name);
         stream.readRaw(group.SHA256);
+
+        uint32_t config;
+        stream.readRaw(config);
+        group.Config = (ShaderConfiguration)config;
+
         stream.readArray<ShaderObject>(group.Objects, ReadObject);
     }
 

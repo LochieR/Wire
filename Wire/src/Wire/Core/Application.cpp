@@ -23,7 +23,13 @@ namespace wire {
 		glfwInit();
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+		glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 		m_Window = glfwCreateWindow((int)desc.WindowWidth, (int)desc.WindowHeight, desc.WindowTitle.c_str(), nullptr, nullptr);
+
+		submitPostFrameTask([](Application& app)
+		{
+			app.showWindow();
+		});
 	
 		glfwSetWindowUserPointer(m_Window, &m_Desc);
 
@@ -104,7 +110,7 @@ namespace wire {
 			uint32_t frameIndex = m_Renderer->getFrameIndex();
 
 			UIRenderer::beginFrame();
-			UIRenderer::drawRect({ { 0.0f, 695.0f }, { 1280.0f, 720.0f } }, { 0.39f, 0.07f, 0.54f, 1.0f });
+			UIRenderer::drawRect({ { 0.0f, (float)m_Desc.WindowHeight - 25.0f }, { (float)m_Desc.WindowWidth, (float)m_Desc.WindowHeight } }, { 0.39f, 0.07f, 0.54f, 1.0f });
 
 			// button
 			UIRenderer::drawText("hello", textTransform, params);
@@ -113,7 +119,26 @@ namespace wire {
 
 			m_Renderer->endFrame();
 			glfwPollEvents();
+
+			for (auto& func : m_PostFrameTasks)
+				func(*this);
+			m_PostFrameTasks.clear();
 		}
+	}
+
+	void Application::showWindow()
+	{
+		glfwShowWindow(m_Window);
+	}
+
+	void Application::hideWindow()
+	{
+		glfwHideWindow(m_Window);
+	}
+
+	void Application::submitPostFrameTask(std::function<void(Application&)>&& func)
+	{
+		m_PostFrameTasks.emplace_back(func);
 	}
 
 }

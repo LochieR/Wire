@@ -133,8 +133,16 @@ namespace wire {
 
 			std::string sha256 = generateSHA256(fileString);
 
+			constexpr ShaderConfiguration currentConfig =
+#ifdef WR_DEBUG
+				ShaderConfiguration::Debug;
+#else
+				ShaderConfiguration::Release;
+#endif
+
 			ShaderGroup group;
 			group.Name = path.filename().string();
+			group.Config = currentConfig;
 
 			std::memcpy(group.SHA256, sha256.data(), sizeof(char) * 32);
 

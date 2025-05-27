@@ -463,6 +463,7 @@ namespace wire {
 			{
 				func(this);
 			}
+			m_ResourceFreeQueue[m_FrameIndex].clear();
 
 			return;
 		}
@@ -541,6 +542,7 @@ namespace wire {
 		{
 			func(this);
 		}
+		m_ResourceFreeQueue[m_FrameIndex].clear();
 
 		m_FrameIndex = (m_FrameIndex + 1) % WR_FRAMES_IN_FLIGHT;
 	}

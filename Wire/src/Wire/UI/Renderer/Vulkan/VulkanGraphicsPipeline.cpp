@@ -426,6 +426,9 @@ namespace wire {
 
 	void VulkanGraphicsPipeline::bindDescriptorSet(CommandBuffer commandBuffer)
 	{
+		if (((VulkanRenderer*)m_Renderer)->isFrameSkipped())
+			return;
+
 		vkCmdBindDescriptorSets(
 			commandBuffer.as<VkCommandBuffer>(),
 			VK_PIPELINE_BIND_POINT_GRAPHICS,
