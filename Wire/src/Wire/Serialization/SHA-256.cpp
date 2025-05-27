@@ -69,7 +69,7 @@ namespace wire {
 
     std::string generateSHA256(const std::vector<uint8_t>& data)
     {
-        uint64_t bitlen = data.size();
+        uint64_t bitlen = static_cast<uint64_t>(data.size()) * 8;;
         std::vector<uint8_t> paddedData = data;
 
         paddedData.push_back(0x80);

@@ -38,6 +38,24 @@ namespace wire {
 		int FontIndex;
 	};
 
+	struct CircleVertex
+	{
+		glm::vec3 WorldPosition;
+		glm::vec3 LocalPosition;
+		glm::vec4 Color;
+		float Thickness;
+		float Fade;
+	};
+
+	struct RoundedRectVertex
+	{
+		glm::vec3 WorldPosition;
+		glm::vec3 LocalPosition;
+		glm::vec4 Color;
+		float Thickness;
+		float Fade;
+	};
+
 	struct RendererData
 	{
 		RectVertex* RectVertexBase = nullptr;
@@ -55,6 +73,16 @@ namespace wire {
 
 		std::array<Texture2D*, 32> AtlasTextures;
 		uint32_t AtlasTextureIndex = 0;
+
+		CircleVertex* CircleVertexBase = nullptr;
+		CircleVertex* CircleVertexPointer = nullptr;
+		size_t CircleIndexCount = 0;
+		size_t CircleVertexCount = 0;
+
+		RoundedRectVertex* RoundedRectVertexBase = nullptr;
+		RoundedRectVertex* RoundedRectVertexPointer = nullptr;
+		size_t RoundedRectIndexCount = 0;
+		size_t RoundedRectVertexCount = 0;
 
 		glm::vec4 RectVertexPositions[4];
 	};
@@ -208,6 +236,29 @@ namespace wire {
 			s_TextPipeline->updateDescriptor(s_WhiteTexture, 0, i);
 		}
 
+		s_CircleVertexBuffer = renderer->createVertexBuffer(RendererLimits::MaxVertices * sizeof(CircleVertex));
+		s_Data.CircleVertexBase = new CircleVertex[RendererLimits::MaxVertices];
+
+		layout = {};
+		layout.VertexBufferLayout = {
+			{ "POSITION", ShaderDataType::Float3, sizeof(glm::vec3), offsetof(CircleVertex, WorldPosition) },
+			{ "TEXCOORD0", ShaderDataType::Float3, sizeof(glm::vec3), offsetof(CircleVertex, LocalPosition) },
+			{ "COLOR", ShaderDataType::Float4, sizeof(glm::vec4), offsetof(CircleVertex, Color) },
+			{ "TEXCOORD1", ShaderDataType::Float, sizeof(float), offsetof(CircleVertex, Thickness) },
+			{ "TEXCOORD2", ShaderDataType::Float, sizeof(float), offsetof(CircleVertex, Fade) },
+		};
+		layout.Stride = sizeof(CircleVertex);
+		layout.PushConstantInfos = {
+			{ sizeof(glm::mat4), 0, ShaderType::Vertex }
+		};
+
+		GraphicsPipelineDesc circleDesc{};
+		circleDesc.ShaderPath = "shadercache://UICircle.hlsl";
+		circleDesc.Topology = PrimitiveTopology::TriangleList;
+		circleDesc.Layout = layout;
+
+		s_CirclePipeline = renderer->createGraphicsPipeline(circleDesc);
+
 		s_RendererCommandBuffers.resize(renderer->getNumFramesInFlight());
 		for (uint32_t i = 0; i < renderer->getNumFramesInFlight(); i++)
 		{
@@ -222,9 +273,12 @@ namespace wire {
 
 	void UIRenderer::shutdown()
 	{
+		delete[] s_Data.CircleVertexBase;
 		delete[] s_Data.TextVertexBase;
 		delete[] s_Data.RectVertexBase;
 
+		delete s_CirclePipeline;
+		delete s_CircleVertexBuffer;
 		delete s_TextPipeline;
 		delete s_TextVertexBuffer;
 		delete s_DefaultFont;
@@ -249,6 +303,10 @@ namespace wire {
 		s_Data.TextVertexPointer = s_Data.TextVertexBase;
 		s_Data.TextIndexCount = 0;
 		s_Data.TextVertexCount = 0;
+
+		s_Data.CircleVertexPointer = s_Data.CircleVertexBase;
+		s_Data.CircleIndexCount = 0;
+		s_Data.CircleVertexCount = 0;
 	}
 
 	void UIRenderer::endFrame()
@@ -268,6 +326,12 @@ namespace wire {
 		{
 			size_t dataSize = sizeof(TextVertex) * s_Data.TextVertexCount;
 			s_TextVertexBuffer->setData(s_Data.TextVertexBase, dataSize);
+		}
+
+		if (s_Data.CircleIndexCount)
+		{
+			size_t dataSize = sizeof(CircleVertex) * s_Data.CircleVertexCount;
+			s_CircleVertexBuffer->setData(s_Data.CircleVertexBase, dataSize);
 		}
 
 		s_Renderer->beginCommandBuffer(s_RendererCommandBuffers[frameIndex]);
@@ -292,6 +356,16 @@ namespace wire {
 			s_IndexBuffer->bind(s_RendererCommandBuffers[frameIndex]);
 
 			s_Renderer->drawIndexed(s_RendererCommandBuffers[frameIndex], (uint32_t)s_Data.TextIndexCount);
+		}
+
+		if (s_Data.CircleIndexCount)
+		{
+			s_CirclePipeline->bind(s_RendererCommandBuffers[frameIndex]);
+			s_CirclePipeline->pushConstants(s_RendererCommandBuffers[frameIndex], ShaderType::Vertex, viewProj);
+			s_CircleVertexBuffer->bind(s_RendererCommandBuffers[frameIndex]);
+			s_IndexBuffer->bind(s_RendererCommandBuffers[frameIndex]);
+
+			s_Renderer->drawIndexed(s_RendererCommandBuffers[frameIndex], (uint32_t)s_Data.CircleIndexCount);
 		}
 
 		s_Renderer->endCommandBuffer(s_RendererCommandBuffers[frameIndex]);

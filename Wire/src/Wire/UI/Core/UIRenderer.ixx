@@ -53,6 +53,9 @@ namespace wire {
 		inline static VertexBuffer* s_TextVertexBuffer = nullptr;
 		inline static GraphicsPipeline* s_TextPipeline = nullptr;
 
+		inline static VertexBuffer* s_CircleVertexBuffer = nullptr;
+		inline static GraphicsPipeline* s_CirclePipeline = nullptr;
+
 		inline static Texture2D* s_WhiteTexture = nullptr;
 		inline static Font* s_DefaultFont = nullptr;
 
