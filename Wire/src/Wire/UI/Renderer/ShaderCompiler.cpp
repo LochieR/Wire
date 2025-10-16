@@ -1,6 +1,8 @@
-module;
+#include "ShaderCompiler.h"
 
+#include "Renderer.h"
 #include "Wire/Core/Assert.h"
+#include "Wire/Serialization/SHA-256.h"
 
 #include <shaderc/shaderc.hpp>
 #include <spirv_cross/spirv_cross.hpp>
@@ -9,11 +11,6 @@ module;
 #include <string>
 #include <fstream>
 #include <sstream>
-
-module wire.ui.renderer:shaderCompiler;
-
-import :renderer;
-import wire.serialization;
 
 namespace wire {
 
@@ -149,6 +146,8 @@ namespace wire {
 			if (std::find(apis.begin(), apis.end(), RendererAPI::Vulkan) != apis.end())
 			{
 				ShaderCompilationResult vkVShader = compileHLSLToSpirv(path, ShaderType::Vertex, vertexEntryPoint);
+				WR_ASSERT(vkVShader.Success, "failed to compile Vulkan vertex shader\nerror message:\n{}", vkVShader.ErrorMessage);
+
 				ShaderObject vkVertex;
 				vkVertex.API = RendererAPI::Vulkan;
 				vkVertex.Type = ShaderType::Vertex;
@@ -156,6 +155,8 @@ namespace wire {
 				vkVertex.Bytecode = vkVShader.Bytecode;
 
 				ShaderCompilationResult vkPShader = compileHLSLToSpirv(path, ShaderType::Pixel, pixelEntryPoint);
+				WR_ASSERT(vkPShader.Success, "failed to compile Vulkan pixel shader\nerror message:\n{}", vkPShader.ErrorMessage);
+
 				ShaderObject vkPixel;
 				vkPixel.API = RendererAPI::Vulkan;
 				vkPixel.Type = ShaderType::Pixel;

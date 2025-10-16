@@ -1,6 +1,10 @@
-module;
+#include "ShaderCache.h"
 
+#include "Renderer.h"
+#include "ShaderCompiler.h"
 #include "Wire/Core/Assert.h"
+#include "Wire/Serialization/Stream.h"
+#include "Wire/Serialization/SHA-256.h"
 
 #include <string>
 #include <vector>
@@ -8,12 +12,6 @@ module;
 #include <algorithm>
 #include <filesystem>
 #include <unordered_map>
-
-module wire.ui.renderer:shaderCache;
-
-import :renderer;
-import :shaderCompiler;
-import wire.serialization;
 
 namespace wire {
 

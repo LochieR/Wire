@@ -1,6 +1,13 @@
-module;
+#include "VulkanRenderer.h"
+
+#include "VulkanFont.h"
+#include "VulkanBuffer.h"
+#include "VulkanTexture2D.h"
+#include "VulkanCommandBuffer.h"
+#include "VulkanGraphicsPipeline.h"
 
 #include "Wire/Core/Assert.h"
+#include "Wire/Core/Application.h"
 
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
@@ -10,17 +17,6 @@ module;
 #include <vector>
 #include <iostream>
 #include <algorithm>
-
-#define VK_CHECK(result, message) WR_ASSERT(result == VK_SUCCESS, message)
-#define WR_FRAMES_IN_FLIGHT 2
-
-module wire.ui.renderer.vk:renderer;
-
-import wire.core;
-import :graphicsPipeline;
-import :buffer;
-import :texture2D;
-import :font;
 
 namespace wire {
 	
@@ -337,6 +333,18 @@ namespace wire {
 		{
 			return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 		}
+
+		static VkShaderStageFlags ConvertShaderType(ShaderType type)
+		{
+			switch (type)
+			{
+			case ShaderType::Vertex: return VK_SHADER_STAGE_VERTEX_BIT;
+			case ShaderType::Pixel: return VK_SHADER_STAGE_FRAGMENT_BIT;
+			}
+
+			WR_ASSERT(false, "Unknown ShaderType!");
+			return VkShaderStageFlags(0);
+		}
 	}
 
 	VulkanRenderer::VulkanRenderer(const RendererDesc& desc)
@@ -372,6 +380,10 @@ namespace wire {
 			queue.clear();
 		}
 		m_ResourceFreeQueue.clear();
+
+		for (CommandBuffer* commandBuffer : m_AllocatedCommandBuffers)
+			delete commandBuffer;
+		m_AllocatedCommandBuffers.clear();
 
 		vkDestroyRenderPass(m_Device, m_RenderPass, m_Allocator);
 
@@ -476,7 +488,41 @@ namespace wire {
 		VkResult result = vkBeginCommandBuffer(m_FrameCommandBuffers[m_FrameIndex], &beginInfo);
 		VK_CHECK(result, "Failed to begin Vulkan command buffer!");
 
-		if (!m_SubmittedNonRenderingCommandBuffers.empty())
+		for (const auto& listInfo : m_SubmittedCommandLists[m_FrameIndex])
+		{
+			for (size_t i = 0; i < listInfo.Types.size(); i++)
+			{
+				CommandScope::Type type = listInfo.Types[i];
+				
+				if (type == CommandScope::RenderPass)
+				{
+					std::array<VkClearValue, 2> clearValues = {};
+					clearValues[0].color = { 0.0f, 0.0f, 0.0f, 0.0f };
+					clearValues[1].depthStencil = { 1.0f, 0 };
+
+					VkRenderPassBeginInfo renderPassInfo{};
+					renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+					renderPassInfo.renderArea.extent = m_Extent;
+					renderPassInfo.renderArea.offset = { 0, 0 };
+					renderPassInfo.renderPass = m_RenderPass;
+					renderPassInfo.framebuffer = m_Framebuffers[m_ImageIndex];
+					renderPassInfo.clearValueCount = (uint32_t)clearValues.size();
+					renderPassInfo.pClearValues = clearValues.data();
+
+					vkCmdBeginRenderPass(m_FrameCommandBuffers[m_FrameIndex], &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+				}
+
+				vkCmdExecuteCommands(m_FrameCommandBuffers[m_FrameIndex], 1, &listInfo.Buffers[i]);
+
+				if (type == CommandScope::RenderPass)
+				{
+					vkCmdEndRenderPass(m_FrameCommandBuffers[m_FrameIndex]);
+				}
+			}
+		}
+
+		// old code ---------------------------
+		/*if (!m_SubmittedNonRenderingCommandBuffers.empty())
 			vkCmdExecuteCommands(m_FrameCommandBuffers[m_FrameIndex], (uint32_t)m_SubmittedNonRenderingCommandBuffers.size(), m_SubmittedNonRenderingCommandBuffers.data());
 
 		std::array<VkClearValue, 2> clearValues = {};
@@ -497,7 +543,8 @@ namespace wire {
 		if (!m_SubmittedRenderingCommandBuffers.empty())
 			vkCmdExecuteCommands(m_FrameCommandBuffers[m_FrameIndex], (uint32_t)m_SubmittedRenderingCommandBuffers.size(), m_SubmittedRenderingCommandBuffers.data());
 
-		vkCmdEndRenderPass(m_FrameCommandBuffers[m_FrameIndex]);
+		vkCmdEndRenderPass(m_FrameCommandBuffers[m_FrameIndex]);*/
+		// old code ---------------------------
 
 		result = vkEndCommandBuffer(m_FrameCommandBuffers[m_FrameIndex]);
 		VK_CHECK(result, "Failed to end Vulkan command buffer!");
@@ -538,6 +585,9 @@ namespace wire {
 		m_SubmittedNonRenderingCommandBuffers.clear();
 		m_SubmittedRenderingCommandBuffers.clear();
 
+		m_SubmittedCommandLists[m_FrameIndex].clear();
+		m_UsedSecondaryCommandBufferCount[m_FrameIndex] = 0;
+
 		for (auto& func : m_ResourceFreeQueue[m_FrameIndex])
 		{
 			func(this);
@@ -547,28 +597,12 @@ namespace wire {
 		m_FrameIndex = (m_FrameIndex + 1) % WR_FRAMES_IN_FLIGHT;
 	}
 
-	void VulkanRenderer::draw(CommandBuffer commandBuffer, uint32_t vertexCount, uint32_t vertexOffset)
-	{
-		if (m_SkipFrame)
-			return;
-
-		vkCmdDraw(commandBuffer.as<VkCommandBuffer>(), vertexCount, 1, vertexOffset, 0);
-	}
-
-	void VulkanRenderer::drawIndexed(CommandBuffer commandBuffer, uint32_t indexCount, uint32_t indexOffset)
-	{
-		if (m_SkipFrame)
-			return;
-
-		vkCmdDrawIndexed(commandBuffer.as<VkCommandBuffer>(), indexCount, 1, indexOffset, 0, 0);
-	}
-
 	uint32_t VulkanRenderer::getNumFramesInFlight() const
 	{
 		return WR_FRAMES_IN_FLIGHT;
 	}
 
-	CommandBuffer VulkanRenderer::allocateCommandBuffer()
+	CommandBuffer& VulkanRenderer::allocateCommandBuffer()
 	{
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -580,12 +614,12 @@ namespace wire {
 		VkResult result = vkAllocateCommandBuffers(m_Device, &allocInfo, &commandBuffer);
 		VK_CHECK(result, "Failed to allocate Vulkan command buffer!");
 
-		CommandBuffer cmd((void*)commandBuffer);
+		m_AllocatedCommandBuffers.push_back(new VulkanCommandBuffer(this, commandBuffer, false));
 
-		return cmd;
+		return *m_AllocatedCommandBuffers[m_AllocatedCommandBuffers.size() - 1];
 	}
 
-	CommandBuffer VulkanRenderer::beginSingleTimeCommands()
+	CommandBuffer& VulkanRenderer::beginSingleTimeCommands()
 	{
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -604,12 +638,12 @@ namespace wire {
 		result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
 		VK_CHECK(result, "Failed to begin Vulkan command buffer!");
 
-		CommandBuffer cmd((void*)commandBuffer);
+		m_CurrentSingleTimeCommands.push_back(new VulkanCommandBuffer(this, commandBuffer, true));
 
-		return cmd;
+		return *m_CurrentSingleTimeCommands[m_CurrentSingleTimeCommands.size() - 1];
 	}
 
-	void VulkanRenderer::endSingleTimeCommands(CommandBuffer commandBuffer)
+	void VulkanRenderer::endSingleTimeCommands(CommandBuffer& commandBuffer)
 	{
 		VkCommandBuffer cmd = commandBuffer.as<VkCommandBuffer>();
 
@@ -627,44 +661,21 @@ namespace wire {
 		result = vkQueueWaitIdle(m_GraphicsQueue);
 		VK_CHECK(result, "An error occurred while waiting for Vulkan queue!");
 
+		uint32_t commandBufferIndex = -1;
+		for (uint32_t i = 0; i < m_CurrentSingleTimeCommands.size(); i++)
+		{
+			if ((VkCommandBuffer)m_CurrentSingleTimeCommands[i]->get() == cmd)
+				commandBufferIndex = i;
+		}
+		WR_ASSERT(commandBufferIndex != -1, "Unknown command buffer for endSingleTimeCommands!");
+
+		delete m_CurrentSingleTimeCommands[commandBufferIndex];
+		m_CurrentSingleTimeCommands.erase(m_CurrentSingleTimeCommands.begin() + commandBufferIndex);
+
 		vkFreeCommandBuffers(m_Device, m_CommandPool, 1, &cmd);
 	}
 
-	void VulkanRenderer::beginCommandBuffer(CommandBuffer commandBuffer, bool renderPassStarted)
-	{
-		if (m_SkipFrame)
-			return;
-
-		VkCommandBufferInheritanceInfo inheritanceInfo{};
-		inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-		inheritanceInfo.renderPass = m_RenderPass;
-		inheritanceInfo.framebuffer = m_Framebuffers[m_ImageIndex];
-		inheritanceInfo.subpass = 0;
-
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = renderPassStarted ? VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT : 0;
-		beginInfo.pInheritanceInfo = &inheritanceInfo;
-
-		VkCommandBuffer cmd = commandBuffer.as<VkCommandBuffer>();
-		vkBeginCommandBuffer(cmd, &beginInfo);
-
-		if (renderPassStarted)
-			m_CurrentRenderingCommandBuffers.push_back(commandBuffer.as<VkCommandBuffer>());
-		else
-			m_CurrentNonRenderingCommandBuffers.push_back(commandBuffer.as<VkCommandBuffer>());
-	}
-
-	void VulkanRenderer::endCommandBuffer(CommandBuffer commandBuffer)
-	{
-		if (m_SkipFrame)
-			return;
-
-		VkResult result = vkEndCommandBuffer(commandBuffer.as<VkCommandBuffer>());
-		VK_CHECK(result, "Failed to end Vulkan command buffer!");
-	}
-
-	void VulkanRenderer::submitCommandBuffer(CommandBuffer commandBuffer)
+	void VulkanRenderer::submitCommandBuffer(CommandBuffer& commandBuffer)
 	{
 		if (m_SkipFrame)
 			return;
@@ -682,6 +693,213 @@ namespace wire {
 		else // assume rendering command buffer
 		{
 			m_SubmittedRenderingCommandBuffers.push_back(commandBuffer.as<VkCommandBuffer>());
+		}
+	}
+
+	CommandList VulkanRenderer::createCommandList()
+	{
+		return CommandList(this);
+	}
+
+	void VulkanRenderer::submitCommandList(const CommandList& commandList)
+	{
+		WR_ASSERT(!commandList.isRecording(), "cannot submit a CommandList that is currently recording!");
+
+		CommandListData listData{};
+
+		for (const auto& scope : commandList.getScopes())
+		{
+			if (scope.Commands.empty())
+				continue;
+
+			VkCommandBuffer commandBuffer;
+
+			if (m_UsedSecondaryCommandBufferCount[m_FrameIndex] < m_SecondaryCommandBufferPool[m_FrameIndex].size())
+				commandBuffer = m_SecondaryCommandBufferPool[m_FrameIndex][m_UsedSecondaryCommandBufferCount[m_FrameIndex]++];
+			else
+			{
+				VkCommandBufferAllocateInfo allocInfo{};
+				allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+				allocInfo.commandPool = m_CommandPool;
+				allocInfo.commandBufferCount = 1;
+				allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+
+				VkResult result = vkAllocateCommandBuffers(m_Device, &allocInfo, &commandBuffer);
+				VK_CHECK(result, "Failed to allocate Vulkan command buffer!");
+
+				m_SecondaryCommandBufferPool[m_FrameIndex].push_back(commandBuffer);
+				m_UsedSecondaryCommandBufferCount[m_FrameIndex]++;
+			}
+			
+			VkCommandBufferInheritanceInfo inheritanceInfo{};
+			inheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+
+			VkCommandBufferBeginInfo beginInfo{};
+			beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+			beginInfo.pInheritanceInfo = &inheritanceInfo;
+			
+			if (scope.ScopeType == CommandScope::RenderPass)
+			{
+				inheritanceInfo.renderPass = m_RenderPass;
+				inheritanceInfo.framebuffer = getCurrentFramebuffer();
+
+				beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+			}
+			
+			VkResult result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
+			VK_CHECK(result, "Failed to begin Vulkan command buffer!");
+
+			executeCommandScope(commandBuffer, scope);
+
+			result = vkEndCommandBuffer(commandBuffer);
+			VK_CHECK(result, "Failed to end Vulkan command buffer!");
+
+			listData.Buffers.push_back(commandBuffer);
+			listData.Types.push_back(scope.ScopeType);
+		}
+
+		m_SubmittedCommandLists[m_FrameIndex].push_back(listData);
+	}
+
+	void VulkanRenderer::executeCommandScope(VkCommandBuffer commandBuffer, const CommandScope& commandScope)
+	{
+		for (const auto& command : commandScope.Commands)
+		{
+			switch (command.Type)
+			{
+			case CommandType::BeginRenderPass:
+			case CommandType::EndRenderPass:
+				break; // don't need to handle this as scopes handle it
+			case CommandType::BindPipeline:
+			{
+				const auto& args = std::get<CommandEntry::BindPipelineArgs>(command.Args);
+
+				const VulkanGraphicsPipeline* vkPipeline = static_cast<const VulkanGraphicsPipeline*>(args.Pipeline);
+
+				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkPipeline->getPipeline());
+				break;
+			}
+			case CommandType::PushConstants:
+			{
+				const auto& args = std::get<CommandEntry::PushConstantsArgs>(command.Args);
+
+				const VulkanGraphicsPipeline* vkPipeline = static_cast<const VulkanGraphicsPipeline*>(args.Pipeline);
+
+				vkCmdPushConstants(commandBuffer, vkPipeline->getPipelineLayout(), Utils::ConvertShaderType(args.Stage), args.Offset, args.Size, args.Data);
+				break;
+			}
+			case CommandType::BindDescriptorSet:
+			{
+				const auto& args = std::get<CommandEntry::BindDescriptorSetArgs>(command.Args);
+
+				const VulkanGraphicsPipeline* vkPipeline = static_cast<const VulkanGraphicsPipeline*>(args.Pipeline);
+
+				VkDescriptorSet set = vkPipeline->getDescriptorSet();
+				vkCmdBindDescriptorSets(
+					commandBuffer,
+					VK_PIPELINE_BIND_POINT_GRAPHICS,
+					vkPipeline->getPipelineLayout(),
+					0,
+					1,
+					&set,
+					0,
+					nullptr
+				);
+				break;
+			}
+			case CommandType::SetViewport:
+			{
+				const auto& args = std::get<CommandEntry::SetViewportArgs>(command.Args);
+
+				VkViewport viewport{};
+				viewport.x = args.Position.x;
+				viewport.y = args.Position.y;
+				viewport.width = args.Size.x;
+				viewport.height = args.Size.y;
+				viewport.minDepth = args.MinDepth;
+				viewport.maxDepth = args.MaxDepth;
+
+				vkCmdSetViewport(
+					commandBuffer,
+					0,
+					1,
+					&viewport
+				);
+				break;
+			}
+			case CommandType::SetScissor:
+			{
+				const auto& args = std::get<CommandEntry::SetScissorArgs>(command.Args);
+
+				VkRect2D rect{};
+				rect.extent = { (uint32_t)(args.Max.x - args.Min.x), (uint32_t)(args.Max.y - args.Min.y) };
+				rect.offset = { (int)args.Min.x, (int)args.Min.y };
+
+				vkCmdSetScissor(
+					commandBuffer,
+					0,
+					1,
+					&rect
+				);
+				break;
+			}
+			case CommandType::SetLineWidth:
+			{
+				const auto& args = std::get<CommandEntry::SetLineWidthArgs>(command.Args);
+
+				vkCmdSetLineWidth(commandBuffer, args.LineWidth);
+				break;
+			}
+			case CommandType::BindVertexBuffers:
+			{
+				const auto& args = std::get<CommandEntry::BindVertexBuffersArgs>(command.Args);
+
+				std::vector<VkBuffer> buffers(args.Buffers.size());
+				std::vector<VkDeviceSize> offsets(args.Buffers.size());
+				for (size_t i = 0; i < args.Buffers.size(); i++)
+				{
+					buffers[i] = static_cast<const VulkanVertexBuffer*>(args.Buffers[i])->getBuffer();
+					offsets[i] = 0;
+				}
+
+				vkCmdBindVertexBuffers(
+					commandBuffer,
+					0,
+					static_cast<uint32_t>(args.Buffers.size()),
+					buffers.data(),
+					offsets.data()
+				);
+				break;
+			}
+			case CommandType::BindIndexBuffer:
+			{
+				const auto& args = std::get<CommandEntry::BindIndexBufferArgs>(command.Args);
+
+				vkCmdBindIndexBuffer(commandBuffer, static_cast<const VulkanIndexBuffer*>(args.Buffer)->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+				break;
+			}
+			case CommandType::Draw:
+			{
+				const auto& args = std::get<CommandEntry::DrawArgs>(command.Args);
+				
+				vkCmdDraw(commandBuffer, args.VertexCount, 1, args.VertexOffset, 0);
+				break;
+			}
+			case CommandType::DrawIndexed:
+			{
+				const auto& args = std::get<CommandEntry::DrawIndexedArgs>(command.Args);
+
+				vkCmdDrawIndexed(commandBuffer, args.IndexCount, 1, args.IndexOffset, args.VertexOffset, 0);
+				break;
+			}
+			case CommandType::Dispatch:
+			{
+				break;
+			}
+			default:
+				WR_ASSERT(false, "Unknown command in CommandList!");
+				break;
+			}
 		}
 	}
 
@@ -708,6 +926,11 @@ namespace wire {
 	StagingBuffer* VulkanRenderer::createStagingBuffer(size_t size, const void* data)
 	{
 		return new VulkanStagingBuffer(this, size, data);
+	}
+
+	UniformBuffer* VulkanRenderer::createUniformBuffer(size_t size, const void* data)
+	{
+		return new VulkanUniformBuffer(this, size, data);
 	}
 
 	Texture2D* VulkanRenderer::createTexture2D(const std::filesystem::path& path)
@@ -800,10 +1023,10 @@ namespace wire {
 
 		vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, instanceExtensions.data());
 
-		std::cout << "Available extensions:\n";
+		WR_INFO("Available extensions:");
 		for (const auto& extension : instanceExtensions)
 		{
-			std::cout << "\t" << extension.extensionName << "\n";
+			WR_INFO("\t{}", extension.extensionName);
 		}
 
 		if constexpr (s_EnableValidationLayers)
@@ -904,6 +1127,24 @@ namespace wire {
 
 		result = vkAllocateCommandBuffers(m_Device, &allocInfo, m_FrameCommandBuffers.data());
 		VK_CHECK(result, "Failed to allocate Vulkan command buffers!");
+
+		constexpr uint32_t secondaryCommandBufferCount = 10;
+
+		allocInfo.commandBufferCount = secondaryCommandBufferCount;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+
+		m_SecondaryCommandBufferPool.resize(WR_FRAMES_IN_FLIGHT);
+		m_UsedSecondaryCommandBufferCount.resize(WR_FRAMES_IN_FLIGHT);
+		m_SubmittedCommandLists.resize(WR_FRAMES_IN_FLIGHT);
+
+		for (size_t i = 0; i < WR_FRAMES_IN_FLIGHT; i++)
+		{
+			m_SecondaryCommandBufferPool[i].resize(secondaryCommandBufferCount);
+			m_UsedSecondaryCommandBufferCount[i] = 0;
+
+			result = vkAllocateCommandBuffers(m_Device, &allocInfo, m_SecondaryCommandBufferPool[i].data());
+			VK_CHECK(result, "Failed to allocate Vulkan command buffers!");
+		}
 	}
 
 	void VulkanRenderer::createDescriptorPool()

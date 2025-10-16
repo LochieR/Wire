@@ -1,4 +1,4 @@
-module;
+#include "Windows.h"
 
 #include <GLFW/glfw3.h>
 #define GLFW_EXPOSE_NATIVE_WIN32
@@ -6,8 +6,6 @@ module;
 #include <glm/glm.hpp>
 
 #include <dwmapi.h>
-
-module wire.ui.utils.windows;
 
 namespace wire::windows {
 	
@@ -52,12 +50,9 @@ namespace wire::windows {
 		}
 		else
 		{
-			SendMessage(hwnd, WM_SETICON, ICON_SMALL, (LPARAM)NULL);
-			SendMessage(hwnd, WM_SETICON, ICON_BIG, (LPARAM)NULL);
-
-			LONG exStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
-			exStyle |= WS_EX_DLGMODALFRAME;
-			SetWindowLong(hwnd, GWL_EXSTYLE, exStyle);
+			SetWindowLongPtr(hwnd, GWL_EXSTYLE, GetWindowLongPtr(hwnd, GWL_EXSTYLE) | WS_EX_DLGMODALFRAME);
+			SetClassLongPtr(hwnd, GCLP_HICON, NULL);
+			SetClassLongPtr(hwnd, GCLP_HICONSM, NULL);
 		}
 
 		SetWindowPos(hwnd, NULL, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);

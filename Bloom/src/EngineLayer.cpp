@@ -1,0 +1,219 @@
+#include "EngineLayer.h"
+
+#include "tiny_obj_loader.h"
+#include <glm/gtc/matrix_transform.hpp>
+
+#include <chrono>
+#include <unordered_map>
+
+namespace bloom {
+
+	namespace Utils {
+
+		static void LoadModel(const std::filesystem::path& path, std::vector<ModelVertex>& modelVertices, std::vector<uint32_t>& modelIndices)
+		{
+			tinyobj::attrib_t attrib;
+			std::vector<tinyobj::shape_t> shapes;
+			std::vector<tinyobj::material_t> materials;
+			std::string warning, error;
+
+			std::unordered_map<ModelVertex, uint32_t> uniqueVertices;
+
+			std::string pathStr = path.string();
+			bool success = tinyobj::LoadObj(&attrib, &shapes, &materials, &warning, &error, pathStr.c_str());
+
+			if (!warning.empty())
+				WR_WARN("TinyObj Warning: {}", warning);
+			if (!error.empty())
+				WR_ERROR("TinyObj Error: {}", error);
+
+			WR_ASSERT(success, "Failed to load object with tinyobj!");
+
+			for (const auto& shape : shapes)
+			{
+				for (const auto& index : shape.mesh.indices)
+				{
+					ModelVertex vertex{};
+
+					vertex.Position = {
+						attrib.vertices[3 * index.vertex_index + 0],
+						attrib.vertices[3 * index.vertex_index + 1],
+						attrib.vertices[3 * index.vertex_index + 2],
+						1.0f
+					};
+
+					if (index.texcoord_index >= 0)
+					{
+						vertex.TexCoord = {
+							attrib.texcoords[2 * index.texcoord_index + 0],
+							1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+						};
+					}
+					else
+						vertex.TexCoord = { 0.0f, 0.0f };
+
+					vertex.Color = { 1.0f, 1.0f, 1.0f, 1.0f };
+
+					if (index.normal_index >= 0)
+					{
+						vertex.Normal = {
+							attrib.normals[3 * index.normal_index + 0],
+							attrib.normals[3 * index.normal_index + 1],
+							attrib.normals[3 * index.normal_index + 2]
+						};
+					}
+
+					if (uniqueVertices.count(vertex) == 0)
+					{
+						uniqueVertices[vertex] = static_cast<uint32_t>(modelVertices.size());
+						modelVertices.push_back(vertex);
+					}
+
+					modelIndices.push_back(uniqueVertices[vertex]);
+				}
+			}
+		}
+
+	}
+
+	void EngineLayer::onAttach()
+	{
+		m_Renderer = wire::Application::get().getRenderer();
+
+		m_ModelTexture = m_Renderer->createTexture2D("models/viking_room.png");
+		Utils::LoadModel("models/viking_room.obj", m_ModelVertices, m_ModelIndices);
+
+		m_ModelVertexBuffer = m_Renderer->createVertexBuffer(m_ModelVertices.size() * sizeof(ModelVertex), m_ModelVertices.data());
+		m_ModelIndexBuffer = m_Renderer->createIndexBuffer(m_ModelIndices.size() * sizeof(uint32_t), m_ModelIndices.data());
+
+		wire::InputLayout layout{};
+		layout.VertexBufferLayout = {
+			{ "POSITION", wire::ShaderDataType::Float4, sizeof(glm::vec4), offsetof(ModelVertex, Position) },
+			{ "COLOR",    wire::ShaderDataType::Float4, sizeof(glm::vec4), offsetof(ModelVertex, Color)    },
+			{ "TEXCOORD", wire::ShaderDataType::Float2, sizeof(glm::vec2), offsetof(ModelVertex, TexCoord) },
+			{ "NORMAL",   wire::ShaderDataType::Float3, sizeof(glm::vec3), offsetof(ModelVertex, Normal) },
+		};
+		layout.Stride = sizeof(ModelVertex);
+		layout.PushConstantInfos.push_back(
+			wire::PushConstantInfo{
+				.Size = sizeof(glm::mat4) * 2,
+				.Offset = 0,
+				.Shader = wire::ShaderType::Vertex
+			}
+		);
+		layout.ShaderResources.push_back(
+			wire::ShaderResourceInfo{
+				.ResourceType = wire::ShaderResourceType::UniformBuffer,
+				.Binding = 0,
+				.Shader = wire::ShaderType::Vertex,
+				.ResourceCount = 1
+			}
+		);
+		layout.ShaderResources.push_back(
+			wire::ShaderResourceInfo{
+				.ResourceType = wire::ShaderResourceType::CombinedImageSampler,
+				.Binding = 1,
+				.Shader = wire::ShaderType::Pixel,
+				.ResourceCount = 1
+			}
+		);
+
+		wire::GraphicsPipelineDesc pipelineDesc{};
+		pipelineDesc.Layout = layout;
+		pipelineDesc.ShaderPath = "shadercache://3DModel.hlsl";
+		pipelineDesc.Topology = wire::PrimitiveTopology::TriangleList;
+
+		m_ModelPipeline = m_Renderer->createGraphicsPipeline(pipelineDesc);
+
+		wire::SamplerDesc samplerDesc{};
+		samplerDesc.MinFilter = wire::SamplerFilter::Linear;
+		samplerDesc.MagFilter = wire::SamplerFilter::Linear;
+		samplerDesc.AddressModeU = wire::AddressMode::Repeat;
+		samplerDesc.AddressModeV = wire::AddressMode::Repeat;
+		samplerDesc.AddressModeW = wire::AddressMode::Repeat;
+		samplerDesc.EnableAnisotropy = true;
+		samplerDesc.MaxAnisotropy = m_Renderer->getMaxAnisotropy();
+		samplerDesc.BorderColor = wire::BorderColor::IntOpaqueBlack;
+
+		m_ModelSampler = m_Renderer->createSampler(samplerDesc);
+
+		for (size_t i = 0; i < WR_FRAMES_IN_FLIGHT; i++)
+		{
+			m_ModelUniformBuffers[i] = m_Renderer->createUniformBuffer(sizeof(glm::mat4) * 3);
+			m_ModelUniformDatas[i] = reinterpret_cast<glm::mat4*>(m_ModelUniformBuffers[i]->map(sizeof(glm::mat4) * 3));
+
+			m_ModelPipeline->updateFrameDescriptor(m_ModelUniformBuffers[i], static_cast<uint32_t>(i), 0, 0);
+		}
+		m_ModelPipeline->updateAllDescriptors(m_ModelTexture, m_ModelSampler, 1, 0);
+
+		m_CommandLists.resize(m_Renderer->getNumFramesInFlight());
+		for (size_t i = 0; i < m_Renderer->getNumFramesInFlight(); i++)
+		{
+			m_CommandLists[i] = m_Renderer->createCommandList();
+		}
+	}
+
+	void EngineLayer::onDetach()
+	{
+		for (size_t i = 0; i < WR_FRAMES_IN_FLIGHT; i++)
+		{
+			m_ModelUniformBuffers[i]->unmap();
+
+			delete m_ModelUniformBuffers[i];
+		}
+
+		delete m_ModelSampler;
+		delete m_ModelPipeline;
+		delete m_ModelIndexBuffer;
+		delete m_ModelVertexBuffer;
+		delete m_ModelTexture;
+	}
+
+	void EngineLayer::onUpdate(float timestep)
+	{
+		wire::CommandList& commandList = m_CommandLists[m_Renderer->getFrameIndex()];
+
+		struct
+		{
+			glm::mat4 Model;
+			glm::mat4 View;
+			glm::mat4 Proj;
+		} uniformData{};
+
+		static auto startTime = std::chrono::high_resolution_clock::now();
+
+		auto currentTime = std::chrono::high_resolution_clock::now();
+		float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+		uniformData.Model = glm::rotate(glm::mat4(1.0f), time * glm::radians(30.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		uniformData.View = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		uniformData.Proj = glm::perspective(glm::radians(45.0f), m_Renderer->getExtent().x / m_Renderer->getExtent().y, 0.1f, 10.0f);
+		uniformData.Proj[1][1] *= -1.0f;
+
+		std::memcpy(m_ModelUniformDatas[m_Renderer->getFrameIndex()], &uniformData, sizeof(glm::mat4) * 3);
+
+		glm::vec2 extent = m_Renderer->getExtent();
+
+		commandList.begin();
+		commandList.beginRenderPass();
+
+		commandList.bindPipeline(m_ModelPipeline);
+		commandList.setViewport({ 0.0f, 0.0f }, extent, 0.0f, 1.0f);
+		commandList.setScissor({ 0.0f, 0.0f }, extent);
+		commandList.bindDescriptorSet();
+		commandList.bindVertexBuffers({ m_ModelVertexBuffer });
+		commandList.bindIndexBuffer(m_ModelIndexBuffer);
+
+		commandList.drawIndexed((uint32_t)m_ModelIndices.size());
+
+		commandList.endRenderPass();
+		commandList.end();
+
+		m_Renderer->submitCommandList(commandList);
+	}
+
+	void EngineLayer::onEvent(wire::Event& event)
+	{
+	}
+
+}

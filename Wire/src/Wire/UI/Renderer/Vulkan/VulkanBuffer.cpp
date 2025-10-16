@@ -1,15 +1,11 @@
-module;
+#include "VulkanBuffer.h"
 
+#include "VulkanRenderer.h"
 #include "Wire/Core/Assert.h"
+
 #include <vulkan/vulkan.h>
 
-module wire.ui.renderer.vk:buffer;
-
-import :renderer;
-
 namespace wire {
-
-#define VK_CHECK(result, message) WR_ASSERT(result == VK_SUCCESS, message)
 
 	namespace Utils {
 
@@ -54,7 +50,7 @@ namespace wire {
 			VK_CHECK(result, "Failed to bind Vulkan buffer memory!");
 		}
 
-		static void CopyBuffer(CommandBuffer commandBuffer, VkBuffer srcBuffer, VkBuffer dstBuffer, size_t bufferSize)
+		static void CopyBuffer(CommandBuffer& commandBuffer, VkBuffer srcBuffer, VkBuffer dstBuffer, size_t bufferSize)
 		{
 			VkBufferCopy copyRegion{};
 			copyRegion.srcOffset = 0;
@@ -71,7 +67,7 @@ namespace wire {
 
 		static void CopyBuffer(VulkanRenderer* vk, VkBuffer srcBuffer, VkBuffer dstBuffer, size_t bufferSize)
 		{
-			CommandBuffer commandBuffer = vk->beginSingleTimeCommands();
+			CommandBuffer& commandBuffer = vk->beginSingleTimeCommands();
 			CopyBuffer(commandBuffer, srcBuffer, dstBuffer, bufferSize);
 			vk->endSingleTimeCommands(commandBuffer);
 		}
@@ -104,18 +100,11 @@ namespace wire {
 		);
 	}
 
-	void VulkanVertexBuffer::bind(CommandBuffer commandBuffer) const
-	{
-		if (((VulkanRenderer*)m_Renderer)->isFrameSkipped())
-			return;
-
-		VkDeviceSize offset = 0;
-		vkCmdBindVertexBuffers(commandBuffer.as<VkCommandBuffer>(), 0, 1, &m_Buffer, &offset);
-	}
-
-	void VulkanVertexBuffer::setData(const void* data, size_t size)
+	void VulkanVertexBuffer::setData(const void* data, size_t size, size_t offset)
 	{
 		void* memory = map(size);
+		uint8_t* temp = reinterpret_cast<uint8_t*>(memory);
+		memory = reinterpret_cast<void*>(temp + offset);
 		std::memcpy(memory, data, size);
 		unmap();
 	}
@@ -177,14 +166,6 @@ namespace wire {
 				vkFreeMemory(vk->getDevice(), stagingMemory, vk->getAllocator());
 			}
 		);
-	}
-
-	void VulkanIndexBuffer::bind(CommandBuffer commandBuffer) const
-	{
-		if (((VulkanRenderer*)m_Renderer)->isFrameSkipped())
-			return;
-
-		vkCmdBindIndexBuffer(commandBuffer.as<VkCommandBuffer>(), m_Buffer, 0, VK_INDEX_TYPE_UINT32);
 	}
 
 	void VulkanIndexBuffer::setData(const void* data, size_t size)
@@ -277,6 +258,65 @@ namespace wire {
 	}
 
 	void VulkanStagingBuffer::unmap()
+	{
+		VulkanRenderer* vk = (VulkanRenderer*)m_Renderer;
+
+		vkUnmapMemory(vk->getDevice(), m_Memory);
+	}
+
+	VulkanUniformBuffer::VulkanUniformBuffer(Renderer* renderer, size_t size, const void* data)
+		: m_Renderer(renderer), m_Size(size)
+	{
+		VulkanRenderer* vk = (VulkanRenderer*)renderer;
+
+		Utils::CreateBuffer(
+			vk->getDevice(),
+			vk->getPhysicalDevice(),
+			vk->getAllocator(),
+			size,
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			m_Buffer,
+			m_Memory
+		);
+	}
+
+	VulkanUniformBuffer::~VulkanUniformBuffer()
+	{
+		m_Renderer->submitResourceFree([buffer = m_Buffer, memory = m_Memory](Renderer* renderer)
+		{
+			VulkanRenderer* vk = (VulkanRenderer*)renderer;
+
+			vkDestroyBuffer(vk->getDevice(), buffer, vk->getAllocator());
+			vkFreeMemory(vk->getDevice(), memory, vk->getAllocator());
+		});
+	}
+
+	void VulkanUniformBuffer::setData(const void* data, size_t size)
+	{
+		void* memory = map(size);
+		std::memcpy(memory, data, size);
+		unmap();
+	}
+
+	void VulkanUniformBuffer::setData(int data, size_t size)
+	{
+		void* memory = map(size);
+		std::memset(memory, data, size);
+		unmap();
+	}
+
+	void* VulkanUniformBuffer::map(size_t size)
+	{
+		VulkanRenderer* vk = (VulkanRenderer*)m_Renderer;
+
+		void* memory;
+		vkMapMemory(vk->getDevice(), m_Memory, 0, size, 0, &memory);
+
+		return memory;
+	}
+
+	void VulkanUniformBuffer::unmap()
 	{
 		VulkanRenderer* vk = (VulkanRenderer*)m_Renderer;
 

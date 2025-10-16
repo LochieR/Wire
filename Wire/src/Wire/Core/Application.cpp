@@ -1,4 +1,12 @@
-module;
+#include "Application.h"
+
+#include "Wire/Audio/AudioEngine.h"
+
+#include "Wire/UI/Core/Canvas.h"
+#include "Wire/UI/Renderer/Renderer.h"
+#include "Wire/UI/Components/ComponentLibrary.h"
+
+#include "Wire/UI/Utils/Windows.h"
 
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -6,25 +14,27 @@ module;
 
 #include <array>
 #include <vector>
+#include <numbers>
+#include <iostream>
 #include <filesystem>
-
-module wire.core:app;
-
-import wire.ui.renderer;
-import wire.ui.core;
-
-import wire.ui.utils.windows;
 
 namespace wire {
 
 	Application::Application(const ApplicationDesc& desc)
 		: m_Desc(desc)
 	{
+		//AudioEngine::init();
+		//AudioEngine::shutdown();
+
 		glfwInit();
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 		m_Window = glfwCreateWindow((int)desc.WindowWidth, (int)desc.WindowHeight, desc.WindowTitle.c_str(), nullptr, nullptr);
+
+		Input::setWindow(m_Window);
+
+		m_Desc.m_EventCallback = [this](auto&&... args) { this->onEvent(std::forward<decltype(args)>(args)...); };
 
 		submitPostFrameTask([](Application& app)
 		{
@@ -47,6 +57,25 @@ namespace wire {
 			ApplicationDesc& desc = *reinterpret_cast<ApplicationDesc*>(glfwGetWindowUserPointer(window));
 
 			desc.m_Running = false;
+		});
+
+		glfwSetCharCallback(m_Window, [](GLFWwindow* window, uint32_t codepoint)
+		{
+			ApplicationDesc& desc = *reinterpret_cast<ApplicationDesc*>(glfwGetWindowUserPointer(window));
+			KeyTypedEvent event(static_cast<KeyCode>(codepoint));
+
+			desc.m_EventCallback(event);
+		});
+
+		glfwSetKeyCallback(m_Window, [](GLFWwindow* window, int key, int scancode, int action, int mods)
+		{
+			ApplicationDesc& desc = *reinterpret_cast<ApplicationDesc*>(glfwGetWindowUserPointer(window));
+			KeyPressedEvent event(static_cast<KeyCode>(key), action == GLFW_REPEAT);
+
+			if (action == GLFW_PRESS || action == GLFW_REPEAT)
+			{
+				desc.m_EventCallback(event);
+			}
 		});
 
 		s_App = this;
@@ -84,38 +113,44 @@ namespace wire {
 
 		m_Renderer = createRenderer(rendererDesc);
 
-		UIRenderer::init(m_Renderer);
+		m_LayerStack = new LayerStack();
 	}
 
 	Application::~Application()
 	{
-		UIRenderer::shutdown();
-
+		delete m_LayerStack;
 		delete m_Renderer;
 
 		glfwDestroyWindow(m_Window);
 		glfwTerminate();
+
+		Input::setWindow(nullptr);
+	}
+
+	static void testTrigger(Layout& layout)
+	{
+		layout.clear();
+
+		static std::wstring text = L"";
+		static std::wstring otherText = L"";
+		
+		layout.addButton("hi there");
+		layout.addInputText(text, { 200.0f, 20.0f });
+		layout.addInputText(otherText, { 150.0f, 20.0f });
 	}
 
 	void Application::run()
 	{
-		glm::mat4 textTransform = glm::translate(glm::mat4(1.0f), { 500.0f, 100.0f, 0.0f })
-			* glm::scale(glm::mat4(1.0f), { 25.0f, 25.0f, 1.0f });
-
-		UIRenderer::TextParams params{};
-
 		while (m_Desc.m_Running)
 		{
+			float time = (float)glfwGetTime();
+			float timestep = time - m_LastFrameTime;
+			m_LastFrameTime = time;
+
 			m_Renderer->beginFrame();
-			uint32_t frameIndex = m_Renderer->getFrameIndex();
 
-			UIRenderer::beginFrame();
-			UIRenderer::drawRect({ { 0.0f, (float)m_Desc.WindowHeight - 25.0f }, { (float)m_Desc.WindowWidth, (float)m_Desc.WindowHeight } }, { 0.39f, 0.07f, 0.54f, 1.0f });
-
-			// button
-			UIRenderer::drawText("hello", textTransform, params);
-			UIRenderer::drawRect({ { 500.0f, 80.0f }, { 550.0f, 120.0f } }, { 0.21f, 0.21f, 0.21f, 1.0f });
-			UIRenderer::endFrame();
+			for (Layer* layer : *m_LayerStack)
+				layer->onUpdate(timestep);
 
 			m_Renderer->endFrame();
 			glfwPollEvents();
@@ -134,6 +169,28 @@ namespace wire {
 	void Application::hideWindow()
 	{
 		glfwHideWindow(m_Window);
+	}
+
+	void Application::onEvent(Event& event)
+	{
+		for (auto it = m_LayerStack->rbegin(); it != m_LayerStack->rend(); ++it)
+		{
+			if (event.handled)
+				break;
+			(*it)->onEvent(event);
+		}
+	}
+
+	void Application::pushLayer(Layer* layer)
+	{
+		m_LayerStack->pushLayer(layer);
+		layer->onAttach();
+	}
+
+	void Application::pushOverlay(Layer* layer)
+	{
+		m_LayerStack->pushOverlay(layer);
+		layer->onAttach();
 	}
 
 	void Application::submitPostFrameTask(std::function<void(Application&)>&& func)

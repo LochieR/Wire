@@ -1,6 +1,6 @@
-module wire.ui.renderer;
+#include "Renderer.h"
 
-import wire.ui.renderer.vk;
+#include "Wire/UI/Renderer/Vulkan/VulkanRenderer.h"
 
 namespace wire {
 

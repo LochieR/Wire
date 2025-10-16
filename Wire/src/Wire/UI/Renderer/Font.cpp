@@ -1,15 +1,9 @@
-module;
+#include "Font.h"
 
+#include "MSDFData.h"
 #include "Wire/Core/Assert.h"
 
-#undef INFINITE
-#include <msdf-atlas-gen.h>
-#include <string>
-#include <vector>
 #include <fstream>
-#include <filesystem>
-
-module wire.ui.renderer:font;
 
 namespace wire {
 

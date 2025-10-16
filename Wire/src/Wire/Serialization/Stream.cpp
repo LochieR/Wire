@@ -1,14 +1,10 @@
-module;
+#include "Stream.h"
 
 #include <vector>
 #include <ostream>
 #include <istream>
 #include <iostream>
 #include <functional>
-
-module wire.serialization:stream;
-
-import wire.core.buffer;
 
 namespace wire {
 

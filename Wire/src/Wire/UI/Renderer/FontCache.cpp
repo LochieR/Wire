@@ -1,19 +1,10 @@
-module;
+#include "FontCache.h"
 
 #include "Wire/Core/Assert.h"
-
-#undef INFINITE
-#include <msdf-atlas-gen.h>
+#include "Wire/Serialization/Stream.h"
 
 #include <string>
 #include <fstream>
-#include <filesystem>
-
-module wire.ui.renderer:fontCache;
-
-import :buffer;
-import :font;
-import wire.serialization;
 
 namespace wire::utils {
 

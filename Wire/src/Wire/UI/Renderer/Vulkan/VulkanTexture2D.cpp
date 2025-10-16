@@ -1,17 +1,14 @@
-module;
+#include "VulkanTexture2D.h"
 
+#include "VulkanRenderer.h"
 #include "Wire/Core/Assert.h"
-#include "stb_image.h"
 
+#include "stb_image.h"
 #include <vulkan/vulkan.h>
 
 #include <string>
 
-module wire.ui.renderer.vk:texture2D;
-
 namespace wire {
-
-#define VK_CHECK(result, msg) WR_ASSERT(result == VK_SUCCESS, msg)
 
 	namespace Utils {
 
@@ -95,7 +92,7 @@ namespace wire {
 			return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 		}
 
-		static void TransitionImageLayout(CommandBuffer commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
+		static void TransitionImageLayout(CommandBuffer& commandBuffer, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
 		{
 			VkCommandBuffer cmd = commandBuffer.as<VkCommandBuffer>();
 
@@ -168,7 +165,7 @@ namespace wire {
 			);
 		}
 
-		static void CopyBufferToImage(CommandBuffer commandBuffer, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
+		static void CopyBufferToImage(CommandBuffer& commandBuffer, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
 		{
 			VkCommandBuffer cmd = commandBuffer.as<VkCommandBuffer>();
 
@@ -273,7 +270,7 @@ namespace wire {
 			m_Memory
 		);
 
-		CommandBuffer commandBuffer = vk->beginSingleTimeCommands();
+		CommandBuffer& commandBuffer = vk->beginSingleTimeCommands();
 
 		Utils::TransitionImageLayout(
 			commandBuffer,
@@ -350,7 +347,7 @@ namespace wire {
 			m_Memory
 		);
 
-		CommandBuffer commandBuffer = vk->beginSingleTimeCommands();
+		CommandBuffer& commandBuffer = vk->beginSingleTimeCommands();
 
 		Utils::TransitionImageLayout(
 			commandBuffer,

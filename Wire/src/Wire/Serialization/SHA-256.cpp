@@ -1,4 +1,4 @@
-module;
+#include "SHA-256.h"
 
 #include <array>
 #include <vector>
@@ -8,8 +8,6 @@ module;
 #include <iomanip>
 #include <cstring>
 #include <cstdint>
-
-module wire.serialization:sha256;
 
 namespace wire {
 

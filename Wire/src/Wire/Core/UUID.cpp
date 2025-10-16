@@ -1,8 +1,6 @@
-module;
+#include "UUID.h"
 
 #include <random>
-
-module wire.core.uuid;
 
 namespace wire {
 

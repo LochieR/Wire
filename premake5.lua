@@ -6,6 +6,7 @@ IncludeDir["GLFW"] = "%{wks.location}/external/GLFW/include"
 IncludeDir["glm"] = "%{wks.location}/external/glm"
 IncludeDir["msdfgen"] = "%{wks.location}/external/msdf-atlas-gen/msdfgen"
 IncludeDir["msdf_atlas_gen"] = "%{wks.location}/external/msdf-atlas-gen/msdf-atlas-gen"
+IncludeDir["portaudio"] = "%{wks.location}/external/portaudio/include"
 IncludeDir["Vulkan"] = "%{VULKAN_SDK}/Include"
 
 LibraryDir = {}
@@ -49,6 +50,7 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 group "Dependencies"
     include "external/GLFW"
 	include "external/msdf-atlas-gen"
+	include "external/portaudio"
 group ""
 
 project "wire"
@@ -65,9 +67,10 @@ project "wire"
     {
         "%{prj.location}/src/**.h",
 		"%{prj.location}/src/**.cpp",
-		"%{prj.location}/src/**.ixx",
 		"external/stb_image/stb_image.h",
-		"external/stb_image/stb_image.cpp"
+		"external/stb_image/stb_image.cpp",
+		"external/tinyobjloader/tiny_obj_loader.h",
+		"external/tinyobjloader/tiny_obj_loader.cpp",
     }
 
     defines
@@ -88,8 +91,10 @@ project "wire"
     externalincludedirs
 	{
 		"external/stb_image",
+		"external/tinyobjloader",
 		"%{IncludeDir.GLFW}",
 		"%{IncludeDir.glm}",
+		"%{IncludeDir.portaudio}",
         "%{IncludeDir.Vulkan}"
     }
 
@@ -97,6 +102,7 @@ project "wire"
     {
         "GLFW",
 		"msdf-atlas-gen",
+		"portaudio",
         "%{Library.Vulkan}"
     }
 
@@ -163,11 +169,16 @@ project "bloom"
 	{
 		"%{prj.location}/src/**.h",
 		"%{prj.location}/src/**.cpp",
-		"%{prj.location}/src/**.ixx",
+	}
+
+	includedirs
+	{
+		"%{wks.location}/Wire/src"
 	}
 
     externalincludedirs
 	{
+		"external/tinyobjloader",
 		"%{IncludeDir.glm}",
     }
 
