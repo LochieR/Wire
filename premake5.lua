@@ -7,27 +7,55 @@ IncludeDir["glm"] = "%{wks.location}/external/glm"
 IncludeDir["msdfgen"] = "%{wks.location}/external/msdf-atlas-gen/msdfgen"
 IncludeDir["msdf_atlas_gen"] = "%{wks.location}/external/msdf-atlas-gen/msdf-atlas-gen"
 IncludeDir["portaudio"] = "%{wks.location}/external/portaudio/include"
-IncludeDir["Vulkan"] = "%{VULKAN_SDK}/Include"
+if os.host() == "windows" then
+	IncludeDir["Vulkan"] = "%{VULKAN_SDK}/Include"
+elseif os.host() == "macosx" then
+	IncludeDir["Vulkan"] = "%{VULKAN_SDK}/include"
+end
 
 LibraryDir = {}
 
-LibraryDir["Vulkan"] = "%{VULKAN_SDK}/Lib"
+if os.host() == "windows" then
+	LibraryDir["Vulkan"] = "%{VULKAN_SDK}/Lib"
+elseif os.host() == "macosx" then
+	if VULKAN_SDK:sub(1, 1)	== "~" then
+		VULKAN_SDK = os.getenv("HOME") .. VULKAN_SDK:sub(2)
+	end
+	
+	LibraryDir["Vulkan"] = "%{VULKAN_SDK}/lib"
+end
 
 Library = {}
 
-Library["Vulkan"] = "%{LibraryDir.Vulkan}/vulkan-1.lib"
+if os.host() == "windows" then
+	Library["Vulkan"] = "%{LibraryDir.Vulkan}/vulkan-1.lib"
 
-Library["ShaderC_Debug"] = "%{LibraryDir.Vulkan}/shaderc_sharedd.lib"
-Library["SPIRV_Cross_Debug"] = "%{LibraryDir.Vulkan}/spirv-cross-cored.lib"
-Library["SPIRV_Cross_GLSL_Debug"] = "%{LibraryDir.Vulkan}/spirv-cross-glsld.lib"
-Library["SPIRV_Cross_HLSL_Debug"] = "%{LibraryDir.Vulkan}/spirv-cross-hlsld.lib"
-Library["SPIRV_Cross_MSL_Debug"] = "%{LibraryDir.Vulkan}/spirv-cross-msld.lib"
+	Library["ShaderC_Debug"] = "%{LibraryDir.Vulkan}/shaderc_sharedd.lib"
+	Library["SPIRV_Cross_Debug"] = "%{LibraryDir.Vulkan}/spirv-cross-cored.lib"
+	Library["SPIRV_Cross_GLSL_Debug"] = "%{LibraryDir.Vulkan}/spirv-cross-glsld.lib"
+	Library["SPIRV_Cross_HLSL_Debug"] = "%{LibraryDir.Vulkan}/spirv-cross-hlsld.lib"
+	Library["SPIRV_Cross_MSL_Debug"] = "%{LibraryDir.Vulkan}/spirv-cross-msld.lib"
 
-Library["ShaderC_Release"] = "%{LibraryDir.Vulkan}/shaderc_shared.lib"
-Library["SPIRV_Cross_Release"] = "%{LibraryDir.Vulkan}/spirv-cross-core.lib"
-Library["SPIRV_Cross_GLSL_Release"] = "%{LibraryDir.Vulkan}/spirv-cross-glsl.lib"
-Library["SPIRV_Cross_HLSL_Release"] = "%{LibraryDir.Vulkan}/spirv-cross-hlsl.lib"
-Library["SPIRV_Cross_MSL_Release"] = "%{LibraryDir.Vulkan}/spirv-cross-msl.lib"
+	Library["ShaderC_Release"] = "%{LibraryDir.Vulkan}/shaderc_shared.lib"
+	Library["SPIRV_Cross_Release"] = "%{LibraryDir.Vulkan}/spirv-cross-core.lib"
+	Library["SPIRV_Cross_GLSL_Release"] = "%{LibraryDir.Vulkan}/spirv-cross-glsl.lib"
+	Library["SPIRV_Cross_HLSL_Release"] = "%{LibraryDir.Vulkan}/spirv-cross-hlsl.lib"
+	Library["SPIRV_Cross_MSL_Release"] = "%{LibraryDir.Vulkan}/spirv-cross-msl.lib"
+elseif os.host() == "macosx" then
+	Library["Vulkan"] = "%{LibraryDir.Vulkan}/libvulkan.1.dylib"
+
+	Library["ShaderC_Debug"] = "%{LibraryDir.Vulkan}/libshaderc.a"
+	Library["SPIRV_Cross_Debug"] = "%{LibraryDir.Vulkan}/libspirv-cross-core.a"
+	Library["SPIRV_Cross_GLSL_Debug"] = "%{LibraryDir.Vulkan}/libspirv-cross-glsl.a"
+	Library["SPIRV_Cross_HLSL_Debug"] = "%{LibraryDir.Vulkan}/libspirv-cross-hlsl.a"
+	Library["SPIRV_Cross_MSL_Debug"] = "%{LibraryDir.Vulkan}/libspirv-cross-msl.a"
+
+	Library["ShaderC_Release"] = "%{LibraryDir.Vulkan}/libshaderc.a"
+	Library["SPIRV_Cross_Release"] = "%{LibraryDir.Vulkan}/libspirv-cross-core.a"
+	Library["SPIRV_Cross_GLSL_Release"] = "%{LibraryDir.Vulkan}/libspirv-cross-glsl.a"
+	Library["SPIRV_Cross_HLSL_Release"] = "%{LibraryDir.Vulkan}/libspirv-cross-hlsl.a"
+	Library["SPIRV_Cross_MSL_Release"] = "%{LibraryDir.Vulkan}/libspirv-cross-msl.a"
+end
 
 workspace "wire"
     architecture "x86_64"
@@ -84,8 +112,6 @@ project "wire"
     includedirs
 	{
 		"%{prj.location}/src",
-		"%{IncludeDir.msdf_atlas_gen}",
-		"%{IncludeDir.msdfgen}",
 	}
 
     externalincludedirs
@@ -95,6 +121,8 @@ project "wire"
 		"%{IncludeDir.GLFW}",
 		"%{IncludeDir.glm}",
 		"%{IncludeDir.portaudio}",
+		"%{IncludeDir.msdf_atlas_gen}",
+		"%{IncludeDir.msdfgen}",
         "%{IncludeDir.Vulkan}"
     }
 
@@ -112,6 +140,12 @@ project "wire"
 		links
 		{
 			"dwmapi.lib"
+		}
+
+	filter "system:macosx"
+		files
+		{
+			"%{prj.location}/src/**.mm"
 		}
 
     filter "configurations:Debug"
@@ -191,6 +225,32 @@ project "bloom"
 		systemversion "latest"
 
 		defines { "NOMINMAX" }
+
+	filter "system:macosx"
+		libdirs
+		{
+			"%{VULKAN_SDK}/lib"
+		}
+
+		links
+		{
+			"shaderc",
+			"shaderc_util",
+			"glslang",
+			"vulkan",
+			"CoreFoundation.framework",
+			"CoreGraphics.framework",
+			"IOKit.framework",
+			"AppKit.framework"
+		}
+
+	filter "action:xcode4"
+		xcodebuildresources
+		{
+			"%{prj.location}/shaders/**",
+			"%{prj.location}/fonts/**",
+			"%{prj.location}/models/**"
+		}
 
 	filter "configurations:Debug"
 		kind "ConsoleApp"

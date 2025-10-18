@@ -22,8 +22,11 @@ namespace wire {
 	
 	constexpr bool s_EnableValidationLayers = true;
 
-	const static std::vector<const char*> s_DeviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
-	const static std::vector<const char*> s_ValidationLayers = { "VK_LAYER_KHRONOS_validation" };
+    const static std::vector<const char*> s_DeviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+        "VK_KHR_portability_subset"
+    };
+    const static std::vector<const char*> s_ValidationLayers = { "VK_LAYER_KHRONOS_validation"
+    };
 
 	struct QueueFamilyIndices
 	{
@@ -993,7 +996,16 @@ namespace wire {
 		instanceInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 		instanceInfo.pApplicationInfo = &appInfo;
 
+#ifdef __APPLE__
+        instanceInfo.flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+#endif
+
 		std::vector<const char*> extensions = Utils::GetRequiredExtensions();
+        
+#ifdef __APPLE__
+        extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+#endif
+        
 		instanceInfo.enabledExtensionCount = (uint32_t)extensions.size();
 		instanceInfo.ppEnabledExtensionNames = extensions.data();
 

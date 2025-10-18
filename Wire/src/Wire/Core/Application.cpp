@@ -7,6 +7,7 @@
 #include "Wire/UI/Components/ComponentLibrary.h"
 
 #include "Wire/UI/Utils/Windows.h"
+#include "Wire/UI/Utils/macOS.h"
 
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -83,11 +84,35 @@ namespace wire {
 		windows::SetWindowShowIcon(m_Window, false);
 		windows::SetWindowBorderColor(m_Window, { 0.39f, 0.07f, 0.54f });
 		windows::SetWindowTitlebarColor(m_Window, { 0.39f, 0.07f, 0.54f });
+        
+        std::vector<macOS::MenuItem> testMenuItems = {
+            macOS::MenuItem{
+                "Test 1",
+                []() -> void { WR_INFO("Test 1"); }
+            },
+            macOS::MenuItem{
+                "Test 2",
+                []() -> void { WR_INFO("Test 2"); }
+            }
+        };
+        
+        std::vector<macOS::Menu> menus = {
+            macOS::Menu{
+                "Test",
+                testMenuItems.size(),
+                testMenuItems.data()
+            }
+        };
+        
+        macOS::CreateMenuBar(menus.size(), menus.data());
 
 		RendererDesc rendererDesc{};
 		rendererDesc.API = RendererAPI::Vulkan;
 		rendererDesc.ShaderCache.CachePath = "wire.shadercache";
 		rendererDesc.FontCache.CachePath = "wire.fontcache";
+        
+        if (!std::filesystem::exists("shaders/"))
+            std::filesystem::create_directory("shaders/");
 		
 		for (const auto& dir : std::filesystem::directory_iterator("shaders/"))
 		{

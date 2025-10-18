@@ -30,8 +30,6 @@ namespace wire {
 
 namespace std {
 
-	template<typename T> struct hash;
-
 	template<>
 	struct hash<wire::UUID>
 	{

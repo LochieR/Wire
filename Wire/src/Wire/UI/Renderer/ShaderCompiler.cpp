@@ -90,6 +90,7 @@ namespace wire {
 
 		comp.Bytecode = { begin, end };
 		comp.EntryPoint = entryPoint;
+        comp.Success = true;
 
 		return comp;
 	}

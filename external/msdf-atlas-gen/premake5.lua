@@ -16,7 +16,7 @@ project "msdf-atlas-gen"
     	"msdf-atlas-gen/**.cpp"
 	}
 
-	includedirs
+	externalincludedirs
 	{
 		"msdf-atlas-gen",
 		"msdfgen",

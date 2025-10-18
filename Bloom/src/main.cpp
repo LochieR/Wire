@@ -3,7 +3,7 @@
 #include "EngineLayer.h"
 #include "UIExampleLayer.h"
 
-#ifndef WR_DIST
+#if !defined(WR_DIST) || !defined(WR_PLATFORM_WINDOWS)
 
 int main()
 {
