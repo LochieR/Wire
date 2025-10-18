@@ -102,7 +102,7 @@ namespace bloom {
         depthAttachment.StencilStoreOp = wire::StoreOperation::DontCare;
         
         renderPassDesc.Attachments = { colorAttachment, depthAttachment };
-        m_RenderPass = m_Renderer->createRenderPass(renderPassDesc, m_Renderer->getSwapchain());
+        m_RenderPass = m_Renderer->createRenderPass(renderPassDesc, m_Renderer->getSwapchain(), "EngineLayer::m_RenderPass");
 
 		m_ModelTexture = m_Renderer->createTexture2D("models/viking_room.png");
 		Utils::LoadModel("models/viking_room.obj", m_ModelVertices, m_ModelIndices);
@@ -192,6 +192,7 @@ namespace bloom {
 		delete m_ModelIndexBuffer;
 		delete m_ModelVertexBuffer;
 		delete m_ModelTexture;
+		delete m_RenderPass;
 	}
 
 	void EngineLayer::onUpdate(float timestep)
