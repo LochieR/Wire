@@ -36,14 +36,16 @@ namespace bloom {
 	private:
 		wire::Renderer* m_Renderer = nullptr;
 
+        wire::RenderPass* m_RenderPass = nullptr;
+        
 		wire::Texture2D* m_ModelTexture = nullptr;
 		wire::Sampler* m_ModelSampler = nullptr;
 
 		std::vector<ModelVertex> m_ModelVertices;
 		std::vector<uint32_t> m_ModelIndices;
-		wire::VertexBuffer* m_ModelVertexBuffer = nullptr;
-		wire::IndexBuffer* m_ModelIndexBuffer = nullptr;
-		std::array<wire::UniformBuffer*, WR_FRAMES_IN_FLIGHT> m_ModelUniformBuffers;
+		wire::Buffer<wire::VertexBuffer>* m_ModelVertexBuffer = nullptr;
+		wire::Buffer<wire::IndexBuffer>* m_ModelIndexBuffer = nullptr;
+		std::array<wire::Buffer<wire::UniformBuffer>*, WR_FRAMES_IN_FLIGHT> m_ModelUniformBuffers;
 		std::array<glm::mat4*, WR_FRAMES_IN_FLIGHT> m_ModelUniformDatas;
 
 		wire::GraphicsPipeline* m_ModelPipeline = nullptr;

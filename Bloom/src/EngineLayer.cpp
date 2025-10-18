@@ -79,12 +79,36 @@ namespace bloom {
 	void EngineLayer::onAttach()
 	{
 		m_Renderer = wire::Application::get().getRenderer();
+        
+        wire::RenderPassDesc renderPassDesc{};
+        wire::AttachmentDesc colorAttachment{};
+        colorAttachment.Format = wire::AttachmentFormat::SwapchainColorDefault;
+        colorAttachment.Usage = wire::AttachmentLayout::Present;
+        colorAttachment.PreviousAttachmentUsage = wire::AttachmentLayout::Undefined;
+        colorAttachment.Samples = wire::AttachmentDesc::Count1Bit;
+        colorAttachment.LoadOp = wire::LoadOperation::Clear;
+        colorAttachment.StoreOp = wire::StoreOperation::Store;
+        colorAttachment.StencilLoadOp = wire::LoadOperation::DontCare;
+        colorAttachment.StencilStoreOp = wire::StoreOperation::DontCare;
+        
+        wire::AttachmentDesc depthAttachment{};
+        depthAttachment.Format = wire::AttachmentFormat::SwapchainDepthDefault;
+        depthAttachment.Usage = wire::AttachmentLayout::Depth;
+        depthAttachment.PreviousAttachmentUsage = wire::AttachmentLayout::Undefined;
+        depthAttachment.Samples = wire::AttachmentDesc::Count1Bit;
+        depthAttachment.LoadOp = wire::LoadOperation::Clear;
+        depthAttachment.StoreOp = wire::StoreOperation::Store;
+        depthAttachment.StencilLoadOp = wire::LoadOperation::DontCare;
+        depthAttachment.StencilStoreOp = wire::StoreOperation::DontCare;
+        
+        renderPassDesc.Attachments = { colorAttachment, depthAttachment };
+        m_RenderPass = m_Renderer->createRenderPass(renderPassDesc, m_Renderer->getSwapchain());
 
 		m_ModelTexture = m_Renderer->createTexture2D("models/viking_room.png");
 		Utils::LoadModel("models/viking_room.obj", m_ModelVertices, m_ModelIndices);
 
-		m_ModelVertexBuffer = m_Renderer->createVertexBuffer(m_ModelVertices.size() * sizeof(ModelVertex), m_ModelVertices.data());
-		m_ModelIndexBuffer = m_Renderer->createIndexBuffer(m_ModelIndices.size() * sizeof(uint32_t), m_ModelIndices.data());
+		m_ModelVertexBuffer = m_Renderer->createBuffer<wire::VertexBuffer>(m_ModelVertices.size() * sizeof(ModelVertex), m_ModelVertices.data());
+		m_ModelIndexBuffer = m_Renderer->createBuffer<wire::IndexBuffer>(m_ModelIndices.size() * sizeof(uint32_t), m_ModelIndices.data());
 
 		wire::InputLayout layout{};
 		layout.VertexBufferLayout = {
@@ -122,6 +146,7 @@ namespace bloom {
 		pipelineDesc.Layout = layout;
 		pipelineDesc.ShaderPath = "shadercache://3DModel.hlsl";
 		pipelineDesc.Topology = wire::PrimitiveTopology::TriangleList;
+        pipelineDesc.RenderPass = m_RenderPass;
 
 		m_ModelPipeline = m_Renderer->createGraphicsPipeline(pipelineDesc);
 
@@ -139,10 +164,10 @@ namespace bloom {
 
 		for (size_t i = 0; i < WR_FRAMES_IN_FLIGHT; i++)
 		{
-			m_ModelUniformBuffers[i] = m_Renderer->createUniformBuffer(sizeof(glm::mat4) * 3);
+			m_ModelUniformBuffers[i] = m_Renderer->createBuffer<wire::UniformBuffer>(sizeof(glm::mat4) * 3);
 			m_ModelUniformDatas[i] = reinterpret_cast<glm::mat4*>(m_ModelUniformBuffers[i]->map(sizeof(glm::mat4) * 3));
 
-			m_ModelPipeline->updateFrameDescriptor(m_ModelUniformBuffers[i], static_cast<uint32_t>(i), 0, 0);
+			m_ModelPipeline->updateFrameDescriptor(m_ModelUniformBuffers[i]->getBase(), static_cast<uint32_t>(i), 0, 0);
 		}
 		m_ModelPipeline->updateAllDescriptors(m_ModelTexture, m_ModelSampler, 1, 0);
 
@@ -195,14 +220,14 @@ namespace bloom {
 		glm::vec2 extent = m_Renderer->getExtent();
 
 		commandList.begin();
-		commandList.beginRenderPass();
+		commandList.beginRenderPass(m_RenderPass);
 
 		commandList.bindPipeline(m_ModelPipeline);
 		commandList.setViewport({ 0.0f, 0.0f }, extent, 0.0f, 1.0f);
 		commandList.setScissor({ 0.0f, 0.0f }, extent);
-		commandList.bindDescriptorSet();
-		commandList.bindVertexBuffers({ m_ModelVertexBuffer });
-		commandList.bindIndexBuffer(m_ModelIndexBuffer);
+		commandList.bindDescriptorSet(0, 0);
+		commandList.bindVertexBuffers({ m_ModelVertexBuffer->getBase() });
+		commandList.bindIndexBuffer(m_ModelIndexBuffer->getBase());
 
 		commandList.drawIndexed((uint32_t)m_ModelIndices.size());
 

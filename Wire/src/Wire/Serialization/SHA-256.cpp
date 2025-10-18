@@ -65,7 +65,24 @@ namespace wire {
         return rotr(x, 17) ^ rotr(x, 19) ^ (x >> 10);
     }
 
-    std::string generateSHA256(const std::vector<uint8_t>& data)
+    std::string generateSHA256String(const std::vector<uint8_t>& data)
+    {
+        std::array<uint32_t, 8> hash = generateSHA256(data);
+
+        std::stringstream ss;
+        for (size_t i = 0; i < 8; i++)
+            ss << std::hex << std::setw(8) << std::setfill('0') << hash[i];
+
+        return ss.str();
+    }
+
+    std::string generateSHA256String(std::string_view input)
+    {
+        std::vector<uint8_t> data(input.begin(), input.end());
+        return generateSHA256String(data);
+    }
+
+    std::array<uint32_t, 8> generateSHA256(const std::vector<uint8_t>& data)
     {
         uint64_t bitlen = static_cast<uint64_t>(data.size()) * 8;;
         std::vector<uint8_t> paddedData = data;
@@ -138,14 +155,10 @@ namespace wire {
             hash[7] += H;
         }
 
-        std::stringstream ss;
-        for (size_t i = 0; i < 8; i++)
-            ss << std::hex << std::setw(8) << std::setfill('0') << hash[i];
-
-        return ss.str();
+        return std::to_array(hash);
     }
 
-    std::string generateSHA256(std::string_view input)
+    std::array<uint32_t, 8> generateSHA256(std::string_view input)
     {
         std::vector<uint8_t> data(input.begin(), input.end());
         return generateSHA256(data);

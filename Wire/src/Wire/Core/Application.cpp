@@ -113,30 +113,51 @@ namespace wire {
         
         if (!std::filesystem::exists("shaders/"))
             std::filesystem::create_directory("shaders/");
-		
-		for (const auto& dir : std::filesystem::directory_iterator("shaders/"))
-		{
-			if (dir.path().has_extension() && dir.path().extension() == ".hlsl")
-			{
-				rendererDesc.ShaderCache.ShaderInfos.push_back(ShaderInfo{
-					.Path = dir.path(),
-					.VertexEntryPoint = "VShader",
-					.PixelEntryPoint = "PShader"
-				});
-			}
-		}
 
-		for (const auto& dir : std::filesystem::directory_iterator("fonts/"))
-		{
-			if (dir.path().has_extension() && dir.path().extension() == ".ttf")
-			{
-				rendererDesc.FontCache.FontInfos.push_back(FontInfo{
-					.FontTTFPath = dir.path()
-				});
-			}
-		}
+        for (const auto& dir : std::filesystem::directory_iterator("shaders/"))
+        {
+            if (dir.path().has_extension() && dir.path().extension() == ".hlsl")
+            {
+                if (dir.path().string().ends_with(".compute.hlsl"))
+                {
+                    rendererDesc.ShaderCache.ShaderInfos.push_back(ShaderInfo{
+                        .Path = dir.path(),
+                        .IsGraphics = false,
+                        .VertexOrComputeEntryPoint = "CShader"
+                    });
 
-		m_Renderer = createRenderer(rendererDesc);
+                    continue;
+                }
+
+                rendererDesc.ShaderCache.ShaderInfos.push_back(ShaderInfo{
+                    .Path = dir.path(),
+                    .IsGraphics = true,
+                    .VertexOrComputeEntryPoint = "VShader",
+                    .PixelEntryPoint = "PShader"
+                });
+            }
+        }
+
+        if (!std::filesystem::exists("fonts/"))
+            std::filesystem::create_directory("fonts/");
+
+        for (const auto& dir : std::filesystem::directory_iterator("fonts/"))
+        {
+            if (dir.path().has_extension() && dir.path().extension() == ".ttf")
+            {
+                rendererDesc.FontCache.FontInfos.push_back(FontInfo{
+                    .FontTTFPath = dir.path()
+                });
+            }
+        }
+        
+        SwapchainDesc scDesc = {};
+        scDesc.Attachments = {
+            AttachmentFormat::SwapchainColorDefault,
+            AttachmentFormat::SwapchainDepthDefault
+        };
+
+		m_Renderer = createRenderer(rendererDesc, scDesc);
 
 		m_LayerStack = new LayerStack();
 	}

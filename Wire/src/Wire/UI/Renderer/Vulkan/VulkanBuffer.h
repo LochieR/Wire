@@ -6,97 +6,33 @@
 
 namespace wire {
 
-	class VulkanVertexBuffer : public VertexBuffer
-	{
-	public:
-		VulkanVertexBuffer(Renderer* renderer, size_t size, const void* data = nullptr);
-		virtual ~VulkanVertexBuffer();
+    class VulkanBufferBase : public BufferBase
+    {
+    public:
+        VulkanBufferBase(Renderer* renderer, BufferType type, size_t size, const void* data = nullptr, std::string_view debugName = {});
+        virtual ~VulkanBufferBase();
 
-		virtual void setData(const void* data, size_t size, size_t offset = 0) override;
-		virtual void setData(int data, size_t size) override;
+        virtual void setData(const void* data, size_t size, size_t offset = 0) override;
+        virtual void setData(int data, size_t size) override;
 
-		virtual void* map(size_t size) override;
-		virtual void unmap() override;
+        virtual void* map(size_t size) override;
+        virtual void unmap() override;
 
-		virtual size_t getSize() const override;
+        virtual size_t getSize() const override { return m_Size; }
 
-		VkBuffer getBuffer() const { return m_Buffer; }
-	private:
-		Renderer* m_Renderer;
-		VkBuffer m_Buffer;
-		VkDeviceMemory m_Memory;
+        VkBuffer getBuffer() const { return m_Buffer; }
+    private:
+        Renderer* m_Renderer;
+        BufferType m_Type;
 
-		size_t m_Size;
-	};
+        std::string m_DebugName;
 
-	class VulkanIndexBuffer : public IndexBuffer
-	{
-	public:
-		VulkanIndexBuffer(Renderer* renderer, size_t size, const void* data = nullptr);
-		virtual ~VulkanIndexBuffer();
+        VkBuffer m_Buffer = nullptr;
+        VkDeviceMemory m_Memory = nullptr;
+        VkBuffer m_StagingBuffer = nullptr;
+        VkDeviceMemory m_StagingMemory = nullptr;
 
-		virtual void setData(const void* data, size_t size) override;
-		virtual void setData(int data, size_t size) override;
-
-		virtual void* map(size_t size) override;
-		virtual void unmap() override;
-
-		virtual size_t getSize() const override;
-
-		VkBuffer getBuffer() const { return m_Buffer; }
-	private:
-		Renderer* m_Renderer;
-		VkBuffer m_Buffer;
-		VkDeviceMemory m_Memory;
-
-		size_t m_Size;
-
-		VkBuffer m_StagingBuffer;
-		VkDeviceMemory m_StagingMemory;
-	};
-
-	class VulkanStagingBuffer : public StagingBuffer
-	{
-	public:
-		VulkanStagingBuffer(Renderer* renderer, size_t size, const void* data = nullptr);
-		virtual ~VulkanStagingBuffer();
-
-		virtual void setData(const void* data, size_t size) override;
-		virtual void setData(int data, size_t size) override;
-
-		virtual void* map(size_t size) override;
-		virtual void unmap() override;
-
-		virtual size_t getSize() const override { return m_Size; }
-	private:
-		Renderer* m_Renderer;
-		VkBuffer m_Buffer;
-		VkDeviceMemory m_Memory;
-
-		size_t m_Size;
-	};
-
-	class VulkanUniformBuffer : public UniformBuffer
-	{
-	public:
-		VulkanUniformBuffer(Renderer* renderer, size_t size, const void* data = nullptr);
-		virtual ~VulkanUniformBuffer();
-
-		virtual void setData(const void* data, size_t size) override;
-		virtual void setData(int data, size_t size) override;
-
-		virtual void* map(size_t size) override;
-		virtual void unmap() override;
-
-		virtual size_t getSize() const override { return m_Size; }
-
-		VkBuffer getBuffer() const { return m_Buffer; }
-	private:
-		Renderer* m_Renderer;
-		VkBuffer m_Buffer;
-		VkDeviceMemory m_Memory;
-
-		size_t m_Size;
-	};
+        size_t m_Size;
+    };
 
 }

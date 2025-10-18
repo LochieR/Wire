@@ -5,7 +5,7 @@
 #include <filesystem>
 
 namespace wire {
-	
+    
     enum class RendererAPI
     {
         Vulkan = 0
@@ -14,7 +14,8 @@ namespace wire {
     enum class ShaderType
     {
         Vertex = 0,
-        Pixel
+        Pixel,
+        Compute
     };
 
     enum class ShaderConfiguration
@@ -23,18 +24,18 @@ namespace wire {
         Release
     };
 
-	struct ShaderObject
-	{
-		RendererAPI API;
-		ShaderType Type;
-		std::string EntryPoint;
-		std::vector<uint8_t> Bytecode;
-	};
+    struct ShaderObject
+    {
+        RendererAPI API;
+        ShaderType Type;
+        std::string EntryPoint;
+        std::vector<uint8_t> Bytecode;
+    };
 
     struct ShaderGroup
     {
         std::string Name;
-        char SHA256[32];
+        uint32_t SHA256[8];
         ShaderConfiguration Config;
         std::vector<ShaderObject> Objects;
     };
@@ -42,7 +43,8 @@ namespace wire {
     struct ShaderInfo
     {
         std::filesystem::path Path;
-        std::string VertexEntryPoint;
+        bool IsGraphics;
+        std::string VertexOrComputeEntryPoint;
         std::string PixelEntryPoint;
     };
 
@@ -54,7 +56,8 @@ namespace wire {
 
     struct ShaderResult
     {
-        ShaderObject Vertex;
+        bool IsGraphics;
+        ShaderObject VertexOrCompute;
         ShaderObject Pixel;
     };
 
@@ -66,7 +69,7 @@ namespace wire {
 
         void outputToFile(const std::filesystem::path& path);
 
-        ShaderResult getShaderFromURL(const std::filesystem::path& path, RendererAPI api);
+        ShaderResult getShaderFromURL(const std::filesystem::path& path, RendererAPI api, bool isGraphics);
 
         const std::vector<ShaderGroup>& getGroups() const { return m_Groups; }
 

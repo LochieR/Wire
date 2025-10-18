@@ -4,9 +4,9 @@
 
 namespace wire {
 
-	Renderer* createRenderer(const RendererDesc& desc)
+	Renderer* createRenderer(const RendererDesc& desc, const SwapchainDesc& swapchainDesc)
 	{
-		return new VulkanRenderer(desc);
+		return new VulkanRenderer(desc, swapchainDesc);
 	}
 
 }
