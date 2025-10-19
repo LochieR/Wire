@@ -43,6 +43,31 @@ namespace wire {
 	{
 		m_Renderer = renderer;
 		m_Data = {};
+        
+        // create render pass
+        RenderPassDesc renderPassDesc{};
+        AttachmentDesc colorAttachment{};
+        colorAttachment.Format = AttachmentFormat::SwapchainColorDefault;
+        colorAttachment.Usage = AttachmentLayout::Present;
+        colorAttachment.PreviousAttachmentUsage = AttachmentLayout::Undefined;
+        colorAttachment.Samples = AttachmentDesc::Count1Bit;
+        colorAttachment.LoadOp = LoadOperation::Clear;
+        colorAttachment.StoreOp = StoreOperation::Store;
+        colorAttachment.StencilLoadOp = LoadOperation::DontCare;
+        colorAttachment.StencilStoreOp = StoreOperation::DontCare;
+        
+        AttachmentDesc depthAttachment{};
+        depthAttachment.Format = AttachmentFormat::SwapchainDepthDefault;
+        depthAttachment.Usage = AttachmentLayout::Depth;
+        depthAttachment.PreviousAttachmentUsage = AttachmentLayout::Undefined;
+        depthAttachment.Samples = AttachmentDesc::Count1Bit;
+        depthAttachment.LoadOp = LoadOperation::Clear;
+        depthAttachment.StoreOp = StoreOperation::Store;
+        depthAttachment.StencilLoadOp = LoadOperation::DontCare;
+        depthAttachment.StencilStoreOp = StoreOperation::DontCare;
+        
+        renderPassDesc.Attachments = { colorAttachment, depthAttachment };
+        m_RenderPass = renderer->createRenderPass(renderPassDesc, renderer->getSwapchain());
 
 		uint32_t* indices = new uint32_t[RendererLimits::MaxIndices];
 
@@ -60,10 +85,10 @@ namespace wire {
 			offset += 4;
 		}
 
-		m_IndexBuffer = renderer->createIndexBuffer(RendererLimits::MaxIndices * sizeof(uint32_t), indices);
+		m_IndexBuffer = renderer->createBuffer<IndexBuffer>(RendererLimits::MaxIndices * sizeof(uint32_t), indices);
 		delete[] indices;
 
-		m_RectVertexBuffer = renderer->createVertexBuffer(RendererLimits::MaxVertices * sizeof(RectVertex));
+		m_RectVertexBuffer = renderer->createBuffer<VertexBuffer>(RendererLimits::MaxVertices * sizeof(RectVertex));
 
 		InputLayout layout;
 		layout.VertexBufferLayout = {
@@ -96,7 +121,8 @@ namespace wire {
 		rectDesc.ShaderPath = "shadercache://UIRect.hlsl";
 		rectDesc.Topology = PrimitiveTopology::TriangleList;
 		rectDesc.Layout = layout;
-
+        rectDesc.RenderPass = m_RenderPass;
+        
 		m_RectPipeline = renderer->createGraphicsPipeline(rectDesc);
 
 		SamplerDesc textureSamplerDesc{};
@@ -125,7 +151,7 @@ namespace wire {
 
 		m_Data.RectVertexBase = new RectVertex[RendererLimits::MaxVertices];
 
-		m_TextVertexBuffer = renderer->createVertexBuffer(RendererLimits::MaxVertices * sizeof(TextVertex));
+		m_TextVertexBuffer = renderer->createBuffer<VertexBuffer>(RendererLimits::MaxVertices * sizeof(TextVertex));
 		m_Data.TextVertexBase = new TextVertex[RendererLimits::MaxVertices];
 
 		layout = {};
@@ -159,6 +185,7 @@ namespace wire {
 		textDesc.ShaderPath = "shadercache://UIText.hlsl";
 		textDesc.Topology = PrimitiveTopology::TriangleList;
 		textDesc.Layout = layout;
+        textDesc.RenderPass = m_RenderPass;
 
 		m_TextPipeline = renderer->createGraphicsPipeline(textDesc);
 
@@ -186,7 +213,7 @@ namespace wire {
 			m_TextPipeline->updateAllDescriptors(m_WhiteTexture, 0, i);
 		}
 
-		m_CircleVertexBuffer = renderer->createVertexBuffer(RendererLimits::MaxVertices * sizeof(CircleVertex));
+		m_CircleVertexBuffer = renderer->createBuffer<VertexBuffer>(RendererLimits::MaxVertices * sizeof(CircleVertex));
 		m_Data.CircleVertexBase = new CircleVertex[RendererLimits::MaxVertices];
 
 		layout = {};
@@ -206,10 +233,11 @@ namespace wire {
 		circleDesc.ShaderPath = "shadercache://UICircle.hlsl";
 		circleDesc.Topology = PrimitiveTopology::TriangleList;
 		circleDesc.Layout = layout;
+        circleDesc.RenderPass = m_RenderPass;
 
 		m_CirclePipeline = renderer->createGraphicsPipeline(circleDesc);
 
-		m_RoundedRectVertexBuffer = renderer->createVertexBuffer(RendererLimits::MaxVertices * sizeof(RoundedRectVertex));
+		m_RoundedRectVertexBuffer = renderer->createBuffer<VertexBuffer>(RendererLimits::MaxVertices * sizeof(RoundedRectVertex));
 		m_Data.RoundedRectVertexBase = new RoundedRectVertex[RendererLimits::MaxVertices];
 
 		layout = {};
@@ -231,10 +259,11 @@ namespace wire {
 		roundedRectDesc.ShaderPath = "shadercache://UIRoundedRect.hlsl";
 		roundedRectDesc.Topology = PrimitiveTopology::TriangleList;
 		roundedRectDesc.Layout = layout;
+        roundedRectDesc.RenderPass = m_RenderPass;
 
 		m_RoundedRectPipeline = renderer->createGraphicsPipeline(roundedRectDesc);
 
-		m_LineVertexBuffer = renderer->createVertexBuffer(RendererLimits::MaxVertices * sizeof(LineVertex));
+		m_LineVertexBuffer = renderer->createBuffer<VertexBuffer>(RendererLimits::MaxVertices * sizeof(LineVertex));
 		m_Data.LineVertexBase = new LineVertex[RendererLimits::MaxVertices];
 
 		layout = {};
@@ -251,7 +280,8 @@ namespace wire {
 		lineDesc.ShaderPath = "shadercache://UILine.hlsl";
 		lineDesc.Topology = PrimitiveTopology::LineList;
 		lineDesc.Layout = layout;
-
+        lineDesc.RenderPass = m_RenderPass;
+        
 		m_LinePipeline = renderer->createGraphicsPipeline(lineDesc);
 		
 		m_RendererCommandLists.resize(renderer->getNumFramesInFlight());
@@ -289,6 +319,7 @@ namespace wire {
 		delete m_RectPipeline;
 		delete m_RectVertexBuffer;
 		delete m_IndexBuffer;
+        delete m_RenderPass;
 
 		m_RendererCommandLists.clear();
 
@@ -363,7 +394,7 @@ namespace wire {
 
 		glm::vec2 extent = m_Renderer->getExtent();
 
-		commandList.beginRenderPass();
+		commandList.beginRenderPass(m_RenderPass);
 
 		if (m_Data.RectIndexCount)
 		{
@@ -381,9 +412,9 @@ namespace wire {
 			);
 
 			commandList.pushConstants(ShaderType::Vertex, viewProj);
-			commandList.bindDescriptorSet();
-			commandList.bindVertexBuffers({ m_RectVertexBuffer });
-			commandList.bindIndexBuffer(m_IndexBuffer);
+            commandList.bindDescriptorSet(0, 0);
+			commandList.bindVertexBuffers({ m_RectVertexBuffer->getBase() });
+			commandList.bindIndexBuffer(m_IndexBuffer->getBase());
 
 			// apply scissors
 			if (!m_Data.Scissors.empty())
@@ -411,8 +442,8 @@ namespace wire {
 			);
 
 			commandList.pushConstants(ShaderType::Vertex, viewProj);
-			commandList.bindVertexBuffers({ m_CircleVertexBuffer });
-			commandList.bindIndexBuffer(m_IndexBuffer);
+			commandList.bindVertexBuffers({ m_CircleVertexBuffer->getBase() });
+			commandList.bindIndexBuffer(m_IndexBuffer->getBase());
 
 			// apply scissors
 			if (!m_Data.Scissors.empty())
@@ -440,8 +471,8 @@ namespace wire {
 			);
 
 			commandList.pushConstants(ShaderType::Vertex, viewProj);
-			commandList.bindVertexBuffers({ m_RoundedRectVertexBuffer });
-			commandList.bindIndexBuffer(m_IndexBuffer);
+			commandList.bindVertexBuffers({ m_RoundedRectVertexBuffer->getBase() });
+			commandList.bindIndexBuffer(m_IndexBuffer->getBase());
 
 			// apply scissors
 			if (!m_Data.Scissors.empty())
@@ -470,7 +501,7 @@ namespace wire {
 
 			commandList.pushConstants(ShaderType::Vertex, viewProj);
 			commandList.setLineWidth(1.0f);
-			commandList.bindVertexBuffers({ m_LineVertexBuffer });
+			commandList.bindVertexBuffers({ m_LineVertexBuffer->getBase() });
 
 			// apply scissors
 			if (!m_Data.Scissors.empty())
@@ -498,9 +529,9 @@ namespace wire {
 			);
 
 			commandList.pushConstants(ShaderType::Vertex, viewProj);
-			commandList.bindDescriptorSet();
-			commandList.bindVertexBuffers({ m_TextVertexBuffer });
-			commandList.bindIndexBuffer(m_IndexBuffer);
+			commandList.bindDescriptorSet(0, 0);
+			commandList.bindVertexBuffers({ m_TextVertexBuffer->getBase() });
+			commandList.bindIndexBuffer(m_IndexBuffer->getBase());
 
 			// apply scissors
 			if (!m_Data.Scissors.empty())
@@ -602,7 +633,7 @@ namespace wire {
 		if (textureIndex == -1)
 		{
 			m_Data.RectTextures[m_Data.RectTextureIndex] = texture;
-			m_RectPipeline->updateDescriptor(m_Data.RectTextures[m_Data.RectTextureIndex], 0, m_Data.RectTextureIndex);
+			m_RectPipeline->updateAllDescriptors(m_Data.RectTextures[m_Data.RectTextureIndex], 0, m_Data.RectTextureIndex);
 			textureIndex = m_Data.RectTextureIndex;
 
 			m_Data.RectTextureIndex++;
@@ -794,7 +825,7 @@ namespace wire {
 		if (texIndex == -1)
 		{
 			m_Data.AtlasTextures[m_Data.AtlasTextureIndex] = fontAtlas;
-			m_TextPipeline->updateDescriptor(m_Data.AtlasTextures[m_Data.AtlasTextureIndex], 0, m_Data.AtlasTextureIndex);
+			m_TextPipeline->updateAllDescriptors(m_Data.AtlasTextures[m_Data.AtlasTextureIndex], 0, m_Data.AtlasTextureIndex);
 			texIndex = m_Data.AtlasTextureIndex;
 
 			m_Data.AtlasTextureIndex++;

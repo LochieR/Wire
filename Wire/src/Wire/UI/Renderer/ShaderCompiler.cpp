@@ -14,164 +14,234 @@
 
 namespace wire {
 
-	namespace Utils {
+    namespace Utils {
 
-		static shaderc_shader_kind ConvertShaderType(ShaderType type)
-		{
-			switch (type)
-			{
-			case ShaderType::Vertex:
-				return shaderc_vertex_shader;
-			case ShaderType::Pixel:
-				return shaderc_fragment_shader;
-			default:
-				break;
-			}
+        static shaderc_shader_kind ConvertShaderType(ShaderType type)
+        {
+            switch (type)
+            {
+            case ShaderType::Vertex:
+                return shaderc_vertex_shader;
+            case ShaderType::Pixel:
+                return shaderc_fragment_shader;
+            case ShaderType::Compute:
+                return shaderc_compute_shader;
+            default:
+                break;
+            }
 
-			WR_ASSERT(false, "Unkown shader type");
-			return shaderc_shader_kind(0);
-		}
+            WR_ASSERT(false, "Unkown shader type");
+            return shaderc_shader_kind(0);
+        }
 
-	}
+    }
 
-	ShaderCompilationResult ShaderCompiler::compileHLSLToSpirv(const std::filesystem::path& path, ShaderType type, const std::string& entryPoint)
-	{
-		ShaderCompilationResult comp;
+    ShaderCompilationResult ShaderCompiler::compileHLSLToSpirv(const std::filesystem::path& path, ShaderType type, const std::string& entryPoint)
+    {
+        ShaderCompilationResult comp;
 
-		std::ifstream file(path);
-		std::stringstream ss;
-		ss << file.rdbuf();
-		file.close();
+        std::ifstream file(path);
+        std::stringstream ss;
+        ss << file.rdbuf();
+        file.close();
 
-		if (!file.good())
-		{
-			return ShaderCompilationResult{
-				.Success = false,
-				.ErrorMessage = "Failed to open file " + path.string()
-			};
-		}
+        if (!file.good())
+        {
+            return ShaderCompilationResult{
+                .Success = false,
+                .ErrorMessage = "Failed to open file " + path.string()
+            };
+        }
 
-		std::string shader = ss.str();
+        std::string shader = ss.str();
 
-		shaderc::Compiler compiler;
-		shaderc::CompileOptions options;
+        shaderc::Compiler compiler;
+        shaderc::CompileOptions options;
 
-		options.SetSourceLanguage(shaderc_source_language_hlsl);
-		options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_2);
-		options.AddMacroDefinition("SPIRV");
+        options.SetSourceLanguage(shaderc_source_language_hlsl);
+        options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_2);
+        options.AddMacroDefinition("SPIRV");
 
-		constexpr bool debug =
+        constexpr bool debug =
 #ifdef WR_DEBUG
-			true;
+            true;
 #else
-			false;
+            false;
 #endif
 
-		if constexpr (debug)
-		{
-			options.SetGenerateDebugInfo();
-			options.SetOptimizationLevel(shaderc_optimization_level_zero);
-		}
-		else
-			options.SetOptimizationLevel(shaderc_optimization_level_performance);
+        if constexpr (debug)
+        {
+            options.SetGenerateDebugInfo();
+            options.SetOptimizationLevel(shaderc_optimization_level_zero);
+        }
+        else
+            options.SetOptimizationLevel(shaderc_optimization_level_performance);
 
-		shaderc::SpvCompilationResult result = compiler.CompileGlslToSpv(shader, Utils::ConvertShaderType(type), path.string().c_str(), entryPoint.c_str(), options);
+        shaderc::SpvCompilationResult result = compiler.CompileGlslToSpv(shader, Utils::ConvertShaderType(type), path.string().c_str(), entryPoint.c_str(), options);
 
-		if (result.GetCompilationStatus() != shaderc_compilation_status_success)
-		{
-			comp.Success = false;
-			comp.ErrorMessage = result.GetErrorMessage();
+        if (result.GetCompilationStatus() != shaderc_compilation_status_success)
+        {
+            comp.Success = false;
+            comp.ErrorMessage = result.GetErrorMessage();
 
-			return comp;
-		}
+            return comp;
+        }
 
-		const uint8_t* begin = reinterpret_cast<const uint8_t*>(result.cbegin());
-		const uint8_t* end = reinterpret_cast<const uint8_t*>(result.cend());
+        const uint8_t* begin = reinterpret_cast<const uint8_t*>(result.cbegin());
+        const uint8_t* end = reinterpret_cast<const uint8_t*>(result.cend());
 
-		comp.Bytecode = { begin, end };
-		comp.EntryPoint = entryPoint;
+        comp.Bytecode = { begin, end };
+        comp.EntryPoint = entryPoint;
         comp.Success = true;
+        
+        return comp;
+    }
 
-		return comp;
-	}
+    ShaderCache ShaderCompiler::createShaderCacheHLSL(const std::filesystem::path& path, const std::string& vertexEntryPoint, const std::string& pixelEntryPoint)
+    {
+        return createShaderCacheHLSL(path, vertexEntryPoint, pixelEntryPoint, { RendererAPI::Vulkan });
+    }
 
-	ShaderCache ShaderCompiler::createShaderCacheHLSL(const std::filesystem::path& path, const std::string& vertexEntryPoint, const std::string& pixelEntryPoint)
-	{
-		return createShaderCacheHLSL(path, vertexEntryPoint, pixelEntryPoint, { RendererAPI::Vulkan });
-	}
+    ShaderCache ShaderCompiler::createShaderCacheHLSL(const std::filesystem::path& path, const std::string& vertexEntryPoint, const std::string& pixelEntryPoint, const std::vector<RendererAPI>& apis)
+    {
+        return createShaderCacheHLSL(std::vector<std::filesystem::path>{ path }, std::vector<std::string>{ vertexEntryPoint }, std::vector<std::string>{ pixelEntryPoint }, apis);
+    }
 
-	ShaderCache ShaderCompiler::createShaderCacheHLSL(const std::filesystem::path& path, const std::string& vertexEntryPoint, const std::string& pixelEntryPoint, const std::vector<RendererAPI>& apis)
-	{
-		return createShaderCacheHLSL(std::vector<std::filesystem::path>{ path }, std::vector<std::string>{ vertexEntryPoint }, std::vector<std::string>{ pixelEntryPoint }, apis);
-	}
+    ShaderCache ShaderCompiler::createShaderCacheHLSL(const std::vector<std::filesystem::path>& paths, const std::vector<std::string>& vertexEntryPoints, const std::vector<std::string>& pixelEntryPoints)
+    {
+        return createShaderCacheHLSL(paths, vertexEntryPoints, pixelEntryPoints, { RendererAPI::Vulkan });
+    }
 
-	ShaderCache ShaderCompiler::createShaderCacheHLSL(const std::vector<std::filesystem::path>& paths, const std::vector<std::string>& vertexEntryPoints, const std::vector<std::string>& pixelEntryPoints)
-	{
-		return createShaderCacheHLSL(paths, vertexEntryPoints, pixelEntryPoints, { RendererAPI::Vulkan });
-	}
+    ShaderCache ShaderCompiler::createShaderCacheHLSL(const std::vector<std::filesystem::path>& paths, const std::vector<std::string>& vertexEntryPoints, const std::vector<std::string>& pixelEntryPoints, const std::vector<RendererAPI>& apis)
+    {
+        WR_ASSERT(paths.size() == vertexEntryPoints.size() && paths.size() == pixelEntryPoints.size(), "ShaderCache must have same number of vertex and pixel shaders!");
 
-	ShaderCache ShaderCompiler::createShaderCacheHLSL(const std::vector<std::filesystem::path>& paths, const std::vector<std::string>& vertexEntryPoints, const std::vector<std::string>& pixelEntryPoints, const std::vector<RendererAPI>& apis)
-	{
-		WR_ASSERT(paths.size() == vertexEntryPoints.size() && paths.size() == pixelEntryPoints.size(), "ShaderCache must have same number of vertex and pixel shaders!");
+        std::vector<ShaderGroup> groups;
 
-		std::vector<ShaderGroup> groups;
+        for (uint32_t i = 0; i < paths.size(); i++)
+        {
+            std::filesystem::path path = paths[i];
+            std::string vertexEntryPoint = vertexEntryPoints[i];
+            std::string pixelEntryPoint = pixelEntryPoints[i];
 
-		for (uint32_t i = 0; i < paths.size(); i++)
-		{
-			std::filesystem::path path = paths[i];
-			std::string vertexEntryPoint = vertexEntryPoints[i];
-			std::string pixelEntryPoint = pixelEntryPoints[i];
+            std::ifstream file(path);
+            std::stringstream ss;
+            ss << file.rdbuf();
 
-			std::ifstream file(path);
-			std::stringstream ss;
-			ss << file.rdbuf();
+            std::string fileString = ss.str();
+            file.close();
 
-			std::string fileString = ss.str();
-			file.close();
+            std::array<uint32_t, 8> sha256 = generateSHA256(fileString);
 
-			std::string sha256 = generateSHA256(fileString);
-
-			constexpr ShaderConfiguration currentConfig =
+            constexpr ShaderConfiguration currentConfig =
 #ifdef WR_DEBUG
-				ShaderConfiguration::Debug;
+                ShaderConfiguration::Debug;
 #else
-				ShaderConfiguration::Release;
+                ShaderConfiguration::Release;
 #endif
 
-			ShaderGroup group;
-			group.Name = path.filename().string();
-			group.Config = currentConfig;
+            ShaderGroup group;
+            group.Name = path.filename().string();
+            group.Config = currentConfig;
 
-			std::memcpy(group.SHA256, sha256.data(), sizeof(char) * 32);
+            std::memcpy(group.SHA256, sha256.data(), sizeof(uint32_t) * 8);
 
-			if (std::find(apis.begin(), apis.end(), RendererAPI::Vulkan) != apis.end())
-			{
-				ShaderCompilationResult vkVShader = compileHLSLToSpirv(path, ShaderType::Vertex, vertexEntryPoint);
-				WR_ASSERT(vkVShader.Success, "failed to compile Vulkan vertex shader\nerror message:\n{}", vkVShader.ErrorMessage);
+            if (std::find(apis.begin(), apis.end(), RendererAPI::Vulkan) != apis.end())
+            {
+                ShaderCompilationResult vkVShader = compileHLSLToSpirv(path, ShaderType::Vertex, vertexEntryPoint);
+                WR_ASSERT(vkVShader.Success, "failed to compile Vulkan vertex shader\nerror message:\n{}", vkVShader.ErrorMessage);
 
-				ShaderObject vkVertex;
-				vkVertex.API = RendererAPI::Vulkan;
-				vkVertex.Type = ShaderType::Vertex;
-				vkVertex.EntryPoint = vertexEntryPoint;
-				vkVertex.Bytecode = vkVShader.Bytecode;
+                ShaderObject vkVertex;
+                vkVertex.API = RendererAPI::Vulkan;
+                vkVertex.Type = ShaderType::Vertex;
+                vkVertex.EntryPoint = vertexEntryPoint;
+                vkVertex.Bytecode = vkVShader.Bytecode;
 
-				ShaderCompilationResult vkPShader = compileHLSLToSpirv(path, ShaderType::Pixel, pixelEntryPoint);
-				WR_ASSERT(vkPShader.Success, "failed to compile Vulkan pixel shader\nerror message:\n{}", vkPShader.ErrorMessage);
+                ShaderCompilationResult vkPShader = compileHLSLToSpirv(path, ShaderType::Pixel, pixelEntryPoint);
+                WR_ASSERT(vkPShader.Success, "failed to compile Vulkan pixel shader\nerror message:\n{}", vkPShader.ErrorMessage);
 
-				ShaderObject vkPixel;
-				vkPixel.API = RendererAPI::Vulkan;
-				vkPixel.Type = ShaderType::Pixel;
-				vkPixel.EntryPoint = pixelEntryPoint;
-				vkPixel.Bytecode = vkPShader.Bytecode;
+                ShaderObject vkPixel;
+                vkPixel.API = RendererAPI::Vulkan;
+                vkPixel.Type = ShaderType::Pixel;
+                vkPixel.EntryPoint = pixelEntryPoint;
+                vkPixel.Bytecode = vkPShader.Bytecode;
 
-				group.Objects.push_back(vkVertex);
-				group.Objects.push_back(vkPixel);
-			}
+                group.Objects.push_back(vkVertex);
+                group.Objects.push_back(vkPixel);
+            }
 
-			groups.push_back(group);
-		}
+            groups.push_back(group);
+        }
 
-		return ShaderCache(groups);
-	}
+        return ShaderCache(groups);
+    }
+
+    ShaderCache ShaderCompiler::createShaderCacheHLSL(const std::filesystem::path& path, const std::string& computeEntryPoint)
+    {
+        return createShaderCacheHLSL(path, computeEntryPoint, { RendererAPI::Vulkan });
+    }
+
+    ShaderCache ShaderCompiler::createShaderCacheHLSL(const std::filesystem::path& path, const std::string& computeEntryPoint, const std::vector<RendererAPI>& apis)
+    {
+        return createShaderCacheHLSL(std::vector<std::filesystem::path>{ path }, std::vector<std::string>{ computeEntryPoint }, apis);
+    }
+
+    ShaderCache ShaderCompiler::createShaderCacheHLSL(const std::vector<std::filesystem::path>& paths, const std::vector<std::string>& computeEntryPoints)
+    {
+        return createShaderCacheHLSL(paths, computeEntryPoints, { RendererAPI::Vulkan });
+    }
+
+    ShaderCache ShaderCompiler::createShaderCacheHLSL(const std::vector<std::filesystem::path>& paths, const std::vector<std::string>& computeEntryPoints, const std::vector<RendererAPI>& apis)
+    {
+        WR_ASSERT(paths.size() == computeEntryPoints.size(), "must have same number of paths as compute entry points");
+
+        std::vector<ShaderGroup> groups;
+
+        for (uint32_t i = 0; i < paths.size(); i++)
+        {
+            std::filesystem::path path = paths[i];
+            std::string entryPoint = computeEntryPoints[i];
+
+            std::ifstream file(path);
+            std::stringstream ss;
+            ss << file.rdbuf();
+
+            std::string fileString = ss.str();
+            file.close();
+
+            std::array<uint32_t, 8> sha256 = generateSHA256(fileString);
+
+            constexpr ShaderConfiguration currentConfig =
+#ifdef WR_DEBUG
+                ShaderConfiguration::Debug;
+#else
+                ShaderConfiguration::Release;
+#endif
+
+            ShaderGroup group;
+            group.Name = path.filename().string();
+            group.Config = currentConfig;
+
+            std::memcpy(group.SHA256, sha256.data(), sizeof(uint32_t) * 8);
+
+            if (std::find(apis.begin(), apis.end(), RendererAPI::Vulkan) != apis.end())
+            {
+                ShaderCompilationResult vkCShader = compileHLSLToSpirv(path, ShaderType::Compute, entryPoint);
+                WR_ASSERT(vkCShader.Success, "failed to compile Vulkan compute shader\nerror message:\n{}", vkCShader.ErrorMessage);
+
+                ShaderObject vkCompute;
+                vkCompute.API = RendererAPI::Vulkan;
+                vkCompute.Type = ShaderType::Compute;
+                vkCompute.EntryPoint = vkCShader.EntryPoint;
+                vkCompute.Bytecode = vkCShader.Bytecode;
+
+                group.Objects.push_back(vkCompute);
+            }
+
+            groups.push_back(group);
+        }
+
+        return ShaderCache(groups);
+    }
 
 }

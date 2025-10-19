@@ -230,20 +230,22 @@ namespace wire {
 	private:
 		Renderer* m_Renderer = nullptr;
 		RendererData m_Data;
+        
+        RenderPass* m_RenderPass = nullptr;
 
-		VertexBuffer* m_RectVertexBuffer = nullptr;
+		Buffer<VertexBuffer>* m_RectVertexBuffer = nullptr;
 		GraphicsPipeline* m_RectPipeline = nullptr;
 
-		VertexBuffer* m_TextVertexBuffer = nullptr;
+        Buffer<VertexBuffer>* m_TextVertexBuffer = nullptr;
 		GraphicsPipeline* m_TextPipeline = nullptr;
 
-		VertexBuffer* m_CircleVertexBuffer = nullptr;
+        Buffer<VertexBuffer>* m_CircleVertexBuffer = nullptr;
 		GraphicsPipeline* m_CirclePipeline = nullptr;
 
-		VertexBuffer* m_RoundedRectVertexBuffer = nullptr;
+        Buffer<VertexBuffer>* m_RoundedRectVertexBuffer = nullptr;
 		GraphicsPipeline* m_RoundedRectPipeline = nullptr;
 
-		VertexBuffer* m_LineVertexBuffer = nullptr;
+        Buffer<VertexBuffer>* m_LineVertexBuffer = nullptr;
 		GraphicsPipeline* m_LinePipeline = nullptr;
 
 		Texture2D* m_WhiteTexture = nullptr;
@@ -251,7 +253,7 @@ namespace wire {
 
 		Sampler* m_TextureSampler = nullptr;
 		Sampler* m_TextSampler = nullptr;
-		IndexBuffer* m_IndexBuffer = nullptr;
+		Buffer<IndexBuffer>* m_IndexBuffer = nullptr;
 
 		std::vector<CommandList> m_RendererCommandLists;
 	};

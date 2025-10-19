@@ -8,8 +8,8 @@
 
 #include <string>
 #include <vector>
-#include <sstream>
 #include <fstream>
+#include <sstream>
 #include <algorithm>
 #include <filesystem>
 #include <unordered_map>
@@ -26,11 +26,10 @@ namespace wire {
         // ID data
         const char AppID[4] = { 'W', 'I', 'R', 'E' };    // WIRE
         const char TypeID[4] = { 'S', 'C', 'C', 'H' };   // SCCH  (shader cache)
-        const uint32_t Version = HEADER_VER(1, 0, 1, 0); // 1.0.1.0
+        const uint32_t Version = HEADER_VER(1, 0, 3, 0); // 1.0.3.0
 
         // cache data
         size_t GroupCount;
-        size_t ObjectPerGroupCount;
     };
 
     ShaderCache::ShaderCache(const std::vector<ShaderGroup>& groups)
@@ -45,18 +44,17 @@ namespace wire {
 
     void ShaderCache::outputToFile(const std::filesystem::path& path)
     {
-        for (const auto& group : m_Groups)
+        /*for (const auto& group : m_Groups)
         {
             if (group.Objects.size() != m_Groups[0].Objects.size())
             {
                 WR_ASSERT(false, "Each group in a shader cache must have the same number of objects");
                 return;
             }
-        }
+        }*/
 
         ShaderCacheHeader header{};
         header.GroupCount = m_Groups.size();
-        header.ObjectPerGroupCount = m_Groups[0].Objects.size();
 
         if (path.has_parent_path())
             std::filesystem::create_directories(path.parent_path());
@@ -67,12 +65,18 @@ namespace wire {
         StreamWriter stream(file);
 
         stream.writeRaw(header);
+
+        /*for (const auto& group : m_Groups)
+        {
+            stream.writeRaw<size_t>(group.Objects.size());
+        }*/
+
         stream.writeArray<ShaderGroup>(m_Groups, WriteGroup, false);
 
         file.close();
     }
 
-    ShaderResult ShaderCache::getShaderFromURL(const std::filesystem::path& path, RendererAPI api)
+    ShaderResult ShaderCache::getShaderFromURL(const std::filesystem::path& path, RendererAPI api, bool isGraphics)
     {
         std::string pathStr = path.string();
         WR_ASSERT(pathStr.contains("shadercache://"), "Invalid shadercache path! (must begin with shadercache://)");
@@ -89,10 +93,20 @@ namespace wire {
                 {
                     if (object.API == api)
                     {
-                        if (object.Type == ShaderType::Vertex)
-                            result.Vertex = object;
-                        if (object.Type == ShaderType::Pixel)
-                            result.Pixel = object;
+                        if (isGraphics)
+                        {
+                            result.IsGraphics = true;
+                            if (object.Type == ShaderType::Vertex)
+                                result.VertexOrCompute = object;
+                            if (object.Type == ShaderType::Pixel)
+                                result.Pixel = object;
+                        }
+                        else
+                        {
+                            result.IsGraphics = false;
+                            if (object.Type == ShaderType::Compute)
+                                result.VertexOrCompute = object;
+                        }
                     }
                 }
             }
@@ -114,6 +128,8 @@ namespace wire {
         cache.m_Version = header.Version;
 
         std::vector<ShaderGroup>& groups = cache.m_Groups;
+        groups.resize(header.GroupCount);
+
         stream.readArray<ShaderGroup>(groups, ReadGroup, header.GroupCount);
 
         file.close();
@@ -138,18 +154,35 @@ namespace wire {
     {
         if (!std::filesystem::exists(desc.CachePath))
         {
-            std::vector<std::filesystem::path> paths;
+            std::vector<std::filesystem::path> graphicsPaths;
+            std::vector<std::filesystem::path> computePaths;
             std::vector<std::string> vertexEntryPoints;
             std::vector<std::string> pixelEntryPoints;
+            std::vector<std::string> computeEntryPoints;
 
             for (const auto& shaderInfo : desc.ShaderInfos)
             {
-                paths.push_back(shaderInfo.Path);
-                vertexEntryPoints.push_back(shaderInfo.VertexEntryPoint);
-                pixelEntryPoints.push_back(shaderInfo.PixelEntryPoint);
+                if (shaderInfo.IsGraphics)
+                {
+                    graphicsPaths.push_back(shaderInfo.Path);
+
+                    vertexEntryPoints.push_back(shaderInfo.VertexOrComputeEntryPoint);
+                    pixelEntryPoints.push_back(shaderInfo.PixelEntryPoint);
+                }
+                else
+                {
+                    computePaths.push_back(shaderInfo.Path);
+                    computeEntryPoints.push_back(shaderInfo.VertexOrComputeEntryPoint);
+                }
             }
 
-            ShaderCache cache = ShaderCompiler::createShaderCacheHLSL(paths, vertexEntryPoints, pixelEntryPoints);
+            if (graphicsPaths.empty() && computePaths.empty())
+                return {};
+
+            ShaderCache graphicsCache = ShaderCompiler::createShaderCacheHLSL(graphicsPaths, vertexEntryPoints, pixelEntryPoints);
+            ShaderCache computeCache = ShaderCompiler::createShaderCacheHLSL(computePaths, computeEntryPoints);
+
+            ShaderCache cache = combineShaderCaches(graphicsCache, computeCache);
             cache.outputToFile(desc.CachePath);
 
             return cache;
@@ -160,18 +193,35 @@ namespace wire {
 
         if (oldCacheHeader.GroupCount != desc.ShaderInfos.size() || oldCacheHeader.Version != currentHeader.Version)
         {
-            std::vector<std::filesystem::path> paths;
+            std::vector<std::filesystem::path> graphicsPaths;
+            std::vector<std::filesystem::path> computePaths;
             std::vector<std::string> vertexEntryPoints;
             std::vector<std::string> pixelEntryPoints;
+            std::vector<std::string> computeEntryPoints;
 
             for (const auto& shaderInfo : desc.ShaderInfos)
             {
-                paths.push_back(shaderInfo.Path);
-                vertexEntryPoints.push_back(shaderInfo.VertexEntryPoint);
-                pixelEntryPoints.push_back(shaderInfo.PixelEntryPoint);
+                if (shaderInfo.IsGraphics)
+                {
+                    graphicsPaths.push_back(shaderInfo.Path);
+
+                    vertexEntryPoints.push_back(shaderInfo.VertexOrComputeEntryPoint);
+                    pixelEntryPoints.push_back(shaderInfo.PixelEntryPoint);
+                }
+                else
+                {
+                    computePaths.push_back(shaderInfo.Path);
+                    computeEntryPoints.push_back(shaderInfo.VertexOrComputeEntryPoint);
+                }
             }
 
-            ShaderCache cache = ShaderCompiler::createShaderCacheHLSL(paths, vertexEntryPoints, pixelEntryPoints);
+            if (graphicsPaths.empty() && computePaths.empty())
+                return {};
+            
+            ShaderCache graphicsCache = ShaderCompiler::createShaderCacheHLSL(graphicsPaths, vertexEntryPoints, pixelEntryPoints);
+            ShaderCache computeCache = ShaderCompiler::createShaderCacheHLSL(computePaths, computeEntryPoints);
+
+            ShaderCache cache = combineShaderCaches(graphicsCache, computeCache);
             cache.outputToFile(desc.CachePath);
 
             return cache;
@@ -221,12 +271,9 @@ namespace wire {
             file.close();
 
             std::string shaderSource = ss.str();
-            std::string shaderHash = generateSHA256(shaderSource);
+            std::array<uint32_t, 8> shaderHash = generateSHA256(shaderSource);
 
-            char sha256[32] = {};
-            std::memcpy(sha256, shaderHash.data(), sizeof(char) * 32);
-
-            if (std::memcmp(oldCache.m_Groups[cacheIndex].SHA256, sha256, sizeof(char) * 32) != 0)
+            if (std::memcmp(oldCache.m_Groups[cacheIndex].SHA256, shaderHash.data(), sizeof(uint32_t) * 8) != 0)
             {
                 toRecreate.push_back(i);
                 toRemove.push_back(cacheIndex);
@@ -243,18 +290,35 @@ namespace wire {
                 oldCache.m_Groups.erase(oldCache.m_Groups.begin() + i);
         }
 
-        std::vector<std::filesystem::path> paths;
+        std::vector<std::filesystem::path> graphicsPaths;
+        std::vector<std::filesystem::path> computePaths;
         std::vector<std::string> vertexEntryPoints;
         std::vector<std::string> pixelEntryPoints;
+        std::vector<std::string> computeEntryPoints;
 
         for (uint32_t i : toRecreate)
         {
-            paths.push_back(desc.ShaderInfos[i].Path);
-            vertexEntryPoints.push_back(desc.ShaderInfos[i].VertexEntryPoint);
-            pixelEntryPoints.push_back(desc.ShaderInfos[i].PixelEntryPoint);
+            if (desc.ShaderInfos[i].IsGraphics)
+            {
+                graphicsPaths.push_back(desc.ShaderInfos[i].Path);
+
+                vertexEntryPoints.push_back(desc.ShaderInfos[i].VertexOrComputeEntryPoint);
+                pixelEntryPoints.push_back(desc.ShaderInfos[i].PixelEntryPoint);
+            }
+            else
+            {
+                computePaths.push_back(desc.ShaderInfos[i].Path);
+                computeEntryPoints.push_back(desc.ShaderInfos[i].VertexOrComputeEntryPoint);
+            }
         }
 
-        ShaderCache newCache = ShaderCompiler::createShaderCacheHLSL(paths, vertexEntryPoints, pixelEntryPoints);
+        if (graphicsPaths.empty() && computePaths.empty())
+            return oldCache;
+
+        ShaderCache newGraphicsCache = ShaderCompiler::createShaderCacheHLSL(graphicsPaths, vertexEntryPoints, pixelEntryPoints);
+        ShaderCache newComputeCache = ShaderCompiler::createShaderCacheHLSL(computePaths, computeEntryPoints);
+
+        ShaderCache newCache = combineShaderCaches(newGraphicsCache, newComputeCache);
 
         ShaderCache result = combineShaderCaches(oldCache, newCache);
         result.outputToFile(desc.CachePath);

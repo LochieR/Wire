@@ -6,3 +6,9 @@ bin-int/
 
 *.fontcache
 *.shadercache
+
+.DS_Store
+
+*.xcworkspace/
+*.xcodeproj/
+*.log

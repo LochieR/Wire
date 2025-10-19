@@ -1,147 +1,211 @@
 #pragma once
 
+#include "VulkanExtensions.h"
+
 #include "Wire/Core/Assert.h"
 #include "Wire/UI/Renderer/Renderer.h"
 
 #include <vulkan/vulkan.h>
+#include <glfw/glfw3.h>
 
 #include <map>
 #include <vector>
+#include <typeindex>
 
 #define VK_CHECK(result, message) WR_ASSERT(result == VK_SUCCESS, message)
 
+#ifdef WR_DEBUG
+#define VK_DEBUG_NAME(device, type, object, nameCStr)                        \
+    {                                                                        \
+        VkDebugUtilsObjectNameInfoEXT info{};                                \
+        info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;    \
+        info.objectType = VK_OBJECT_TYPE_##type;                            \
+        info.objectHandle = (uint64_t)object;                                \
+        info.pObjectName = nameCStr;                                        \
+                                                                            \
+        exts::vkSetDebugUtilsObjectNameEXT(device, &info);                    \
+    }
+#else
+#define VK_DEBUG_NAME(...)
+#endif
+
 namespace wire {
 
-	class VulkanRenderer : public Renderer
-	{
-	public:
-		VulkanRenderer(const RendererDesc& desc);
-		virtual ~VulkanRenderer();
+    struct QueueFamilyIndices
+    {
+        uint32_t GraphicsFamily = static_cast<uint32_t>(-1);
+        uint32_t PresentFamily = static_cast<uint32_t>(-1);
 
-		virtual void beginFrame() override;
-		virtual void endFrame() override;
+        bool IsComplete() const { return GraphicsFamily != static_cast<uint32_t>(-1) && PresentFamily != static_cast<uint32_t>(-1); }
+    };
 
-		virtual glm::vec2 getExtent() const override { return { (float)m_Extent.width, (float)m_Extent.height }; }
+    struct SwapchainSupportDetails
+    {
+        VkSurfaceCapabilitiesKHR Capabilities;
+        std::vector<VkSurfaceFormatKHR> Formats;
+        std::vector<VkPresentModeKHR> PresentModes;
+    };
 
-		virtual uint32_t getFrameIndex() const override { return m_FrameIndex; }
-		virtual uint32_t getNumFramesInFlight() const override;
+    struct VulkanCopyBufferNativeCommand : public CommandListNativeCommand
+    {
+        VkBuffer SrcBuffer;
+        VkBuffer DstBuffer;
+        size_t Size;
+        size_t SrcOffset, DstOffset;
 
-		virtual CommandBuffer& allocateCommandBuffer() override;
-		virtual CommandBuffer& beginSingleTimeCommands() override;
-		virtual void endSingleTimeCommands(CommandBuffer& commandBuffer) override;
-		virtual void submitCommandBuffer(CommandBuffer& commandBuffer) override;
+        virtual ~VulkanCopyBufferNativeCommand() = default;
+    };
 
-		virtual CommandList createCommandList() override;
-		virtual void submitCommandList(const CommandList& commandList) override;
+    struct VulkanPipelineBarrierNativeCommand : public CommandListNativeCommand
+    {
+        VkPipelineStageFlags SrcStage, DstStage;
+        VkImageMemoryBarrier Barrier;
+    };
 
-		virtual void submitResourceFree(std::function<void(Renderer*)>&& func) override;
+    struct VulkanCopyBufferToImageNativeCommand : public CommandListNativeCommand
+    {
+        VkBuffer SrcBuffer;
+        VkImage DstImage;
+        VkImageLayout DstImageLayout;
+        VkBufferImageCopy Region;
+    };
 
-		virtual GraphicsPipeline* createGraphicsPipeline(const GraphicsPipelineDesc& desc) override;
-		virtual VertexBuffer* createVertexBuffer(size_t size, const void* data = nullptr) override;
-		virtual IndexBuffer* createIndexBuffer(size_t size, const void* data = nullptr) override;
-		virtual StagingBuffer* createStagingBuffer(size_t size, const void* data = nullptr) override;
-		virtual UniformBuffer* createUniformBuffer(size_t size, const void* data = nullptr) override;
-		virtual Texture2D* createTexture2D(const std::filesystem::path& path) override;
-		virtual Texture2D* createTexture2D(uint32_t* data, uint32_t width, uint32_t height) override;
-		virtual Sampler* createSampler(const SamplerDesc& desc) override;
-		virtual Font* createFont(const std::filesystem::path& path, uint32_t minChar = 0x0020, uint32_t maxChar = 0x00FF) override;
-		virtual Font* getFontFromCache(const std::filesystem::path& path) override;
+    class VulkanRenderer : public Renderer
+    {
+    public:
+        VulkanRenderer(const RendererDesc& desc, const SwapchainDesc& swapchainDesc);
+        virtual ~VulkanRenderer();
 
-		virtual ShaderCache& getShaderCache() override { return m_ShaderCache; }
-		virtual const ShaderCache& getShaderCache() const override { return m_ShaderCache; }
-		virtual FontCache& getFontCache() override { return m_FontCache; }
-		virtual const FontCache& getFontCache() const override { return m_FontCache; }
+        virtual void beginFrame() override;
+        virtual void endFrame() override;
 
-		virtual float getMaxAnisotropy() const override;
+        virtual glm::vec2 getExtent() const override { return m_Swapchain->getExtent(); }
 
-		VkDevice getDevice() const { return m_Device; }
-		VkPhysicalDevice getPhysicalDevice() const { return m_PhysicalDevice; }
-		const VkAllocationCallbacks* getAllocator() const { return m_Allocator; }
-		VkDescriptorPool getDescriptorPool() const { return m_DescriptorPool; }
-		VkRenderPass getRenderPass() const { return m_RenderPass; }
-		VkFramebuffer getCurrentFramebuffer() const { return m_Framebuffers[m_ImageIndex]; }
+        virtual uint32_t getFrameIndex() const override { return m_FrameIndex; }
+        virtual uint32_t getNumFramesInFlight() const override;
 
-		uint32_t getSwapchainImageCount() const { return m_SwapchainImageCount; }
+        virtual CommandList beginSingleTimeCommands() override;
+        virtual void endSingleTimeCommands(CommandList& commandList) override;
 
-		void addRenderingCommandBuffer(VkCommandBuffer commandBuffer) { m_CurrentRenderingCommandBuffers.push_back(commandBuffer); }
-		void addNonRenderingCommandBuffer(VkCommandBuffer commandBuffer) { m_CurrentNonRenderingCommandBuffers.push_back(commandBuffer); }
+        virtual CommandList createCommandList() override;
+        virtual void submitCommandList(const CommandList& commandList) override;
 
-		bool isFrameSkipped() const { return m_SkipFrame; }
-	private:
-		void createInstance();
-		void createSurface();
-		void pickPhysicalDevice();
-		void createLogicalDevice();
-		void createCommandPool();
-		void createDescriptorPool();
-		void createSyncObject();
+        virtual void submitResourceFree(std::function<void(Renderer*)>&& func) override;
 
-		void createSwapchain();
-		void createRenderPass();
+        virtual bool didSwapchainResize() const override { return m_DidSwapchainResize; }
+        virtual bool skipFrame() const override { return m_SkipFrame; }
 
-		void executeCommandScope(VkCommandBuffer commandBuffer, const CommandScope& commandScope);
-	private:
-		struct CommandListData
-		{
-			std::vector<VkCommandBuffer> Buffers;
-			std::vector<CommandScope::Type> Types;
-		};
-	private:
-		VkInstance m_Instance = nullptr;
-		VkAllocationCallbacks* m_Allocator = nullptr;
-		VkDebugUtilsMessengerEXT m_DebugMessenger = nullptr;
-		VkSurfaceKHR m_Surface = nullptr;
-		VkPhysicalDevice m_PhysicalDevice = nullptr;
-		VkDevice m_Device = nullptr;
-		VkQueue m_GraphicsQueue = nullptr;
-		VkQueue m_PresentQueue = nullptr;
-		VkCommandPool m_CommandPool = nullptr;
-		VkDescriptorPool m_DescriptorPool = nullptr;
+        virtual Swapchain* getSwapchain() const override { return m_Swapchain; }
 
-		std::vector<VkCommandBuffer> m_FrameCommandBuffers;
+        virtual Swapchain* createSwapchain(const SwapchainDesc& desc, std::string_view debugName = {}) override;
+        virtual Framebuffer* createFramebuffer(const FramebufferDesc& desc, std::string_view debugName = {}) override;
+        virtual RenderPass* createRenderPass(const RenderPassDesc& desc, Swapchain* swapchain, std::string_view debugName = {}) override;
+        virtual RenderPass* createRenderPass(const RenderPassDesc& desc, Framebuffer* framebuffer, std::string_view debugName = {}) override;
+        virtual GraphicsPipeline* createGraphicsPipeline(const GraphicsPipelineDesc& desc, std::string_view debugName = {}) override;
+        virtual ComputePipeline* createComputePipeline(const ComputePipelineDesc& desc, std::string_view debugName = {}) override;
+        virtual Texture2D* createTexture2D(const std::filesystem::path& path, std::string_view debugName = {}) override;
+        virtual Texture2D* createTexture2D(uint32_t* data, uint32_t width, uint32_t height, std::string_view debugName = {}) override;
+        virtual Sampler* createSampler(const SamplerDesc& desc, std::string_view debugName = {}) override;
+        virtual Font* createFont(const std::filesystem::path& path, std::string_view debugName = {}, uint32_t minChar = 0x0020, uint32_t maxChar = 0x00FF) override;
+        virtual Font* getFontFromCache(const std::filesystem::path& path) override;
 
-		VkExtent2D m_Extent;
-		VkSwapchainKHR m_Swapchain = nullptr;
-		uint32_t m_SwapchainImageCount;
-		VkFormat m_SwapchainImageFormat;
+        virtual ShaderCache& getShaderCache() override { return m_ShaderCache; }
+        virtual const ShaderCache& getShaderCache() const override { return m_ShaderCache; }
+        virtual FontCache& getFontCache() override { return m_FontCache; }
+        virtual const FontCache& getFontCache() const override { return m_FontCache; }
 
-		std::vector<VkImage> m_SwapchainImages;
-		std::vector<VkImageView> m_SwapchainImageViews;
+        virtual float getMaxAnisotropy() const override;
 
-		VkImage m_DepthImage = nullptr;
-		VkDeviceMemory m_DepthImageMemory = nullptr;
-		VkImageView m_DepthImageView = nullptr;
+        VkCommandBuffer beginCommandListOverride(RenderPass* renderPass = nullptr);
+        void endCommandListOverride();
 
-		VkRenderPass m_RenderPass = nullptr;
+        VkInstance getInstance() const { return m_Instance; }
+        VkPhysicalDevice getPhysicalDevice() const { return m_PhysicalDevice; }
+        VkSurfaceKHR getSurface() const { return m_Surface; }
+        VkDevice getDevice() const { return m_Device; }
+        uint32_t getGraphicsQueueFamily() const;
+        VkQueue getGraphicsQueue() const { return m_GraphicsQueue; }
+        const VkAllocationCallbacks* getAllocator() const { return m_Allocator; }
+        VkDescriptorPool getDescriptorPool() const { return m_DescriptorPool; }
 
-		std::vector<VkFramebuffer> m_Framebuffers;
+        VkSemaphore getCurrentImageAvailableSemaphore() const { return m_ImageAvailableSemaphores[m_FrameIndex]; }
+        void setImageAvailableSemaphore(uint32_t frameIndex, VkSemaphore semaphore) { m_ImageAvailableSemaphores[frameIndex] = semaphore; }
 
-		uint32_t m_ImageIndex = 0;
-		uint32_t m_FrameIndex;
+        bool isFrameSkipped() const { return m_SkipFrame; }
 
-		bool m_SkipFrame = false;
+        std::shared_ptr<CommandListNativeCommand> copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, size_t size, size_t srcOffset, size_t dstOffset, std::type_index& outType);
+        std::shared_ptr<CommandListNativeCommand> pipelineBarrier(VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage, const VkImageMemoryBarrier& barrier, std::type_index& outType);
+        std::shared_ptr<CommandListNativeCommand> copyBufferToImage(VkBuffer srcBuffer, VkImage dstImage, VkImageLayout dstImageLayout, const VkBufferImageCopy& copy, std::type_index& outType);
+    protected:
+        virtual BufferBase* createBufferBase(BufferType type, size_t size, const void* data = nullptr, std::string_view debugName = {}) override;
+    private:
+        void createInstance();
+        void createSurface();
+        void pickPhysicalDevice();
+        void createLogicalDevice();
+        void createCommandPool();
+        void createDescriptorPool();
+        void createSyncObject();
 
-		std::vector<VkCommandBuffer> m_CurrentRenderingCommandBuffers;
-		std::vector<VkCommandBuffer> m_CurrentNonRenderingCommandBuffers;
-		std::vector<VkCommandBuffer> m_SubmittedRenderingCommandBuffers;
-		std::vector<VkCommandBuffer> m_SubmittedNonRenderingCommandBuffers;
+        void loadExtensions();
 
-		std::vector<CommandBuffer*> m_AllocatedCommandBuffers;
-		std::vector<CommandBuffer*> m_CurrentSingleTimeCommands;
+        void executeCommandScope(VkCommandBuffer commandBuffer, const CommandScope& commandScope);
+    private:
+        struct CommandListData
+        {
+            std::vector<VkCommandBuffer> Buffers;
+            std::vector<CommandScope::Type> Types;
+            std::vector<RenderPass*> RenderPasses;
+        };
+    private:
+        VkInstance m_Instance = nullptr;
+        VkAllocationCallbacks* m_Allocator = nullptr;
+        VkDebugUtilsMessengerEXT m_DebugMessenger = nullptr;
+        VkSurfaceKHR m_Surface = nullptr;
+        VkPhysicalDevice m_PhysicalDevice = nullptr;
+        VkDevice m_Device = nullptr;
+        VkQueue m_GraphicsQueue = nullptr;
+        VkQueue m_PresentQueue = nullptr;
+        VkCommandPool m_CommandPool = nullptr;
+        VkDescriptorPool m_DescriptorPool = nullptr;
 
-		std::vector<std::vector<VkCommandBuffer>> m_SecondaryCommandBufferPool;
-		std::vector<uint32_t> m_UsedSecondaryCommandBufferCount;
+        std::vector<VkCommandBuffer> m_FrameCommandBuffers;
 
-		std::vector<std::vector<CommandListData>> m_SubmittedCommandLists;
+        Swapchain* m_Swapchain = nullptr;
 
-		std::vector<VkSemaphore> m_ImageAvailableSemaphores;
-		std::vector<VkSemaphore> m_RenderFinishedSemaphores;
-		std::vector<VkFence> m_InFlightFences;
+        uint32_t m_ImageIndex;
+        uint32_t m_FrameIndex;
 
-		ShaderCache m_ShaderCache;
-		FontCache m_FontCache;
+        bool m_SkipFrame = false;
+        bool m_DidSwapchainResize = false;
 
-		std::vector<std::vector<std::function<void(Renderer*)>>> m_ResourceFreeQueue;
-	};
+        std::vector<std::vector<VkCommandBuffer>> m_SecondaryCommandBufferPool;
+        std::vector<uint32_t> m_UsedSecondaryCommandBufferCount;
+
+        std::vector<std::vector<CommandListData>> m_SubmittedCommandLists;
+        CommandListData* m_CurrentOverrideCommandList = nullptr;
+
+        std::vector<VkSemaphore> m_ImageAvailableSemaphores;
+        std::vector<VkSemaphore> m_RenderFinishedSemaphores;
+        std::vector<VkFence> m_InFlightFences;
+
+        ShaderCache m_ShaderCache;
+        FontCache m_FontCache;
+
+        std::vector<std::vector<std::function<void(Renderer*)>>> m_ResourceFreeQueue;
+    };
+
+    namespace Utils {
+
+        QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
+        SwapchainSupportDetails QuerySwapchainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);
+        VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+        VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+        VkExtent2D ChooseSwapExtent(GLFWwindow* window, const VkSurfaceCapabilitiesKHR& capabilities);
+        VkFormat FindDepthFormat(VkPhysicalDevice device);
+        uint32_t FindMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties);
+        VkImageLayout GetImageLayout(AttachmentLayout type);
+
+    }
 
 }

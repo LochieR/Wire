@@ -4,151 +4,249 @@
 
 namespace wire {
 
-	CommandList::CommandList(Renderer* renderer)
-		: m_Renderer(renderer)
-	{
-	}
-	
-	void CommandList::begin()
-	{
-		m_CurrentScope = CommandScope{ .ScopeType = CommandScope::General };
-		m_IsRecording = true;
+    CommandList::CommandList(Renderer* renderer, bool singleTimeCommands)
+        : m_Renderer(renderer), m_SingleTimeCommands(singleTimeCommands)
+    {
+    }
+    
+    void CommandList::begin()
+    {
+        m_CurrentScope = CommandScope{ .ScopeType = CommandScope::General, .CurrentRenderPass = nullptr };
+        m_IsRecording = true;
 
-		m_Scopes.clear();
-	}
+        m_Scopes.clear();
+    }
 
-	void CommandList::end()
-	{
-		m_IsRecording = false;
-		m_CurrentPipeline = nullptr;
-		m_Scopes.push_back(m_CurrentScope);
-		m_CurrentScope = {};
-	}
+    void CommandList::end()
+    {
+        m_IsRecording = false;
+        m_CurrentGraphicsPipeline = nullptr;
+        m_Scopes.push_back(m_CurrentScope);
+        m_CurrentScope = {};
+    }
 
-	void CommandList::beginRenderPass()
-	{
-		m_Scopes.push_back(m_CurrentScope);
-		m_CurrentScope = CommandScope{ .ScopeType = CommandScope::RenderPass };
-	}
+    void CommandList::beginRenderPass(RenderPass* renderPass)
+    {
+        WR_ASSERT(!m_SingleTimeCommands, "cannot begin render pass during single time commands");
 
-	void CommandList::endRenderPass()
-	{
-		m_Scopes.push_back(m_CurrentScope);
-		m_CurrentScope = CommandScope{ .ScopeType = CommandScope::General };
-	}
+        m_Scopes.push_back(m_CurrentScope);
+        m_CurrentScope = CommandScope{ .ScopeType = CommandScope::RenderPass, .CurrentRenderPass = renderPass };
+    }
 
-	void CommandList::bindPipeline(GraphicsPipeline* pipeline)
-	{
-		CommandEntry entry;
-		entry.Type = CommandType::BindPipeline;
-		entry.Args = CommandEntry::BindPipelineArgs{ .Pipeline = pipeline };
+    void CommandList::endRenderPass()
+    {
+        m_Scopes.push_back(m_CurrentScope);
+        m_CurrentScope = CommandScope{ .ScopeType = CommandScope::General, .CurrentRenderPass = nullptr };
+    }
 
-		m_CurrentPipeline = pipeline;
+    void CommandList::bindPipeline(GraphicsPipeline* pipeline)
+    {
+        CommandEntry entry;
+        entry.Type = CommandType::BindPipeline;
+        entry.Args = CommandEntry::BindPipelineArgs{ .IsGraphics = true, .Graphics = pipeline };
 
-		m_CurrentScope.Commands.push_back(entry);
-	}
+        m_CurrentGraphicsPipeline = pipeline;
+        m_CurrentComputePipeline = nullptr;
 
-	void CommandList::pushConstants(ShaderType shaderStage, const void* data, size_t size, size_t offset)
-	{
-		WR_ASSERT(m_CurrentPipeline, "cannot push constants without binding a pipeline");
-		WR_ASSERT(size <= 128, "push constant size must be <= 128");
+        m_CurrentScope.Commands.push_back(entry);
+    }
 
-		CommandEntry::PushConstantsArgs args{};
-		args.Pipeline = m_CurrentPipeline;
-		args.Stage = shaderStage;
-		args.Size = static_cast<uint32_t>(size);
-		args.Offset = static_cast<uint32_t>(offset);
-		std::memcpy(args.Data, data, size);
+    void CommandList::bindPipeline(ComputePipeline* pipeline)
+    {
+        CommandEntry entry;
+        entry.Type = CommandType::BindPipeline;
+        entry.Args = CommandEntry::BindPipelineArgs{ .IsGraphics = false, .Compute = pipeline };
 
-		CommandEntry entry;
-		entry.Type = CommandType::PushConstants;
-		entry.Args = args;
+        m_CurrentComputePipeline = pipeline;
+        m_CurrentGraphicsPipeline = nullptr;
 
-		m_CurrentScope.Commands.push_back(entry);
-	}
+        m_CurrentScope.Commands.push_back(entry);
+    }
 
-	void CommandList::bindDescriptorSet()
-	{
-		WR_ASSERT(m_CurrentPipeline, "cannot bind descriptor set without binding a pipeline");
+    void CommandList::pushConstants(ShaderType shaderStage, const void* data, size_t size, size_t offset)
+    {
+        WR_ASSERT(m_CurrentGraphicsPipeline || m_CurrentComputePipeline, "cannot push constants without binding a pipeline");
+        WR_ASSERT(size <= 128, "push constant size must be <= 128");
 
-		CommandEntry entry;
-		entry.Type = CommandType::BindDescriptorSet;
-		entry.Args = CommandEntry::BindDescriptorSetArgs{ .Pipeline = m_CurrentPipeline };
+        CommandEntry::PushConstantsArgs args{};
+        
+        if (m_CurrentComputePipeline)
+        {
+            args.IsGraphics = false;
+            args.Compute = m_CurrentComputePipeline;
+        }
+        else
+        {
+            args.IsGraphics = true;
+            args.Graphics = m_CurrentGraphicsPipeline;
+        }
 
-		m_CurrentScope.Commands.push_back(entry);
-	}
+        args.Stage = shaderStage;
+        args.Size = static_cast<uint32_t>(size);
+        args.Offset = static_cast<uint32_t>(offset);
+        std::memcpy(args.Data, data, size);
 
-	void CommandList::setViewport(const glm::vec2& position, const glm::vec2& size, float minDepth, float maxDepth)
-	{
-		WR_ASSERT(m_CurrentPipeline, "cannot set viewport without binding a pipeline");
+        CommandEntry entry;
+        entry.Type = CommandType::PushConstants;
+        entry.Args = args;
 
-		CommandEntry entry;
-		entry.Type = CommandType::SetViewport;
-		entry.Args = CommandEntry::SetViewportArgs{ .Pipeline = m_CurrentPipeline, .Position = position, .Size = size, .MinDepth = minDepth, .MaxDepth = maxDepth };
+        m_CurrentScope.Commands.push_back(entry);
+    }
 
-		m_CurrentScope.Commands.push_back(entry);
-	}
+    void CommandList::bindDescriptorSet(uint32_t set, uint32_t setIndex)
+    {
+        WR_ASSERT(m_CurrentGraphicsPipeline || m_CurrentComputePipeline, "cannot bind descriptor set without binding a pipeline");
 
-	void CommandList::setScissor(const glm::vec2& min, const glm::vec2& max)
-	{
-		WR_ASSERT(m_CurrentPipeline, "cannot set scissor without binding a pipeline");
+        CommandEntry entry;
+        entry.Type = CommandType::BindDescriptorSet;
 
-		CommandEntry entry;
-		entry.Type = CommandType::SetScissor;
-		entry.Args = CommandEntry::SetScissorArgs{ .Pipeline = m_CurrentPipeline, .Min = min, .Max = max };
+        if (m_CurrentGraphicsPipeline)
+            entry.Args = CommandEntry::BindDescriptorSetArgs{ .IsGraphics = true, .Graphics = m_CurrentGraphicsPipeline, .Set = set, .SetIndex = setIndex };
+        else if (m_CurrentComputePipeline)
+            entry.Args = CommandEntry::BindDescriptorSetArgs{ .IsGraphics = false, .Compute = m_CurrentComputePipeline, .Set = set, .SetIndex = setIndex };
 
-		m_CurrentScope.Commands.push_back(entry);
-	}
+        m_CurrentScope.Commands.push_back(entry);
+    }
 
-	void CommandList::setLineWidth(float lineWidth)
-	{
-		WR_ASSERT(m_CurrentPipeline, "cannot set line width without binding a pipeline");
+    void CommandList::setViewport(const glm::vec2& position, const glm::vec2& size, float minDepth, float maxDepth)
+    {
+        WR_ASSERT(m_CurrentGraphicsPipeline, "cannot set viewport without binding a pipeline");
 
-		CommandEntry entry;
-		entry.Type = CommandType::SetLineWidth;
-		entry.Args = CommandEntry::SetLineWidthArgs{ .Pipeline = m_CurrentPipeline, .LineWidth = lineWidth };
+        CommandEntry entry;
+        entry.Type = CommandType::SetViewport;
+        entry.Args = CommandEntry::SetViewportArgs{ .Pipeline = m_CurrentGraphicsPipeline, .Position = position, .Size = size, .MinDepth = minDepth, .MaxDepth = maxDepth };
 
-		m_CurrentScope.Commands.push_back(entry);
-	}
+        m_CurrentScope.Commands.push_back(entry);
+    }
 
-	void CommandList::bindVertexBuffers(const std::vector<VertexBuffer*> vertexBuffers)
-	{
-		CommandEntry entry;
-		entry.Type = CommandType::BindVertexBuffers;
-		entry.Args = CommandEntry::BindVertexBuffersArgs{ .Buffers = vertexBuffers };
+    void CommandList::setScissor(const glm::vec2& min, const glm::vec2& max)
+    {
+        WR_ASSERT(m_CurrentGraphicsPipeline, "cannot set scissor without binding a pipeline");
 
-		m_CurrentScope.Commands.push_back(entry);
-	}
+        CommandEntry entry;
+        entry.Type = CommandType::SetScissor;
+        entry.Args = CommandEntry::SetScissorArgs{ .Pipeline = m_CurrentGraphicsPipeline, .Min = min, .Max = max };
 
-	void CommandList::bindIndexBuffer(IndexBuffer* indexBuffer)
-	{
-		CommandEntry entry;
-		entry.Type = CommandType::BindIndexBuffer;
-		entry.Args = CommandEntry::BindIndexBufferArgs{ .Buffer = indexBuffer };
+        m_CurrentScope.Commands.push_back(entry);
+    }
 
-		m_CurrentScope.Commands.push_back(entry);
-	}
+    void CommandList::setLineWidth(float lineWidth)
+    {
+        WR_ASSERT(m_CurrentGraphicsPipeline, "cannot set line width without binding a pipeline");
 
-	void CommandList::draw(uint32_t vertexCount, uint32_t vertexOffset)
-	{
-		WR_ASSERT(m_CurrentPipeline, "cannot draw without binding graphics pipeline");
+        CommandEntry entry;
+        entry.Type = CommandType::SetLineWidth;
+        entry.Args = CommandEntry::SetLineWidthArgs{ .Pipeline = m_CurrentGraphicsPipeline, .LineWidth = lineWidth };
 
-		CommandEntry entry;
-		entry.Type = CommandType::Draw;
-		entry.Args = CommandEntry::DrawArgs{ .VertexCount = vertexCount, .VertexOffset = vertexOffset };
+        m_CurrentScope.Commands.push_back(entry);
+    }
 
-		m_CurrentScope.Commands.push_back(entry);
-	}
+    void CommandList::bindVertexBuffers(const std::vector<BufferBase*> vertexBuffers)
+    {
+        CommandEntry entry;
+        entry.Type = CommandType::BindVertexBuffers;
+        entry.Args = CommandEntry::BindVertexBuffersArgs{ .Buffers = vertexBuffers };
 
-	void CommandList::drawIndexed(uint32_t indexCount, uint32_t vertexOffset, uint32_t indexOffset)
-	{
-		WR_ASSERT(m_CurrentPipeline, "cannot draw without binding graphics pipeline");
+        m_CurrentScope.Commands.push_back(entry);
+    }
 
-		CommandEntry entry;
-		entry.Type = CommandType::DrawIndexed;
-		entry.Args = CommandEntry::DrawIndexedArgs{ .IndexCount = indexCount, .VertexOffset = vertexOffset, .IndexOffset = indexOffset };
+    void CommandList::bindIndexBuffer(BufferBase* indexBuffer)
+    {
+        CommandEntry entry;
+        entry.Type = CommandType::BindIndexBuffer;
+        entry.Args = CommandEntry::BindIndexBufferArgs{ .Buffer = indexBuffer };
 
-		m_CurrentScope.Commands.push_back(entry);
-	}
+        m_CurrentScope.Commands.push_back(entry);
+    }
+
+    void CommandList::draw(uint32_t vertexCount, uint32_t vertexOffset)
+    {
+        WR_ASSERT(m_CurrentGraphicsPipeline, "cannot draw without binding graphics pipeline");
+
+        CommandEntry entry;
+        entry.Type = CommandType::Draw;
+        entry.Args = CommandEntry::DrawArgs{ .VertexCount = vertexCount, .VertexOffset = vertexOffset };
+
+        m_CurrentScope.Commands.push_back(entry);
+    }
+
+    void CommandList::drawIndexed(uint32_t indexCount, uint32_t vertexOffset, uint32_t indexOffset)
+    {
+        WR_ASSERT(m_CurrentGraphicsPipeline, "cannot draw without binding graphics pipeline");
+
+        CommandEntry entry;
+        entry.Type = CommandType::DrawIndexed;
+        entry.Args = CommandEntry::DrawIndexedArgs{ .IndexCount = indexCount, .VertexOffset = vertexOffset, .IndexOffset = indexOffset };
+
+        m_CurrentScope.Commands.push_back(entry);
+    }
+
+    void CommandList::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+    {
+        WR_ASSERT(m_CurrentComputePipeline, "cannot dispatch without binding compute pipeline");
+
+        CommandEntry entry;
+        entry.Type = CommandType::Dispatch;
+        entry.Args = CommandEntry::DispatchArgs{ .GroupCountX = groupCountX, .GroupCountY = groupCountY, .GroupCountZ = groupCountZ };
+
+        m_CurrentScope.Commands.push_back(entry);
+    }
+
+    void CommandList::clearImage(Framebuffer* framebuffer, const glm::vec4& color, AttachmentLayout currentLayout, uint32_t baseMip, uint32_t numMips)
+    {
+        WR_ASSERT(m_CurrentScope.ScopeType == CommandScope::General, "cannot clear image inside a render pass");
+
+        if (currentLayout != AttachmentLayout::TransferDst)
+        {
+            imageMemoryBarrier(framebuffer, currentLayout, AttachmentLayout::TransferDst, baseMip, numMips);
+        }
+
+        CommandEntry entry;
+        entry.Type = CommandType::ClearImage;
+        entry.Args = CommandEntry::ClearImageArgs{ .Framebuffer = framebuffer, .Color = color, .BaseMipLevel = baseMip, .MipCount = numMips };
+
+        m_CurrentScope.Commands.push_back(entry);
+
+        if (currentLayout != AttachmentLayout::TransferDst)
+        {
+            imageMemoryBarrier(framebuffer, AttachmentLayout::TransferDst, currentLayout, baseMip, numMips);
+        }
+    }
+
+    void CommandList::copyBuffer(BufferBase* srcBuffer, BufferBase* dstBuffer, size_t size, size_t srcOffset, size_t dstOffset)
+    {
+        CommandEntry entry;
+        entry.Type = CommandType::CopyBuffer;
+        entry.Args = CommandEntry::CopyBufferArgs{ .SrcBuffer = srcBuffer, .DstBuffer = dstBuffer, .Size = size, .SrcOffset = srcOffset, .DstOffset = dstOffset };
+
+        m_CurrentScope.Commands.push_back(entry);
+    }
+
+    void CommandList::bufferMemoryBarrier(BufferBase* buffer, BarrierMask waitFor, BarrierMask access, PipelineStage waitStage, PipelineStage untilStage)
+    {
+        CommandEntry entry;
+        entry.Type = CommandType::BufferMemoryBarrier;
+        entry.Args = CommandEntry::BufferMemoryBarrierArgs{ .WaitFor = waitFor, .Access = access, .WaitStage = waitStage, .UntilStage = untilStage, .Buffer = buffer };
+
+        m_CurrentScope.Commands.push_back(entry);
+    }
+
+    void CommandList::imageMemoryBarrier(Framebuffer* framebuffer, AttachmentLayout oldLayout, AttachmentLayout newLayout, uint32_t baseMip, uint32_t numMips)
+    {
+        CommandEntry entry;
+        entry.Type = CommandType::ImageMemoryBarrier;
+        entry.Args = CommandEntry::ImageMemoryBarrierArgs{ .Framebuffer = framebuffer, .OldUsage = oldLayout, .NewUsage = newLayout, .BaseMip = baseMip, .NumMips = numMips };
+
+        m_CurrentScope.Commands.push_back(entry);
+    }
+
+    void CommandList::submitNativeCommand(std::shared_ptr<CommandListNativeCommand> nativeCommand, std::type_index typeIndex)
+    {
+        CommandEntry entry;
+        entry.Type = CommandType::NativeCommand;
+        entry.Args = CommandEntry::NativeCommandArgs{ .CommandType = typeIndex, .NativeCommand = nativeCommand };
+
+        m_CurrentScope.Commands.push_back(entry);
+    }
 
 }

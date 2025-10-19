@@ -7,60 +7,103 @@ using size_t = std::size_t;
 
 namespace wire {
 
-	class VertexBuffer
-	{
-	public:
-		virtual ~VertexBuffer() = default;
+    enum BufferType : uint16_t
+    {
+        VertexBuffer  = 1 << 0,
+        IndexBuffer   = 1 << 1,
+        StagingBuffer = 1 << 2,
+        UniformBuffer = 1 << 3,
+        StorageBuffer = 1 << 4
+    };
 
-		virtual void setData(const void* data, size_t size, size_t offset = 0) = 0;
-		virtual void setData(int data, size_t size) = 0;
+    constexpr inline BufferType operator|(BufferType lhs, BufferType rhs)
+    {
+        return static_cast<BufferType>(
+            static_cast<std::underlying_type<BufferType>::type>(lhs) |
+            static_cast<std::underlying_type<BufferType>::type>(rhs)
+        );
+    }
 
-		virtual void* map(size_t size) = 0;
-		virtual void unmap() = 0;
+    constexpr inline BufferType operator&(BufferType lhs, BufferType rhs)
+    {
+        return static_cast<BufferType>(
+            static_cast<std::underlying_type<BufferType>::type>(lhs) &
+            static_cast<std::underlying_type<BufferType>::type>(rhs)
+        );
+    }
 
-		virtual size_t getSize() const = 0;
-	};
+    constexpr inline BufferType operator^(BufferType lhs, BufferType rhs)
+    {
+        return static_cast<BufferType>(
+            static_cast<std::underlying_type<BufferType>::type>(lhs) ^
+            static_cast<std::underlying_type<BufferType>::type>(rhs)
+        );
+    }
 
-	class IndexBuffer
-	{
-	public:
-		virtual ~IndexBuffer() = default;
+    constexpr inline BufferType operator~(BufferType type)
+    {
+        return static_cast<BufferType>(~static_cast<std::underlying_type<BufferType>::type>(type));
+    }
 
-		virtual void setData(const void* data, size_t size) = 0;
-		virtual void setData(int data, size_t size) = 0;
+    constexpr inline BufferType& operator|=(BufferType& lhs, BufferType rhs)
+    {
+        lhs = lhs | rhs;
+        return lhs;
+    }
 
-		virtual void* map(size_t size) = 0;
-		virtual void unmap() = 0;
+    constexpr inline BufferType& operator&=(BufferType& lhs, BufferType rhs)
+    {
+        lhs = lhs & rhs;
+        return lhs;
+    }
 
-		virtual size_t getSize() const = 0;
-	};
+    constexpr inline BufferType& operator^=(BufferType& lhs, BufferType rhs)
+    {
+        lhs = lhs ^ rhs;
+        return lhs;
+    }
 
-	class StagingBuffer
-	{
-	public:
-		virtual ~StagingBuffer() = default;
+    template<BufferType Type>
+    constexpr bool is_vertex_buffer()
+    {
+        return Type & VertexBuffer;
+    }
 
-		virtual void setData(const void* data, size_t size) = 0;
-		virtual void setData(int data, size_t size) = 0;
+    class BufferBase
+    {
+    public:
+        virtual ~BufferBase() = default;
 
-		virtual void* map(size_t size) = 0;
-		virtual void unmap() = 0;
+        virtual void setData(const void* data, size_t size, size_t offset = 0) = 0;
+        virtual void setData(int data, size_t size) = 0;
 
-		virtual size_t getSize() const = 0;
-	};
+        virtual void* map(size_t size) = 0;
+        virtual void unmap() = 0;
 
-	class UniformBuffer
-	{
-	public:
-		virtual ~UniformBuffer() = default;
+        virtual size_t getSize() const = 0;
+    };
 
-		virtual void setData(const void* data, size_t size) = 0;
-		virtual void setData(int data, size_t size) = 0;
+    template<BufferType Type>
+    class Buffer
+    {
+    public:
+        Buffer(BufferBase* base)
+            : m_Base(base)
+        {
+        }
+        ~Buffer() { delete m_Base; }
 
-		virtual void* map(size_t size) = 0;
-		virtual void unmap() = 0;
+        void setData(const void* data, size_t size, size_t offset = 0) { m_Base->setData(data, size, offset); }
+        void setData(int data, size_t size) { m_Base->setData(data, size); }
 
-		virtual size_t getSize() const = 0;
-	};
+        void* map(size_t size) { return m_Base->map(size); }
+        void unmap() { m_Base->unmap(); }
+
+        size_t getSize() const { return m_Base->getSize(); }
+
+        BufferBase* getBase() const { return m_Base; }
+    private:
+        BufferBase* m_Base;
+    };
 
 }
