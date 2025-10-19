@@ -1,6 +1,9 @@
 #pragma once
 
+#include <cstdint>
 #include <type_traits>
+
+using size_t = std::size_t;
 
 namespace wire {
 

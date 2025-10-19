@@ -108,6 +108,15 @@ project "GLFW"
 		sanitize { "Address" }
 		flags { "NoRuntimeChecks", "NoIncrementalLink" }
 
+	filter "system:macosx"
+		links
+		{
+			"AppKit.framework",
+			"CoreFoundation.framework",
+			"CoreGraphics.framework",
+			"IOKit.framework"
+		}
+
 	filter "configurations:Release"
 		runtime "Release"
 		optimize "speed"

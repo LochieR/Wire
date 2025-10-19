@@ -50,7 +50,10 @@ namespace wire {
 					if (!color)
 						output << colorCode;
 					else
-						output << "\033[0m";
+                    {
+                        if (colorCode.length() != 0)
+                            output << "\033[0m";
+                    }
 					color = !color;
 					break;
 				default:
@@ -83,10 +86,23 @@ namespace wire {
 	{
 		std::lock_guard<std::mutex> lock(s_LogMutex);
 		const auto& config = LogConfig::instance();
-		std::string formatted = LogFormatter::formatMessage(msg, config.getFormat(), color);
+		
 		for (auto* out : config.getOutputs())
 		{
-			(*out) << formatted << "\033[0m" << std::endl;
+            bool isFile = dynamic_cast<std::ofstream*>(out) != nullptr;
+            
+            std::string formatted;
+            if (isFile)
+                formatted = LogFormatter::formatMessage(msg, config.getFormat(), "");
+            else
+                formatted = LogFormatter::formatMessage(msg, config.getFormat(), color);
+            
+			(*out) << formatted;
+            
+            if (!isFile)
+                (*out) << "\033[0m";
+
+            (*out) << std::endl;
 		}
 	}
 
