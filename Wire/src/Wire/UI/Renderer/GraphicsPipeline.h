@@ -7,6 +7,7 @@
 #include "RenderPass.h"
 #include "ShaderCache.h"
 #include "ShaderCompiler.h"
+#include "ShaderResource.h"
 
 namespace wire {
 
@@ -37,32 +38,13 @@ namespace wire {
         ShaderType Shader;
     };
 
-    enum class ShaderResourceType
-    {
-        UniformBuffer = 0,
-        CombinedImageSampler,
-        SampledImage,
-        Sampler,
-        StorageBuffer,
-        StorageImage
-    };
-
-    struct ShaderResourceInfo
-    {
-        ShaderResourceType ResourceType;
-        uint32_t Set;
-        uint32_t Binding;
-        ShaderType Shader;
-        uint32_t ResourceCount = 1;
-    };
-
     struct InputLayout
     {
         std::vector<InputElement> VertexBufferLayout;
         size_t Stride = 0;
 
         std::vector<PushConstantInfo> PushConstantInfos;
-        std::vector<ShaderResourceInfo> ShaderResources;
+        ShaderResourceLayout* ResourceLayout;
     };
 
     struct GraphicsPipelineDesc
@@ -77,39 +59,6 @@ namespace wire {
     {
     public:
         virtual ~GraphicsPipeline() = default;
-
-        virtual void updateDescriptor(Texture2D* texture, uint32_t binding, uint32_t index) = 0;
-        virtual void updateDescriptor(Sampler* sampler, uint32_t binding, uint32_t index) = 0;
-        virtual void updateDescriptor(Texture2D* texture, Sampler* sampler, uint32_t binding, uint32_t index) = 0;
-        virtual void updateDescriptor(BufferBase* uniformBuffer, uint32_t binding, uint32_t index) = 0;
-
-        virtual void updateFrameDescriptor(Texture2D* texture, uint32_t frameIndex, uint32_t binding, uint32_t index) = 0;
-        virtual void updateFrameDescriptor(Sampler* sampler, uint32_t frameIndex, uint32_t binding, uint32_t index) = 0;
-        virtual void updateFrameDescriptor(Texture2D* texture, Sampler* sampler, uint32_t frameIndex, uint32_t binding, uint32_t index) = 0;
-        virtual void updateFrameDescriptor(BufferBase* uniformBuffer, uint32_t frameIndex, uint32_t binding, uint32_t index) = 0;
-
-        virtual void updateAllDescriptors(Texture2D* texture, uint32_t binding, uint32_t index) = 0;
-        virtual void updateAllDescriptors(Sampler* sampler, uint32_t binding, uint32_t index) = 0;
-        virtual void updateAllDescriptors(Texture2D* texture, Sampler* sampler, uint32_t binding, uint32_t index) = 0;
-        virtual void updateAllDescriptors(BufferBase* uniformBuffer, uint32_t binding, uint32_t index) = 0;
-
-        template<BufferType Type>
-        std::enable_if_t<Type & UniformBuffer, void> updateDescriptor(Buffer<Type>* uniformBuffer, uint32_t binding, uint32_t index)
-        {
-            updateDescriptor(uniformBuffer->getBase(), binding, index);
-        }
-
-        template<BufferType Type>
-        std::enable_if_t<Type & UniformBuffer, void> updateFrameDescriptor(Buffer<Type>* uniformBuffer, uint32_t frameIndex, uint32_t binding, uint32_t index)
-        {
-            updateFrameDescriptor(uniformBuffer->getBase(), frameIndex, binding, index);
-        }
-
-        template<BufferType Type>
-        std::enable_if_t<Type & UniformBuffer, void> updateAllDescriptors(Buffer<Type>* uniformBuffer, uint32_t binding, uint32_t index)
-        {
-            updateAllDescriptors(uniformBuffer->getBase(), binding, index);
-        }
     };
 
 }

@@ -104,18 +104,28 @@ namespace wire {
 
 		ShaderResourceInfo rectImagesResource{};
 		rectImagesResource.Binding = 0;
-		rectImagesResource.ResourceType = ShaderResourceType::SampledImage;
-		rectImagesResource.Shader = ShaderType::Pixel;
-		rectImagesResource.ResourceCount = 32;
+		rectImagesResource.Type = ShaderResourceType::SampledImage;
+		rectImagesResource.Stage = ShaderType::Pixel;
+		rectImagesResource.ArrayCount = 32;
 
 		ShaderResourceInfo rectSamplerResource{};
 		rectSamplerResource.Binding = 1;
-		rectSamplerResource.ResourceType = ShaderResourceType::Sampler;
-		rectSamplerResource.Shader = ShaderType::Pixel;
-		rectSamplerResource.ResourceCount = 1;
+		rectSamplerResource.Type = ShaderResourceType::Sampler;
+		rectSamplerResource.Stage = ShaderType::Pixel;
+		rectSamplerResource.ArrayCount = 1;
 
-		layout.ShaderResources.push_back(rectImagesResource);
-		layout.ShaderResources.push_back(rectSamplerResource);
+        ShaderResourceLayoutInfo rectResourceLayout = ShaderResourceLayoutInfo{
+            .Sets = {
+                ShaderResourceSetInfo{
+                    .Resources = { rectImagesResource, rectSamplerResource }
+                }
+            }
+        };
+        
+        m_RectResourceLayout = renderer->createShaderResourceLayout(rectResourceLayout);
+        layout.ResourceLayout = m_RectResourceLayout;
+        
+        m_RectResource = renderer->createShaderResource(0, m_RectResourceLayout);
 
 		GraphicsPipelineDesc rectDesc{};
 		rectDesc.ShaderPath = "shadercache://UIRect.hlsl";
@@ -139,15 +149,13 @@ namespace wire {
 		uint32_t whiteTextureData = 0xFFFFFFFF;
 		m_WhiteTexture = renderer->createTexture2D(&whiteTextureData, 1, 1);
 		m_Data.RectTextures[m_Data.RectTextureIndex] = m_WhiteTexture;
-
-		m_RectPipeline->updateAllDescriptors(m_Data.RectTextures[m_Data.RectTextureIndex], 0, m_Data.RectTextureIndex);
+        
+        m_RectResource->update(m_Data.RectTextures[m_Data.RectTextureIndex], 0, m_Data.RectTextureIndex);
 		m_Data.RectTextureIndex++;
 
 		for (uint32_t i = m_Data.RectTextureIndex; i < 32; i++)
-		{
-			m_RectPipeline->updateAllDescriptors(m_Data.RectTextures[0], 0, i);
-		}
-		m_RectPipeline->updateAllDescriptors(m_TextureSampler, 1, 0);
+			m_RectResource->update(m_Data.RectTextures[0], 0, i);
+		m_RectResource->update(m_TextureSampler, 1, 0);
 
 		m_Data.RectVertexBase = new RectVertex[RendererLimits::MaxVertices];
 
@@ -168,19 +176,29 @@ namespace wire {
 
 		ShaderResourceInfo textImagesResource{};
 		textImagesResource.Binding = 0;
-		textImagesResource.ResourceType = ShaderResourceType::SampledImage;
-		textImagesResource.ResourceCount = 32;
-		textImagesResource.Shader = ShaderType::Pixel;
+		textImagesResource.Type = ShaderResourceType::SampledImage;
+		textImagesResource.ArrayCount = 32;
+		textImagesResource.Stage = ShaderType::Pixel;
 
 		ShaderResourceInfo textSamplerResource{};
 		textSamplerResource.Binding = 1;
-		textSamplerResource.ResourceType = ShaderResourceType::Sampler;
-		textSamplerResource.ResourceCount = 1;
-		textSamplerResource.Shader = ShaderType::Pixel;
+		textSamplerResource.Type = ShaderResourceType::Sampler;
+		textSamplerResource.ArrayCount = 1;
+		textSamplerResource.Stage = ShaderType::Pixel;
 
-		layout.ShaderResources.push_back(textImagesResource);
-		layout.ShaderResources.push_back(textSamplerResource);
-
+        ShaderResourceLayoutInfo textResourceLayout = ShaderResourceLayoutInfo{
+            .Sets = {
+                ShaderResourceSetInfo{
+                    .Resources = { textImagesResource, textSamplerResource }
+                }
+            }
+        };
+        
+        m_TextResourceLayout = renderer->createShaderResourceLayout(textResourceLayout);
+        layout.ResourceLayout = m_TextResourceLayout;
+        
+        m_TextResource = renderer->createShaderResource(0, m_TextResourceLayout);
+        
 		GraphicsPipelineDesc textDesc{};
 		textDesc.ShaderPath = "shadercache://UIText.hlsl";
 		textDesc.Topology = PrimitiveTopology::TriangleList;
@@ -200,17 +218,17 @@ namespace wire {
 		textSamplerDesc.MaxAnisotropy = 0.0f;
 
 		m_TextSampler = renderer->createSampler(textSamplerDesc);
-		m_TextPipeline->updateAllDescriptors(m_TextSampler, 1, 0);
+		m_TextResource->update(m_TextSampler, 1, 0);
 
 		m_DefaultFont = renderer->getFontFromCache("fontcache://OpenSans-Bold.ttf");
 
 		m_Data.AtlasTextures[m_Data.AtlasTextureIndex] = m_DefaultFont->getAtlasTexture();
-		m_TextPipeline->updateAllDescriptors(m_Data.AtlasTextures[m_Data.AtlasTextureIndex], 0, 0);
+		m_TextResource->update(m_Data.AtlasTextures[m_Data.AtlasTextureIndex], 0, 0);
 		m_Data.AtlasTextureIndex++;
 
 		for (uint32_t i = m_Data.AtlasTextureIndex; i < 32; i++)
 		{
-			m_TextPipeline->updateAllDescriptors(m_WhiteTexture, 0, i);
+			m_TextResource->update(m_WhiteTexture, 0, i);
 		}
 
 		m_CircleVertexBuffer = renderer->createBuffer<VertexBuffer>(RendererLimits::MaxVertices * sizeof(CircleVertex));
@@ -228,6 +246,7 @@ namespace wire {
 		layout.PushConstantInfos = {
 			{ sizeof(glm::mat4), 0, ShaderType::Vertex }
 		};
+        layout.ResourceLayout = nullptr;
 
 		GraphicsPipelineDesc circleDesc{};
 		circleDesc.ShaderPath = "shadercache://UICircle.hlsl";
@@ -254,6 +273,7 @@ namespace wire {
 		layout.PushConstantInfos = {
 			{ sizeof(glm::mat4), 0, ShaderType::Vertex }
 		};
+        layout.ResourceLayout = nullptr;
 
 		GraphicsPipelineDesc roundedRectDesc{};
 		roundedRectDesc.ShaderPath = "shadercache://UIRoundedRect.hlsl";
@@ -275,6 +295,7 @@ namespace wire {
 		layout.PushConstantInfos = {
 			{ sizeof(glm::mat4), 0, ShaderType::Vertex }
 		};
+        layout.ResourceLayout = nullptr;
 
 		GraphicsPipelineDesc lineDesc{};
 		lineDesc.ShaderPath = "shadercache://UILine.hlsl";
@@ -311,12 +332,16 @@ namespace wire {
 		delete m_CirclePipeline;
 		delete m_CircleVertexBuffer;
 		delete m_TextPipeline;
+        delete m_TextResource;
+        delete m_TextResourceLayout;
 		delete m_TextVertexBuffer;
 		delete m_DefaultFont;
 		delete m_WhiteTexture;
 		delete m_TextSampler;
 		delete m_TextureSampler;
 		delete m_RectPipeline;
+        delete m_RectResource;
+        delete m_RectResourceLayout;
 		delete m_RectVertexBuffer;
 		delete m_IndexBuffer;
         delete m_RenderPass;
@@ -412,7 +437,7 @@ namespace wire {
 			);
 
 			commandList.pushConstants(ShaderType::Vertex, viewProj);
-            commandList.bindDescriptorSet(0, 0);
+            commandList.bindShaderResource(0, m_RectResource);
 			commandList.bindVertexBuffers({ m_RectVertexBuffer->getBase() });
 			commandList.bindIndexBuffer(m_IndexBuffer->getBase());
 
@@ -529,8 +554,8 @@ namespace wire {
 			);
 
 			commandList.pushConstants(ShaderType::Vertex, viewProj);
-			commandList.bindDescriptorSet(0, 0);
-			commandList.bindVertexBuffers({ m_TextVertexBuffer->getBase() });
+            commandList.bindShaderResource(0, m_TextResource);
+            commandList.bindVertexBuffers({ m_TextVertexBuffer->getBase() });
 			commandList.bindIndexBuffer(m_IndexBuffer->getBase());
 
 			// apply scissors
@@ -633,7 +658,7 @@ namespace wire {
 		if (textureIndex == -1)
 		{
 			m_Data.RectTextures[m_Data.RectTextureIndex] = texture;
-			m_RectPipeline->updateAllDescriptors(m_Data.RectTextures[m_Data.RectTextureIndex], 0, m_Data.RectTextureIndex);
+			m_RectResource->update(m_Data.RectTextures[m_Data.RectTextureIndex], 0, m_Data.RectTextureIndex);
 			textureIndex = m_Data.RectTextureIndex;
 
 			m_Data.RectTextureIndex++;
@@ -825,7 +850,7 @@ namespace wire {
 		if (texIndex == -1)
 		{
 			m_Data.AtlasTextures[m_Data.AtlasTextureIndex] = fontAtlas;
-			m_TextPipeline->updateAllDescriptors(m_Data.AtlasTextures[m_Data.AtlasTextureIndex], 0, m_Data.AtlasTextureIndex);
+			m_TextResource->update(m_Data.AtlasTextures[m_Data.AtlasTextureIndex], 0, m_Data.AtlasTextureIndex);
 			texIndex = m_Data.AtlasTextureIndex;
 
 			m_Data.AtlasTextureIndex++;

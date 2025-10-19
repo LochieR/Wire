@@ -234,9 +234,13 @@ namespace wire {
         RenderPass* m_RenderPass = nullptr;
 
 		Buffer<VertexBuffer>* m_RectVertexBuffer = nullptr;
+        ShaderResourceLayout* m_RectResourceLayout = nullptr;
+        ShaderResource* m_RectResource = nullptr;
 		GraphicsPipeline* m_RectPipeline = nullptr;
 
         Buffer<VertexBuffer>* m_TextVertexBuffer = nullptr;
+        ShaderResourceLayout* m_TextResourceLayout = nullptr;
+        ShaderResource* m_TextResource = nullptr;
 		GraphicsPipeline* m_TextPipeline = nullptr;
 
         Buffer<VertexBuffer>* m_CircleVertexBuffer = nullptr;

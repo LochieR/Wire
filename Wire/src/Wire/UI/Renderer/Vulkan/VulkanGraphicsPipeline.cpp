@@ -4,6 +4,7 @@
 #include "VulkanRenderer.h"
 #include "VulkanTexture2D.h"
 #include "VulkanRenderPass.h"
+#include "VulkanShaderResource.h"
 
 #include "Wire/Core/Assert.h"
 
@@ -114,7 +115,7 @@ namespace wire {
     }
 
     VulkanGraphicsPipeline::VulkanGraphicsPipeline(Renderer* renderer, const GraphicsPipelineDesc& desc, std::string_view debugName)
-        : m_RenderPass(desc.RenderPass), m_DebugName(debugName)
+        : m_RenderPass(desc.RenderPass), m_ShaderResourceLayout(desc.Layout.ResourceLayout), m_DebugName(debugName)
     {
         ShaderCache& cache = renderer->getShaderCache();
 
@@ -264,63 +265,14 @@ namespace wire {
             range.offset = (uint32_t)pushConstant.Offset;
             range.stageFlags = Utils::ConvertShaderType(pushConstant.Shader);
         }
-
-        const std::vector<ShaderResourceInfo>& shaderResourceInfos = desc.Layout.ShaderResources;
-        std::vector<VkDescriptorSetLayoutBinding> bindings;
-
-        uint32_t i = 0;
-        for (const auto& shaderResource : shaderResourceInfos)
-        {
-            VkDescriptorType descriptorType = Utils::ConvertDescriptorType(shaderResource.ResourceType);
-
-            VkDescriptorSetLayoutBinding binding{};
-            binding.binding = shaderResource.Binding;
-            binding.descriptorType = descriptorType;
-            binding.descriptorCount = shaderResource.ResourceCount;
-            binding.stageFlags = Utils::ConvertShaderType(shaderResource.Shader);
-            binding.pImmutableSamplers = nullptr;
-
-            bindings.push_back(binding);
-
-            i++;
-        }
-
-        VkDescriptorSetLayoutCreateInfo layoutInfo{};
-        layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layoutInfo.bindingCount = (uint32_t)bindings.size();
-        layoutInfo.pBindings = bindings.data();
-
-        result = vkCreateDescriptorSetLayout(vk->getDevice(), &layoutInfo, vk->getAllocator(), &m_SetLayout);
-        VK_CHECK(result, "Failed to create Vulkan descriptor set layout!");
-
-        workingDebugName = m_DebugName;
-        workingDebugName += " (set layout)";
-        VK_DEBUG_NAME(vk->getDevice(), DESCRIPTOR_SET_LAYOUT, m_SetLayout, workingDebugName.c_str());
-
-        std::vector<VkDescriptorSetLayout> setLayouts(WR_FRAMES_IN_FLIGHT);
-        for (size_t i = 0; i < WR_FRAMES_IN_FLIGHT; i++)
-            setLayouts[i] = m_SetLayout;
-
-        VkDescriptorSetAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = vk->getDescriptorPool();
-        allocInfo.descriptorSetCount = WR_FRAMES_IN_FLIGHT;
-        allocInfo.pSetLayouts = setLayouts.data();
-
-        result = vkAllocateDescriptorSets(vk->getDevice(), &allocInfo, m_DescriptorSets.data());
-        VK_CHECK(result, "Failed to allocate Vulkan descriptor set!");
-
-        for (size_t i = 0; i < WR_FRAMES_IN_FLIGHT; i++)
-        {
-            workingDebugName = m_DebugName;
-            workingDebugName += " (frame " + std::to_string(i) + " descriptor set)";
-            VK_DEBUG_NAME(vk->getDevice(), DESCRIPTOR_SET, m_DescriptorSets[i], workingDebugName.c_str());
-        }
+        
+        VulkanShaderResourceLayout* vkShaderResourceLayout = static_cast<VulkanShaderResourceLayout*>(m_ShaderResourceLayout);
+        const std::vector<VkDescriptorSetLayout>& setLayouts = vkShaderResourceLayout->getLayouts();
 
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = 1;
-        pipelineLayoutInfo.pSetLayouts = &m_SetLayout;
+        pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(setLayouts.size());
+        pipelineLayoutInfo.pSetLayouts = setLayouts.data();
         pipelineLayoutInfo.pushConstantRangeCount = (uint32_t)pushConstantRanges.size();
         pipelineLayoutInfo.pPushConstantRanges = pushConstantRanges.data();
 
@@ -358,220 +310,17 @@ namespace wire {
     VulkanGraphicsPipeline::~VulkanGraphicsPipeline()
     {
         m_Renderer->submitResourceFree(
-            [pipeline = m_Pipeline, pipelineLayout = m_PipelineLayout, setLayout = m_SetLayout,
+            [pipeline = m_Pipeline, pipelineLayout = m_PipelineLayout,
             pixelShader = m_PixelShader, vertexShader = m_VertexShader](Renderer* renderer)
             {
                 VulkanRenderer* vk = (VulkanRenderer*)renderer;
 
                 vkDestroyPipeline(vk->getDevice(), pipeline, vk->getAllocator());
                 vkDestroyPipelineLayout(vk->getDevice(), pipelineLayout, vk->getAllocator());
-                vkDestroyDescriptorSetLayout(vk->getDevice(), setLayout, vk->getAllocator());
                 vkDestroyShaderModule(vk->getDevice(), pixelShader, vk->getAllocator());
                 vkDestroyShaderModule(vk->getDevice(), vertexShader, vk->getAllocator());
             }
         );
-    }
-
-    void VulkanGraphicsPipeline::updateDescriptor(Texture2D* texture, uint32_t binding, uint32_t index)
-    {
-        VulkanRenderer* vk = (VulkanRenderer*)m_Renderer;
-        VulkanTexture2D* vkTexture = (VulkanTexture2D*)texture;
-
-        VkDescriptorImageInfo imageInfo{};
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = vkTexture->getImageView();
-        imageInfo.sampler = nullptr;
-
-        VkWriteDescriptorSet descriptorWrite{};
-        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrite.dstSet = getDescriptorSet();
-        descriptorWrite.dstBinding = binding;
-        descriptorWrite.dstArrayElement = index;
-        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-        descriptorWrite.descriptorCount = 1;
-        descriptorWrite.pImageInfo = &imageInfo;
-
-        vkUpdateDescriptorSets(vk->getDevice(), 1, &descriptorWrite, 0, nullptr);
-    }
-
-    void VulkanGraphicsPipeline::updateDescriptor(Sampler* sampler, uint32_t binding, uint32_t index)
-    {
-        VulkanRenderer* vk = (VulkanRenderer*)m_Renderer;
-        VulkanSampler* vkSampler = (VulkanSampler*)sampler;
-
-        VkDescriptorImageInfo imageInfo{};
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = nullptr;
-        imageInfo.sampler = vkSampler->getSampler();
-
-        VkWriteDescriptorSet descriptorWrite{};
-        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrite.dstSet = getDescriptorSet();
-        descriptorWrite.dstBinding = binding;
-        descriptorWrite.dstArrayElement = index;
-        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-        descriptorWrite.descriptorCount = 1;
-        descriptorWrite.pImageInfo = &imageInfo;
-
-        vkUpdateDescriptorSets(vk->getDevice(), 1, &descriptorWrite, 0, nullptr);
-    }
-
-    void VulkanGraphicsPipeline::updateDescriptor(Texture2D* texture, Sampler* sampler, uint32_t binding, uint32_t index)
-    {
-        VulkanRenderer* vk = (VulkanRenderer*)m_Renderer;
-        VulkanTexture2D* vkTexture = (VulkanTexture2D*)texture;
-        VulkanSampler* vkSampler = (VulkanSampler*)sampler;
-
-        VkDescriptorImageInfo imageInfo{};
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = vkTexture->getImageView();
-        imageInfo.sampler = vkSampler->getSampler();
-
-        VkWriteDescriptorSet descriptorWrite{};
-        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrite.dstSet = getDescriptorSet();
-        descriptorWrite.dstBinding = binding;
-        descriptorWrite.dstArrayElement = index;
-        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        descriptorWrite.descriptorCount = 1;
-        descriptorWrite.pImageInfo = &imageInfo;
-
-        vkUpdateDescriptorSets(vk->getDevice(), 1, &descriptorWrite, 0, nullptr);
-    }
-
-    void VulkanGraphicsPipeline::updateDescriptor(BufferBase* uniformBuffer, uint32_t binding, uint32_t index)
-    {
-        VulkanRenderer* vk = (VulkanRenderer*)m_Renderer;
-        VulkanBufferBase* vkBuffer = (VulkanBufferBase*)uniformBuffer;
-
-        VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = vkBuffer->getBuffer();
-        bufferInfo.range = vkBuffer->getSize();
-        bufferInfo.offset = 0;
-
-        VkWriteDescriptorSet descriptorWrite{};
-        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrite.dstSet = getDescriptorSet();
-        descriptorWrite.dstBinding = binding;
-        descriptorWrite.dstArrayElement = index;
-        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        descriptorWrite.descriptorCount = 1;
-        descriptorWrite.pBufferInfo = &bufferInfo;
-
-        vkUpdateDescriptorSets(vk->getDevice(), 1, &descriptorWrite, 0, nullptr);
-    }
-
-    void VulkanGraphicsPipeline::updateFrameDescriptor(Texture2D* texture, uint32_t frameIndex, uint32_t binding, uint32_t index)
-    {
-        VulkanRenderer* vk = (VulkanRenderer*)m_Renderer;
-        VulkanTexture2D* vkTexture = (VulkanTexture2D*)texture;
-
-        VkDescriptorImageInfo imageInfo{};
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = vkTexture->getImageView();
-        imageInfo.sampler = nullptr;
-
-        VkWriteDescriptorSet descriptorWrite{};
-        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrite.dstSet = m_DescriptorSets[frameIndex];
-        descriptorWrite.dstBinding = binding;
-        descriptorWrite.dstArrayElement = index;
-        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-        descriptorWrite.descriptorCount = 1;
-        descriptorWrite.pImageInfo = &imageInfo;
-
-        vkUpdateDescriptorSets(vk->getDevice(), 1, &descriptorWrite, 0, nullptr);
-    }
-
-    void VulkanGraphicsPipeline::updateFrameDescriptor(Sampler* sampler, uint32_t frameIndex, uint32_t binding, uint32_t index)
-    {
-        VulkanRenderer* vk = (VulkanRenderer*)m_Renderer;
-        VulkanSampler* vkSampler = (VulkanSampler*)sampler;
-
-        VkDescriptorImageInfo imageInfo{};
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = nullptr;
-        imageInfo.sampler = vkSampler->getSampler();
-
-        VkWriteDescriptorSet descriptorWrite{};
-        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrite.dstSet = m_DescriptorSets[frameIndex];
-        descriptorWrite.dstBinding = binding;
-        descriptorWrite.dstArrayElement = index;
-        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
-        descriptorWrite.descriptorCount = 1;
-        descriptorWrite.pImageInfo = &imageInfo;
-
-        vkUpdateDescriptorSets(vk->getDevice(), 1, &descriptorWrite, 0, nullptr);
-    }
-
-    void VulkanGraphicsPipeline::updateFrameDescriptor(Texture2D* texture, Sampler* sampler, uint32_t frameIndex, uint32_t binding, uint32_t index)
-    {
-        VulkanRenderer* vk = (VulkanRenderer*)m_Renderer;
-        VulkanTexture2D* vkTexture = (VulkanTexture2D*)texture;
-        VulkanSampler* vkSampler = (VulkanSampler*)sampler;
-
-        VkDescriptorImageInfo imageInfo{};
-        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        imageInfo.imageView = vkTexture->getImageView();
-        imageInfo.sampler = vkSampler->getSampler();
-
-        VkWriteDescriptorSet descriptorWrite{};
-        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrite.dstSet = m_DescriptorSets[frameIndex];
-        descriptorWrite.dstBinding = binding;
-        descriptorWrite.dstArrayElement = index;
-        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        descriptorWrite.descriptorCount = 1;
-        descriptorWrite.pImageInfo = &imageInfo;
-
-        vkUpdateDescriptorSets(vk->getDevice(), 1, &descriptorWrite, 0, nullptr);
-    }
-
-    void VulkanGraphicsPipeline::updateFrameDescriptor(BufferBase* uniformBuffer, uint32_t frameIndex, uint32_t binding, uint32_t index)
-    {
-        VulkanRenderer* vk = (VulkanRenderer*)m_Renderer;
-        VulkanBufferBase* vkBuffer = (VulkanBufferBase*)uniformBuffer;
-
-        VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = vkBuffer->getBuffer();
-        bufferInfo.range = vkBuffer->getSize();
-        bufferInfo.offset = 0;
-
-        VkWriteDescriptorSet descriptorWrite{};
-        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrite.dstSet = m_DescriptorSets[frameIndex];
-        descriptorWrite.dstBinding = binding;
-        descriptorWrite.dstArrayElement = index;
-        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        descriptorWrite.descriptorCount = 1;
-        descriptorWrite.pBufferInfo = &bufferInfo;
-
-        vkUpdateDescriptorSets(vk->getDevice(), 1, &descriptorWrite, 0, nullptr);
-    }
-
-    void VulkanGraphicsPipeline::updateAllDescriptors(Texture2D* texture, uint32_t binding, uint32_t index)
-    {
-        for (uint32_t i = 0; i < WR_FRAMES_IN_FLIGHT; i++)
-            updateFrameDescriptor(texture, i, binding, index);
-    }
-
-    void VulkanGraphicsPipeline::updateAllDescriptors(Sampler* sampler, uint32_t binding, uint32_t index)
-    {
-        for (uint32_t i = 0; i < WR_FRAMES_IN_FLIGHT; i++)
-            updateFrameDescriptor(sampler, i, binding, index);
-    }
-
-    void VulkanGraphicsPipeline::updateAllDescriptors(Texture2D* texture, Sampler* sampler, uint32_t binding, uint32_t index)
-    {
-        for (uint32_t i = 0; i < WR_FRAMES_IN_FLIGHT; i++)
-            updateFrameDescriptor(texture, sampler, i, binding, index);
-    }
-
-    void VulkanGraphicsPipeline::updateAllDescriptors(BufferBase* uniformBuffer, uint32_t binding, uint32_t index)
-    {
-        for (uint32_t i = 0; i < WR_FRAMES_IN_FLIGHT; i++)
-            updateFrameDescriptor(uniformBuffer, i, binding, index);
     }
 
 }

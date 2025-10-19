@@ -6,6 +6,7 @@
 #include "VulkanTexture2D.h"
 #include "VulkanRenderPass.h"
 #include "VulkanFramebuffer.h"
+#include "VulkanShaderResource.h"
 #include "VulkanComputePipeline.h"
 #include "VulkanGraphicsPipeline.h"
 
@@ -699,9 +700,9 @@ namespace wire {
                 vkCmdPushConstants(commandBuffer, layout, Utils::ConvertShaderType(args.Stage), args.Offset, args.Size, args.Data);
                 break;
             }
-            case CommandType::BindDescriptorSet:
+            case CommandType::BindShaderResource:
             {
-                const auto& args = std::get<CommandEntry::BindDescriptorSetArgs>(command.Args);
+                const auto& args = std::get<CommandEntry::BindShaderResourceArgs>(command.Args);
 
                 VkDescriptorSet set = nullptr;
                 VkPipelineLayout layout = nullptr;
@@ -710,14 +711,14 @@ namespace wire {
                 if (args.IsGraphics)
                 {
                     const VulkanGraphicsPipeline* vkPipeline = static_cast<const VulkanGraphicsPipeline*>(args.Graphics);
-                    set = vkPipeline->getDescriptorSet();
+                    set = static_cast<VulkanShaderResource*>(args.Resource)->getSet();
                     layout = vkPipeline->getPipelineLayout();
                     bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
                 }
                 else
                 {
                     const VulkanComputePipeline* vkPipeline = static_cast<const VulkanComputePipeline*>(args.Compute);
-                    set = vkPipeline->getDescriptorSet(args.Set, args.SetIndex);
+                    set = static_cast<VulkanShaderResource*>(args.Resource)->getSet();
                     layout = vkPipeline->getPipelineLayout();
                     bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
                 }
@@ -1093,6 +1094,16 @@ namespace wire {
     RenderPass* VulkanRenderer::createRenderPass(const RenderPassDesc& desc, Framebuffer* framebuffer, std::string_view debugName)
     {
         return new VulkanRenderPass(this, (VulkanFramebuffer*)framebuffer, desc, debugName);
+    }
+
+    ShaderResourceLayout* VulkanRenderer::createShaderResourceLayout(const ShaderResourceLayoutInfo& layoutInfo)
+    {
+        return new VulkanShaderResourceLayout(this, layoutInfo);
+    }
+
+    ShaderResource* VulkanRenderer::createShaderResource(uint32_t set, ShaderResourceLayout* layout)
+    {
+        return new VulkanShaderResource(this, set, layout);
     }
 
     GraphicsPipeline* VulkanRenderer::createGraphicsPipeline(const GraphicsPipelineDesc& desc, std::string_view debugName)

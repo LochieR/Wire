@@ -3,6 +3,7 @@
 #include "Buffer.h"
 #include "RenderPass.h"
 #include "Framebuffer.h"
+#include "ShaderResource.h"
 #include "ComputePipeline.h"
 #include "GraphicsPipeline.h"
 
@@ -25,7 +26,7 @@ namespace wire {
     enum class CommandType
     {
         BeginRenderPass, EndRenderPass,
-        BindPipeline, PushConstants, BindDescriptorSet, SetViewport, SetScissor, SetLineWidth,
+        BindPipeline, PushConstants, BindShaderResource, SetViewport, SetScissor, SetLineWidth,
         BindVertexBuffers, BindIndexBuffer,
         ClearImage,
         Draw, DrawIndexed, Dispatch,
@@ -87,7 +88,7 @@ namespace wire {
             char Data[128];
         };
 
-        struct BindDescriptorSetArgs
+        struct BindShaderResourceArgs
         {
             bool IsGraphics;
             union
@@ -97,7 +98,7 @@ namespace wire {
             };
 
             uint32_t Set;
-            uint32_t SetIndex;
+            ShaderResource* Resource;
         };
 
         struct SetViewportArgs
@@ -199,7 +200,7 @@ namespace wire {
         std::variant<
             BindPipelineArgs,
             PushConstantsArgs,
-            BindDescriptorSetArgs,
+            BindShaderResourceArgs,
             SetViewportArgs,
             SetScissorArgs,
             SetLineWidthArgs,
@@ -243,7 +244,7 @@ namespace wire {
         void bindPipeline(GraphicsPipeline* pipeline);
         void bindPipeline(ComputePipeline* pipeline);
         void pushConstants(ShaderType shaderStage, const void* data, size_t size, size_t offset = 0);
-        void bindDescriptorSet(uint32_t set, uint32_t setIndex);
+        void bindShaderResource(uint32_t set, ShaderResource* resource);
 
         void setViewport(const glm::vec2& position, const glm::vec2& size, float minDepth, float maxDepth);
         void setScissor(const glm::vec2& min, const glm::vec2& max);

@@ -1,4 +1,8 @@
-#ifdef _WIN32
+#include "Windows.h"
+
+#include "Wire/Core/Core.h"
+
+#ifdef WR_PLATFORM_WINDOWS
 #include "Windows.h"
 
 #include <GLFW/glfw3.h>
@@ -61,8 +65,6 @@ namespace wire::windows {
 
 }
 #else
-#include "Windows.h"
-
 namespace wire::windows {
 
     void SetWindowBorderColor(GLFWwindow* window, const glm::vec3& color)

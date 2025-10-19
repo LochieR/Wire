@@ -101,6 +101,8 @@ namespace wire {
         virtual Framebuffer* createFramebuffer(const FramebufferDesc& desc, std::string_view debugName = {}) override;
         virtual RenderPass* createRenderPass(const RenderPassDesc& desc, Swapchain* swapchain, std::string_view debugName = {}) override;
         virtual RenderPass* createRenderPass(const RenderPassDesc& desc, Framebuffer* framebuffer, std::string_view debugName = {}) override;
+        virtual ShaderResourceLayout* createShaderResourceLayout(const ShaderResourceLayoutInfo& layoutInfo) override;
+        virtual ShaderResource* createShaderResource(uint32_t set, ShaderResourceLayout* layout) override;
         virtual GraphicsPipeline* createGraphicsPipeline(const GraphicsPipelineDesc& desc, std::string_view debugName = {}) override;
         virtual ComputePipeline* createComputePipeline(const ComputePipelineDesc& desc, std::string_view debugName = {}) override;
         virtual Texture2D* createTexture2D(const std::filesystem::path& path, std::string_view debugName = {}) override;

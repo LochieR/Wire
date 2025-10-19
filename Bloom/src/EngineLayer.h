@@ -45,9 +45,11 @@ namespace bloom {
 		std::vector<uint32_t> m_ModelIndices;
 		wire::Buffer<wire::VertexBuffer>* m_ModelVertexBuffer = nullptr;
 		wire::Buffer<wire::IndexBuffer>* m_ModelIndexBuffer = nullptr;
-		std::array<wire::Buffer<wire::UniformBuffer>*, WR_FRAMES_IN_FLIGHT> m_ModelUniformBuffers;
-		std::array<glm::mat4*, WR_FRAMES_IN_FLIGHT> m_ModelUniformDatas;
+		wire::Buffer<wire::UniformBuffer>* m_ModelUniformBuffer = nullptr;
+		glm::mat4* m_ModelUniformData = nullptr;
 
+        wire::ShaderResourceLayout* m_ModelResourceLayout = nullptr;
+        wire::ShaderResource* m_ModelResource = nullptr;
 		wire::GraphicsPipeline* m_ModelPipeline = nullptr;
 
 		std::vector<wire::CommandList> m_CommandLists;

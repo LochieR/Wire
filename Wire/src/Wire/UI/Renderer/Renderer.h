@@ -11,6 +11,7 @@
 #include "RenderPass.h"
 #include "Swapchain.h"
 #include "Framebuffer.h"
+#include "ShaderResource.h"
 
 #include <string>
 #include <functional>
@@ -58,6 +59,8 @@ namespace wire {
         virtual Framebuffer* createFramebuffer(const FramebufferDesc& desc, std::string_view debugName = {}) = 0;
         virtual RenderPass* createRenderPass(const RenderPassDesc& desc, Swapchain* swapchain, std::string_view debugName = {}) = 0;
         virtual RenderPass* createRenderPass(const RenderPassDesc& desc, Framebuffer* framebuffer, std::string_view debugName = {}) = 0;
+        virtual ShaderResourceLayout* createShaderResourceLayout(const ShaderResourceLayoutInfo& layoutInfo) = 0;
+        virtual ShaderResource* createShaderResource(uint32_t set, ShaderResourceLayout* layout) = 0;
         virtual GraphicsPipeline* createGraphicsPipeline(const GraphicsPipelineDesc& desc, std::string_view debugName = {}) = 0;
         virtual ComputePipeline* createComputePipeline(const ComputePipelineDesc& desc, std::string_view debugName = {}) = 0;
         virtual Texture2D* createTexture2D(const std::filesystem::path& path, std::string_view debugName = {}) = 0;

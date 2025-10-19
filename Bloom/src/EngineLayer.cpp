@@ -125,22 +125,32 @@ namespace bloom {
 				.Shader = wire::ShaderType::Vertex
 			}
 		);
-		layout.ShaderResources.push_back(
-			wire::ShaderResourceInfo{
-				.ResourceType = wire::ShaderResourceType::UniformBuffer,
-				.Binding = 0,
-				.Shader = wire::ShaderType::Vertex,
-				.ResourceCount = 1
-			}
-		);
-		layout.ShaderResources.push_back(
-			wire::ShaderResourceInfo{
-				.ResourceType = wire::ShaderResourceType::CombinedImageSampler,
-				.Binding = 1,
-				.Shader = wire::ShaderType::Pixel,
-				.ResourceCount = 1
-			}
-		);
+        wire::ShaderResourceInfo uniformResource = wire::ShaderResourceInfo{
+            .Type = wire::ShaderResourceType::UniformBuffer,
+            .Binding = 0,
+            .Stage = wire::ShaderType::Vertex,
+            .ArrayCount = 1
+        };
+		
+        wire::ShaderResourceInfo imageSamplerResource = wire::ShaderResourceInfo{
+            .Type = wire::ShaderResourceType::CombinedImageSampler,
+            .Binding = 1,
+            .Stage = wire::ShaderType::Pixel,
+            .ArrayCount = 1
+        };
+        
+        wire::ShaderResourceLayoutInfo layoutInfo = wire::ShaderResourceLayoutInfo{
+            .Sets = {
+                wire::ShaderResourceSetInfo{
+                    .Resources = { uniformResource, imageSamplerResource }
+                }
+            }
+        };
+        
+        m_ModelResourceLayout = m_Renderer->createShaderResourceLayout(layoutInfo);
+        layout.ResourceLayout = m_ModelResourceLayout;
+        
+        m_ModelResource = m_Renderer->createShaderResource(0, m_ModelResourceLayout);
 
 		wire::GraphicsPipelineDesc pipelineDesc{};
 		pipelineDesc.Layout = layout;
@@ -162,14 +172,11 @@ namespace bloom {
 
 		m_ModelSampler = m_Renderer->createSampler(samplerDesc);
 
-		for (size_t i = 0; i < WR_FRAMES_IN_FLIGHT; i++)
-		{
-			m_ModelUniformBuffers[i] = m_Renderer->createBuffer<wire::UniformBuffer>(sizeof(glm::mat4) * 3);
-			m_ModelUniformDatas[i] = reinterpret_cast<glm::mat4*>(m_ModelUniformBuffers[i]->map(sizeof(glm::mat4) * 3));
+        m_ModelUniformBuffer = m_Renderer->createBuffer<wire::UniformBuffer>(sizeof(glm::mat4) * 3);
+        m_ModelUniformData = reinterpret_cast<glm::mat4*>(m_ModelUniformBuffer->map(sizeof(glm::mat4) * 3));
 
-			m_ModelPipeline->updateFrameDescriptor(m_ModelUniformBuffers[i]->getBase(), static_cast<uint32_t>(i), 0, 0);
-		}
-		m_ModelPipeline->updateAllDescriptors(m_ModelTexture, m_ModelSampler, 1, 0);
+        m_ModelResource->update(m_ModelUniformBuffer, 0, 0);
+		m_ModelResource->update(m_ModelTexture, m_ModelSampler, 1, 0);
 
 		m_CommandLists.resize(m_Renderer->getNumFramesInFlight());
 		for (size_t i = 0; i < m_Renderer->getNumFramesInFlight(); i++)
@@ -180,15 +187,13 @@ namespace bloom {
 
 	void EngineLayer::onDetach()
 	{
-		for (size_t i = 0; i < WR_FRAMES_IN_FLIGHT; i++)
-		{
-			m_ModelUniformBuffers[i]->unmap();
-
-			delete m_ModelUniformBuffers[i];
-		}
+        m_ModelUniformBuffer->unmap();
+        delete m_ModelUniformBuffer;
 
 		delete m_ModelSampler;
 		delete m_ModelPipeline;
+        delete m_ModelResource;
+        delete m_ModelResourceLayout;
 		delete m_ModelIndexBuffer;
 		delete m_ModelVertexBuffer;
 		delete m_ModelTexture;
@@ -216,7 +221,7 @@ namespace bloom {
 		uniformData.Proj = glm::perspective(glm::radians(45.0f), m_Renderer->getExtent().x / m_Renderer->getExtent().y, 0.1f, 10.0f);
 		uniformData.Proj[1][1] *= -1.0f;
 
-		std::memcpy(m_ModelUniformDatas[m_Renderer->getFrameIndex()], &uniformData, sizeof(glm::mat4) * 3);
+		std::memcpy(m_ModelUniformData, &uniformData, sizeof(glm::mat4) * 3);
 
 		glm::vec2 extent = m_Renderer->getExtent();
 
@@ -226,7 +231,7 @@ namespace bloom {
 		commandList.bindPipeline(m_ModelPipeline);
 		commandList.setViewport({ 0.0f, 0.0f }, extent, 0.0f, 1.0f);
 		commandList.setScissor({ 0.0f, 0.0f }, extent);
-		commandList.bindDescriptorSet(0, 0);
+        commandList.bindShaderResource(0, m_ModelResource);
 		commandList.bindVertexBuffers({ m_ModelVertexBuffer->getBase() });
 		commandList.bindIndexBuffer(m_ModelIndexBuffer->getBase());
 

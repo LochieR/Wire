@@ -93,17 +93,17 @@ namespace wire {
         m_CurrentScope.Commands.push_back(entry);
     }
 
-    void CommandList::bindDescriptorSet(uint32_t set, uint32_t setIndex)
+    void CommandList::bindShaderResource(uint32_t set, ShaderResource* resource)
     {
         WR_ASSERT(m_CurrentGraphicsPipeline || m_CurrentComputePipeline, "cannot bind descriptor set without binding a pipeline");
 
         CommandEntry entry;
-        entry.Type = CommandType::BindDescriptorSet;
+        entry.Type = CommandType::BindShaderResource;
 
         if (m_CurrentGraphicsPipeline)
-            entry.Args = CommandEntry::BindDescriptorSetArgs{ .IsGraphics = true, .Graphics = m_CurrentGraphicsPipeline, .Set = set, .SetIndex = setIndex };
+            entry.Args = CommandEntry::BindShaderResourceArgs{ .IsGraphics = true, .Graphics = m_CurrentGraphicsPipeline, .Set = set, .Resource = resource };
         else if (m_CurrentComputePipeline)
-            entry.Args = CommandEntry::BindDescriptorSetArgs{ .IsGraphics = false, .Compute = m_CurrentComputePipeline, .Set = set, .SetIndex = setIndex };
+            entry.Args = CommandEntry::BindShaderResourceArgs{ .IsGraphics = false, .Compute = m_CurrentComputePipeline, .Set = set, .Resource = resource };
 
         m_CurrentScope.Commands.push_back(entry);
     }
