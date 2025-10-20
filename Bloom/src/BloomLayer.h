@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Wire/Core/Application.h"
-#include "Wire/UI/Renderer/Renderer.h"
+#include "Wire/Renderer/Device.h"
 
 #include <glm/glm.hpp>
 

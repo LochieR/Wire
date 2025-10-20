@@ -1,7 +1,6 @@
 #include "Wire.h"
 
 #include "EngineLayer.h"
-#include "UIExampleLayer.h"
 
 #if !defined(WR_DIST) || !defined(WR_PLATFORM_WINDOWS)
 

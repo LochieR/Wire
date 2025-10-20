@@ -2,16 +2,16 @@
 
 #include "Wire/Audio/AudioEngine.h"
 
-#include "Wire/UI/Core/Canvas.h"
-#include "Wire/UI/Renderer/Renderer.h"
-#include "Wire/UI/Components/ComponentLibrary.h"
+#include "Wire/Renderer/Instance.h"
 
-#include "Wire/UI/Utils/Windows.h"
-#include "Wire/UI/Utils/macOS.h"
+#include "Wire/Utils/Windows.h"
+#include "Wire/Utils/macOS.h"
 
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+
+#include <imgui.h>
 
 #include <array>
 #include <vector>
@@ -106,10 +106,12 @@ namespace wire {
         
         macOS::CreateMenuBar(menus.size(), menus.data());
 
-		RendererDesc rendererDesc{};
-		rendererDesc.API = RendererAPI::Vulkan;
-		rendererDesc.ShaderCache.CachePath = "wire.shadercache";
-		rendererDesc.FontCache.CachePath = "wire.fontcache";
+		InstanceInfo instanceInfo{};
+		instanceInfo.API = RendererAPI::Vulkan;
+
+		DeviceInfo deviceInfo{};
+		deviceInfo.ShaderCache.CachePath = "wire.shadercache";
+		deviceInfo.FontCache.CachePath = "wire.fontcache";
         
         if (!std::filesystem::exists("shaders/"))
             std::filesystem::create_directory("shaders/");
@@ -120,7 +122,7 @@ namespace wire {
             {
                 if (dir.path().string().ends_with(".compute.hlsl"))
                 {
-                    rendererDesc.ShaderCache.ShaderInfos.push_back(ShaderInfo{
+                    deviceInfo.ShaderCache.ShaderInfos.push_back(ShaderInfo{
                         .Path = dir.path(),
                         .IsGraphics = false,
                         .VertexOrComputeEntryPoint = "CShader"
@@ -129,7 +131,7 @@ namespace wire {
                     continue;
                 }
 
-                rendererDesc.ShaderCache.ShaderInfos.push_back(ShaderInfo{
+                deviceInfo.ShaderCache.ShaderInfos.push_back(ShaderInfo{
                     .Path = dir.path(),
                     .IsGraphics = true,
                     .VertexOrComputeEntryPoint = "VShader",
@@ -145,44 +147,36 @@ namespace wire {
         {
             if (dir.path().has_extension() && dir.path().extension() == ".ttf")
             {
-                rendererDesc.FontCache.FontInfos.push_back(FontInfo{
+                deviceInfo.FontCache.FontInfos.push_back(FontInfo{
                     .FontTTFPath = dir.path()
                 });
             }
         }
         
-        SwapchainDesc scDesc = {};
-        scDesc.Attachments = {
+        SwapchainInfo scInfo = {};
+        scInfo.Attachments = {
             AttachmentFormat::SwapchainColorDefault,
             AttachmentFormat::SwapchainDepthDefault
         };
 
-		m_Renderer = createRenderer(rendererDesc, scDesc);
+		m_Instance = createInstance(instanceInfo);
+		m_Device = m_Instance->createDevice(deviceInfo, scInfo);
 
 		m_LayerStack = new LayerStack();
+		m_ImGuiLayer = new ImGuiLayer();
+		pushOverlay(m_ImGuiLayer);
 	}
 
 	Application::~Application()
 	{
 		delete m_LayerStack;
-		delete m_Renderer;
+		delete m_Device;
+		delete m_Instance;
 
 		glfwDestroyWindow(m_Window);
 		glfwTerminate();
 
 		Input::setWindow(nullptr);
-	}
-
-	static void testTrigger(Layout& layout)
-	{
-		layout.clear();
-
-		static std::wstring text = L"";
-		static std::wstring otherText = L"";
-		
-		layout.addButton("hi there");
-		layout.addInputText(text, { 200.0f, 20.0f });
-		layout.addInputText(otherText, { 150.0f, 20.0f });
 	}
 
 	void Application::run()
@@ -193,12 +187,23 @@ namespace wire {
 			float timestep = time - m_LastFrameTime;
 			m_LastFrameTime = time;
 
-			m_Renderer->beginFrame();
+			m_Device->beginFrame();
+
+			m_ImGuiLayer->begin();
+
+			ImGui::Begin("test");
+
+			if (ImGui::Button("hello"))
+				WR_INFO("hello");
+
+			ImGui::End();
+
+			m_ImGuiLayer->end();
 
 			for (Layer* layer : *m_LayerStack)
 				layer->onUpdate(timestep);
 
-			m_Renderer->endFrame();
+			m_Device->endFrame();
 			glfwPollEvents();
 
 			for (auto& func : m_PostFrameTasks)

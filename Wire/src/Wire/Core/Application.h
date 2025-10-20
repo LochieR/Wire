@@ -3,8 +3,9 @@
 #include "Event.h"
 #include "Input.h"
 #include "LayerStack.h"
+#include "Wire/UI/ImGuiLayer.h"
 
-#include "Wire/UI/Renderer/Renderer.h"
+#include "Wire/Renderer/Instance.h"
 
 #include <string>
 #include <cstdint>
@@ -50,7 +51,8 @@ namespace wire {
 
 		void submitPostFrameTask(std::function<void(Application&)>&& func);
 
-		Renderer* getRenderer() const { return m_Renderer; }
+		Instance* getInstance() const { return m_Instance; }
+		Device* getDevice() const { return m_Device; }
 		const ApplicationDesc& getDesc() const { return m_Desc; }
 
 		static Application& get() { return *s_App; }
@@ -58,9 +60,11 @@ namespace wire {
 		ApplicationDesc m_Desc;
 
 		GLFWwindow* m_Window;
-		Renderer* m_Renderer;
+		Instance* m_Instance;
+		Device* m_Device;
 
 		LayerStack* m_LayerStack = nullptr;
+		ImGuiLayer* m_ImGuiLayer = nullptr;
 
 		float m_LastFrameTime = 0.0f;
 

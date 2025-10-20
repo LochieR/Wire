@@ -34,7 +34,7 @@ namespace bloom {
 		virtual void onUpdate(float timestep) override;
 		virtual void onEvent(wire::Event& event) override;
 	private:
-		wire::Renderer* m_Renderer = nullptr;
+		wire::Device* m_Device = nullptr;
 
         wire::RenderPass* m_RenderPass = nullptr;
         

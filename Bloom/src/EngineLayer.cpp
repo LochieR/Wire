@@ -78,15 +78,15 @@ namespace bloom {
 
 	void EngineLayer::onAttach()
 	{
-		m_Renderer = wire::Application::get().getRenderer();
+		m_Device = wire::Application::get().getDevice();
         
         wire::RenderPassDesc renderPassDesc{};
         wire::AttachmentDesc colorAttachment{};
         colorAttachment.Format = wire::AttachmentFormat::SwapchainColorDefault;
         colorAttachment.Usage = wire::AttachmentLayout::Present;
-        colorAttachment.PreviousAttachmentUsage = wire::AttachmentLayout::Undefined;
+        colorAttachment.PreviousAttachmentUsage = wire::AttachmentLayout::Color;
         colorAttachment.Samples = wire::AttachmentDesc::Count1Bit;
-        colorAttachment.LoadOp = wire::LoadOperation::Clear;
+        colorAttachment.LoadOp = wire::LoadOperation::Load;
         colorAttachment.StoreOp = wire::StoreOperation::Store;
         colorAttachment.StencilLoadOp = wire::LoadOperation::DontCare;
         colorAttachment.StencilStoreOp = wire::StoreOperation::DontCare;
@@ -102,13 +102,13 @@ namespace bloom {
         depthAttachment.StencilStoreOp = wire::StoreOperation::DontCare;
         
         renderPassDesc.Attachments = { colorAttachment, depthAttachment };
-        m_RenderPass = m_Renderer->createRenderPass(renderPassDesc, m_Renderer->getSwapchain(), "EngineLayer::m_RenderPass");
+        m_RenderPass = m_Device->createRenderPass(renderPassDesc, m_Device->getSwapchain(), "EngineLayer::m_RenderPass");
 
-		m_ModelTexture = m_Renderer->createTexture2D("models/viking_room.png");
+		m_ModelTexture = m_Device->createTexture2D("models/viking_room.png");
 		Utils::LoadModel("models/viking_room.obj", m_ModelVertices, m_ModelIndices);
 
-		m_ModelVertexBuffer = m_Renderer->createBuffer<wire::VertexBuffer>(m_ModelVertices.size() * sizeof(ModelVertex), m_ModelVertices.data());
-		m_ModelIndexBuffer = m_Renderer->createBuffer<wire::IndexBuffer>(m_ModelIndices.size() * sizeof(uint32_t), m_ModelIndices.data());
+		m_ModelVertexBuffer = m_Device->createBuffer<wire::VertexBuffer>(m_ModelVertices.size() * sizeof(ModelVertex), m_ModelVertices.data());
+		m_ModelIndexBuffer = m_Device->createBuffer<wire::IndexBuffer>(m_ModelIndices.size() * sizeof(uint32_t), m_ModelIndices.data());
 
 		wire::InputLayout layout{};
 		layout.VertexBufferLayout = {
@@ -126,17 +126,17 @@ namespace bloom {
 			}
 		);
         wire::ShaderResourceInfo uniformResource = wire::ShaderResourceInfo{
-            .Type = wire::ShaderResourceType::UniformBuffer,
             .Binding = 0,
-            .Stage = wire::ShaderType::Vertex,
-            .ArrayCount = 1
+            .Type = wire::ShaderResourceType::UniformBuffer,
+            .ArrayCount = 1,
+            .Stage = wire::ShaderType::Vertex
         };
 		
         wire::ShaderResourceInfo imageSamplerResource = wire::ShaderResourceInfo{
-            .Type = wire::ShaderResourceType::CombinedImageSampler,
             .Binding = 1,
+            .Type = wire::ShaderResourceType::CombinedImageSampler,
+            .ArrayCount = 1,
             .Stage = wire::ShaderType::Pixel,
-            .ArrayCount = 1
         };
         
         wire::ShaderResourceLayoutInfo layoutInfo = wire::ShaderResourceLayoutInfo{
@@ -147,10 +147,10 @@ namespace bloom {
             }
         };
         
-        m_ModelResourceLayout = m_Renderer->createShaderResourceLayout(layoutInfo);
+        m_ModelResourceLayout = m_Device->createShaderResourceLayout(layoutInfo);
         layout.ResourceLayout = m_ModelResourceLayout;
         
-        m_ModelResource = m_Renderer->createShaderResource(0, m_ModelResourceLayout);
+        m_ModelResource = m_Device->createShaderResource(0, m_ModelResourceLayout);
 
 		wire::GraphicsPipelineDesc pipelineDesc{};
 		pipelineDesc.Layout = layout;
@@ -158,7 +158,7 @@ namespace bloom {
 		pipelineDesc.Topology = wire::PrimitiveTopology::TriangleList;
         pipelineDesc.RenderPass = m_RenderPass;
 
-		m_ModelPipeline = m_Renderer->createGraphicsPipeline(pipelineDesc);
+		m_ModelPipeline = m_Device->createGraphicsPipeline(pipelineDesc);
 
 		wire::SamplerDesc samplerDesc{};
 		samplerDesc.MinFilter = wire::SamplerFilter::Linear;
@@ -167,21 +167,21 @@ namespace bloom {
 		samplerDesc.AddressModeV = wire::AddressMode::Repeat;
 		samplerDesc.AddressModeW = wire::AddressMode::Repeat;
 		samplerDesc.EnableAnisotropy = true;
-		samplerDesc.MaxAnisotropy = m_Renderer->getMaxAnisotropy();
+		samplerDesc.MaxAnisotropy = m_Device->getMaxAnisotropy();
 		samplerDesc.BorderColor = wire::BorderColor::IntOpaqueBlack;
 
-		m_ModelSampler = m_Renderer->createSampler(samplerDesc);
+		m_ModelSampler = m_Device->createSampler(samplerDesc);
 
-        m_ModelUniformBuffer = m_Renderer->createBuffer<wire::UniformBuffer>(sizeof(glm::mat4) * 3);
+        m_ModelUniformBuffer = m_Device->createBuffer<wire::UniformBuffer>(sizeof(glm::mat4) * 3);
         m_ModelUniformData = reinterpret_cast<glm::mat4*>(m_ModelUniformBuffer->map(sizeof(glm::mat4) * 3));
 
         m_ModelResource->update(m_ModelUniformBuffer, 0, 0);
 		m_ModelResource->update(m_ModelTexture, m_ModelSampler, 1, 0);
 
-		m_CommandLists.resize(m_Renderer->getNumFramesInFlight());
-		for (size_t i = 0; i < m_Renderer->getNumFramesInFlight(); i++)
+		m_CommandLists.resize(m_Device->getInstance()->getNumFramesInFlight());
+		for (size_t i = 0; i < m_Device->getInstance()->getNumFramesInFlight(); i++)
 		{
-			m_CommandLists[i] = m_Renderer->createCommandList();
+			m_CommandLists[i] = m_Device->createCommandList();
 		}
 	}
 
@@ -202,7 +202,7 @@ namespace bloom {
 
 	void EngineLayer::onUpdate(float timestep)
 	{
-		wire::CommandList& commandList = m_CommandLists[m_Renderer->getFrameIndex()];
+		wire::CommandList& commandList = m_CommandLists[m_Device->getFrameIndex()];
 
 		struct
 		{
@@ -218,12 +218,12 @@ namespace bloom {
 
 		uniformData.Model = glm::rotate(glm::mat4(1.0f), time * glm::radians(30.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		uniformData.View = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		uniformData.Proj = glm::perspective(glm::radians(45.0f), m_Renderer->getExtent().x / m_Renderer->getExtent().y, 0.1f, 10.0f);
+		uniformData.Proj = glm::perspective(glm::radians(45.0f), m_Device->getExtent().x / m_Device->getExtent().y, 0.1f, 10.0f);
 		uniformData.Proj[1][1] *= -1.0f;
 
 		std::memcpy(m_ModelUniformData, &uniformData, sizeof(glm::mat4) * 3);
 
-		glm::vec2 extent = m_Renderer->getExtent();
+		glm::vec2 extent = m_Device->getExtent();
 
 		commandList.begin();
 		commandList.beginRenderPass(m_RenderPass);
@@ -240,7 +240,7 @@ namespace bloom {
 		commandList.endRenderPass();
 		commandList.end();
 
-		m_Renderer->submitCommandList(commandList);
+		m_Device->submitCommandList(commandList);
 	}
 
 	void EngineLayer::onEvent(wire::Event& event)

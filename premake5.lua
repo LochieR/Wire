@@ -7,6 +7,7 @@ IncludeDir["glm"] = "%{wks.location}/external/glm"
 IncludeDir["msdfgen"] = "%{wks.location}/external/msdf-atlas-gen/msdfgen"
 IncludeDir["msdf_atlas_gen"] = "%{wks.location}/external/msdf-atlas-gen/msdf-atlas-gen"
 IncludeDir["portaudio"] = "%{wks.location}/external/portaudio/include"
+IncludeDir["imgui"] = "%{wks.location}/external/imgui"
 if os.host() == "windows" then
 	IncludeDir["Vulkan"] = "%{VULKAN_SDK}/Include"
 elseif os.host() == "macosx" then
@@ -79,6 +80,7 @@ group "Dependencies"
     include "external/GLFW"
 	include "external/msdf-atlas-gen"
 	include "external/portaudio"
+	include "external/imgui"
 group ""
 
 project "wire"
@@ -123,6 +125,7 @@ project "wire"
 		"%{IncludeDir.portaudio}",
 		"%{IncludeDir.msdf_atlas_gen}",
 		"%{IncludeDir.msdfgen}",
+		"%{IncludeDir.imgui}",
         "%{IncludeDir.Vulkan}"
     }
 
@@ -131,6 +134,7 @@ project "wire"
         "GLFW",
 		"msdf-atlas-gen",
 		"portaudio",
+		"imgui",
         "%{Library.Vulkan}"
     }
 
