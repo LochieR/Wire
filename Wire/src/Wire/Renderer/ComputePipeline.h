@@ -1,5 +1,6 @@
 #pragma once
 
+#include "IResource.h"
 #include "GraphicsPipeline.h"
 
 #include <string>
@@ -18,7 +19,7 @@ namespace wire {
         ComputeInputLayout Layout;
     };
     
-    class ComputePipeline
+    class ComputePipeline : public IResource
     {
     public:
         virtual ~ComputePipeline() = default;

@@ -265,7 +265,7 @@ namespace wire {
             range.stageFlags = Utils::ConvertShaderType(pushConstant.Shader);
         }
         
-        VulkanShaderResourceLayout* vkShaderResourceLayout = static_cast<VulkanShaderResourceLayout*>(m_ShaderResourceLayout);
+        VulkanShaderResourceLayout* vkShaderResourceLayout = static_cast<VulkanShaderResourceLayout*>(m_ShaderResourceLayout.get());
         const std::vector<VkDescriptorSetLayout>& setLayouts = vkShaderResourceLayout->getLayouts();
 
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
@@ -295,7 +295,7 @@ namespace wire {
         pipelineInfo.pColorBlendState = &colorBlending;
         pipelineInfo.pDynamicState = &dynamicState;
         pipelineInfo.layout = m_PipelineLayout;
-        pipelineInfo.renderPass = ((VulkanRenderPass*)m_RenderPass)->getRenderPass();
+        pipelineInfo.renderPass = ((VulkanRenderPass*)m_RenderPass.get())->getRenderPass();
         pipelineInfo.subpass = 0;
 
         result = vkCreateGraphicsPipelines(vk->getDevice(), 0, 1, &pipelineInfo, vk->getAllocator(), &m_Pipeline);
@@ -308,18 +308,32 @@ namespace wire {
 
     VulkanGraphicsPipeline::~VulkanGraphicsPipeline()
     {
-        m_Device->submitResourceFree(
-            [pipeline = m_Pipeline, pipelineLayout = m_PipelineLayout,
-            pixelShader = m_PixelShader, vertexShader = m_VertexShader](Device* device)
-            {
-                VulkanDevice* vk = (VulkanDevice*)device;
+        destroy();
+    }
 
-                vkDestroyPipeline(vk->getDevice(), pipeline, vk->getAllocator());
-                vkDestroyPipelineLayout(vk->getDevice(), pipelineLayout, vk->getAllocator());
-                vkDestroyShaderModule(vk->getDevice(), pixelShader, vk->getAllocator());
-                vkDestroyShaderModule(vk->getDevice(), vertexShader, vk->getAllocator());
-            }
-        );
+    void VulkanGraphicsPipeline::destroy()
+    {
+        if (m_Valid && m_Device)
+        {
+            m_Device->submitResourceFree(
+                [pipeline = m_Pipeline, pipelineLayout = m_PipelineLayout,
+                pixelShader = m_PixelShader, vertexShader = m_VertexShader](Device* device)
+                {
+                    VulkanDevice* vk = (VulkanDevice*)device;
+
+                    vkDestroyPipeline(vk->getDevice(), pipeline, vk->getAllocator());
+                    vkDestroyPipelineLayout(vk->getDevice(), pipelineLayout, vk->getAllocator());
+                    vkDestroyShaderModule(vk->getDevice(), pixelShader, vk->getAllocator());
+                    vkDestroyShaderModule(vk->getDevice(), vertexShader, vk->getAllocator());
+                }
+            );
+        }
+    }
+
+    void VulkanGraphicsPipeline::invalidate() noexcept
+    {
+        m_Valid = false;
+        m_Device = nullptr;
     }
 
 }

@@ -51,8 +51,8 @@ namespace wire {
 
 		void submitPostFrameTask(std::function<void(Application&)>&& func);
 
-		Instance* getInstance() const { return m_Instance; }
-		Device* getDevice() const { return m_Device; }
+		Instance& getInstance() const { return *m_Instance; }
+		const std::shared_ptr<Device>& getDevice() const { return m_Device; }
 		const ApplicationDesc& getDesc() const { return m_Desc; }
 
 		static Application& get() { return *s_App; }
@@ -60,8 +60,8 @@ namespace wire {
 		ApplicationDesc m_Desc;
 
 		GLFWwindow* m_Window;
-		Instance* m_Instance;
-		Device* m_Device;
+		std::unique_ptr<Instance> m_Instance;
+		std::shared_ptr<Device> m_Device;
 
 		LayerStack* m_LayerStack = nullptr;
 		ImGuiLayer* m_ImGuiLayer = nullptr;

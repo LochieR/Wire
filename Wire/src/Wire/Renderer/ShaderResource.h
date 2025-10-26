@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Buffer.h"
+#include "IResource.h"
 #include "Texture2D.h"
 #include "ShaderCache.h"
 
@@ -37,27 +38,21 @@ namespace wire {
         std::vector<ShaderResourceSetInfo> Sets;
     };
     
-    class ShaderResourceLayout
+    class ShaderResourceLayout : public IResource
     {
     public:
         virtual ~ShaderResourceLayout() = default;
     };
 
-    class ShaderResource
+    class ShaderResource : public IResource
     {
     public:
         virtual ~ShaderResource() = default;
         
-        virtual void update(Texture2D* texture, uint32_t binding, uint32_t index) = 0;
-        virtual void update(Sampler* sampler, uint32_t binding, uint32_t index) = 0;
-        virtual void update(Texture2D* texture, Sampler* sampler, uint32_t binding, uint32_t index) = 0;
-        virtual void update(BufferBase* uniformBuffer, uint32_t binding, uint32_t index) = 0;
-        
-        template<BufferType Type>
-        std::enable_if_t<(Type & UniformBuffer) == UniformBuffer, void> update(Buffer<Type>* uniformBuffer, uint32_t binding, uint32_t index)
-        {
-            update(uniformBuffer->getBase(), binding, index);
-        }
+        virtual void update(const std::shared_ptr<Texture2D>& texture, uint32_t binding, uint32_t index) = 0;
+        virtual void update(const std::shared_ptr<Sampler>& sampler, uint32_t binding, uint32_t index) = 0;
+        virtual void update(const std::shared_ptr<Texture2D>& texture, const std::shared_ptr<Sampler>& sampler, uint32_t binding, uint32_t index) = 0;
+        virtual void update(const std::shared_ptr<Buffer>& uniformBuffer, uint32_t binding, uint32_t index) = 0;
     };
 
 }

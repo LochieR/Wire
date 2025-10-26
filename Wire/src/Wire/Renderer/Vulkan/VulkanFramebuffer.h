@@ -28,6 +28,9 @@ namespace wire {
         VkImageView getDepthView() const { return m_DepthView; }
 
         VkImageView getMip(uint32_t level) const { return m_Mips.empty() && level == 0 ? m_View : m_Mips[level]; }
+    protected:
+        virtual void destroy() override;
+        virtual void invalidate() noexcept override;
     private:
         Device* m_Device;
         FramebufferDesc m_Desc;

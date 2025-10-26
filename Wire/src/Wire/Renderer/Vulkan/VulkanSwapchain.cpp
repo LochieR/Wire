@@ -55,11 +55,17 @@ namespace wire {
 
     VulkanSwapchain::~VulkanSwapchain()
     {
-        disposeSwapchain();
+        destroy();
     }
 
     bool VulkanSwapchain::acquireNextImage(uint32_t& imageIndex)
     {
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "Swapchain used after destroyed ({})", m_DebugName);
+            return false;
+        }
+        
         VkSemaphore currentSemaphore = m_Device->getCurrentImageAvailableSemaphore();
         VkResult result = vkAcquireNextImageKHR(m_Device->getDevice(), m_Swapchain, std::numeric_limits<uint32_t>::max(), currentSemaphore, nullptr, &imageIndex);
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || Application::get().wasWindowResized())
@@ -94,6 +100,12 @@ namespace wire {
 
     void VulkanSwapchain::recreateSwapchain()
     {
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "Swapchain used after destroyed ({})", m_DebugName);
+            return;
+        }
+        
         disposeSwapchain();
 
         VkSwapchainKHR oldSwapchain = m_Swapchain; // device shouldn't call the resource free queue before now so still valid
@@ -361,6 +373,20 @@ namespace wire {
 
             m_Attachments.push_back(attachment);
         }
+    }
+
+    void VulkanSwapchain::destroy()
+    {
+        if (m_Valid && m_Device)
+        {
+            disposeSwapchain();
+        }
+    }
+
+    void VulkanSwapchain::invalidate() noexcept
+    {
+        m_Valid = false;
+        m_Device = nullptr;
     }
 
     const std::vector<VkImageView> VulkanSwapchain::getAttachmentViews(uint32_t imageIndex) const

@@ -34,23 +34,23 @@ namespace bloom {
 		virtual void onUpdate(float timestep) override;
 		virtual void onEvent(wire::Event& event) override;
 	private:
-		wire::Device* m_Device = nullptr;
+		std::shared_ptr<wire::Device> m_Device = nullptr;
 
-        wire::RenderPass* m_RenderPass = nullptr;
+        std::shared_ptr<wire::RenderPass> m_RenderPass = nullptr;
         
-		wire::Texture2D* m_ModelTexture = nullptr;
-		wire::Sampler* m_ModelSampler = nullptr;
+		std::shared_ptr<wire::Texture2D> m_ModelTexture = nullptr;
+		std::shared_ptr<wire::Sampler> m_ModelSampler = nullptr;
 
 		std::vector<ModelVertex> m_ModelVertices;
 		std::vector<uint32_t> m_ModelIndices;
-		wire::Buffer<wire::VertexBuffer>* m_ModelVertexBuffer = nullptr;
-		wire::Buffer<wire::IndexBuffer>* m_ModelIndexBuffer = nullptr;
-		wire::Buffer<wire::UniformBuffer>* m_ModelUniformBuffer = nullptr;
+		std::shared_ptr<wire::Buffer> m_ModelVertexBuffer = nullptr;
+		std::shared_ptr<wire::Buffer> m_ModelIndexBuffer = nullptr;
+		std::shared_ptr<wire::Buffer> m_ModelUniformBuffer = nullptr;
 		glm::mat4* m_ModelUniformData = nullptr;
 
-        wire::ShaderResourceLayout* m_ModelResourceLayout = nullptr;
-        wire::ShaderResource* m_ModelResource = nullptr;
-		wire::GraphicsPipeline* m_ModelPipeline = nullptr;
+        std::shared_ptr<wire::ShaderResourceLayout> m_ModelResourceLayout = nullptr;
+        std::shared_ptr<wire::ShaderResource> m_ModelResource = nullptr;
+		std::shared_ptr<wire::GraphicsPipeline> m_ModelPipeline = nullptr;
 
 		std::vector<wire::CommandList> m_CommandLists;
 	};

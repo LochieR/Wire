@@ -31,7 +31,7 @@ namespace wire {
         VulkanInstance(const InstanceInfo& instanceInfo);
         virtual ~VulkanInstance();
 
-        virtual Device* createDevice(const DeviceInfo& deviceInfo, const SwapchainInfo& swapchainInfo) override;
+        virtual std::shared_ptr<Device> createDevice(const DeviceInfo& deviceInfo, const SwapchainInfo& swapchainInfo) override;
         
         virtual uint32_t getNumFramesInFlight() const override { return WR_FRAMES_IN_FLIGHT; }
 
@@ -47,6 +47,8 @@ namespace wire {
         VkAllocationCallbacks* m_Allocator = nullptr;
         VkDebugUtilsMessengerEXT m_DebugMessenger = nullptr;
         VkSurfaceKHR m_Surface = nullptr;
+        
+        std::vector<std::shared_ptr<IResource>> m_Resources;
     };
 
 }

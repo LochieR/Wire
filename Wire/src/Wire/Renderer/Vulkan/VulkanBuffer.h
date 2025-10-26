@@ -6,11 +6,11 @@
 
 namespace wire {
 
-    class VulkanBufferBase : public BufferBase
+    class VulkanBuffer : public Buffer
     {
     public:
-        VulkanBufferBase(Device* device, BufferType type, size_t size, const void* data = nullptr, std::string_view debugName = {});
-        virtual ~VulkanBufferBase();
+        VulkanBuffer(Device* device, BufferType type, size_t size, const void* data = nullptr, std::string_view debugName = {});
+        virtual ~VulkanBuffer();
 
         virtual void setData(const void* data, size_t size, size_t offset = 0) override;
         virtual void setData(int data, size_t size) override;
@@ -21,8 +21,12 @@ namespace wire {
         virtual size_t getSize() const override { return m_Size; }
 
         VkBuffer getBuffer() const { return m_Buffer; }
+        
+    protected:
+        virtual void destroy() override;
+        virtual void invalidate() noexcept override;
     private:
-        Device* m_Device;
+        Device* m_Device = nullptr;
         BufferType m_Type;
 
         std::string m_DebugName;

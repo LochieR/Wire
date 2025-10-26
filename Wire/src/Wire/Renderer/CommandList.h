@@ -66,21 +66,19 @@ namespace wire {
         struct BindPipelineArgs
         {
             bool IsGraphics;
-            union
-            {
-                GraphicsPipeline* Graphics;
-                ComputePipeline* Compute;
-            };
+            std::variant<
+                std::shared_ptr<GraphicsPipeline>,
+                std::shared_ptr<ComputePipeline>
+            > Pipeline;
         };
 
         struct PushConstantsArgs
         {
             bool IsGraphics;
-            union
-            {
-                GraphicsPipeline* Graphics;
-                ComputePipeline* Compute;
-            };
+            std::variant<
+                std::shared_ptr<GraphicsPipeline>,
+                std::shared_ptr<ComputePipeline>
+            > Pipeline;
             ShaderType Stage;
 
             uint32_t Size;
@@ -91,19 +89,18 @@ namespace wire {
         struct BindShaderResourceArgs
         {
             bool IsGraphics;
-            union
-            {
-                GraphicsPipeline* Graphics;
-                ComputePipeline* Compute;
-            };
+            std::variant<
+                std::shared_ptr<GraphicsPipeline>,
+                std::shared_ptr<ComputePipeline>
+            > Pipeline;
 
             uint32_t Set;
-            ShaderResource* Resource;
+            std::shared_ptr<ShaderResource> Resource;
         };
 
         struct SetViewportArgs
         {
-            GraphicsPipeline* Pipeline;
+            std::shared_ptr<GraphicsPipeline> Pipeline;
             glm::vec2 Position;
             glm::vec2 Size;
             float MinDepth;
@@ -112,30 +109,30 @@ namespace wire {
 
         struct SetScissorArgs
         {
-            GraphicsPipeline* Pipeline;
+            std::shared_ptr<GraphicsPipeline> Pipeline;
             glm::vec2 Min;
             glm::vec2 Max;
         };
 
         struct SetLineWidthArgs
         {
-            GraphicsPipeline* Pipeline;
+            std::shared_ptr<GraphicsPipeline> Pipeline;
             float LineWidth;
         };
 
         struct BindVertexBuffersArgs
         {
-            std::vector<BufferBase*> Buffers;
+            std::vector<std::shared_ptr<Buffer>> Buffers;
         };
 
         struct BindIndexBufferArgs
         {
-            BufferBase* Buffer;
+            std::shared_ptr<Buffer> Buffer;
         };
 
         struct ClearImageArgs
         {
-            Framebuffer* Framebuffer;
+            std::shared_ptr<Framebuffer> Framebuffer;
             glm::vec4 Color;
             uint32_t BaseMipLevel;
             uint32_t MipCount;
@@ -163,8 +160,8 @@ namespace wire {
 
         struct CopyBufferArgs
         {
-            BufferBase* SrcBuffer;
-            BufferBase* DstBuffer;
+            std::shared_ptr<Buffer> SrcBuffer;
+            std::shared_ptr<Buffer> DstBuffer;
             size_t Size;
             size_t SrcOffset;
             size_t DstOffset;
@@ -176,12 +173,12 @@ namespace wire {
             BarrierMask Access;
             PipelineStage WaitStage;
             PipelineStage UntilStage;
-            BufferBase* Buffer;
+            std::shared_ptr<Buffer> Buffer;
         };
 
         struct ImageMemoryBarrierArgs
         {
-            Framebuffer* Framebuffer;
+            std::shared_ptr<Framebuffer> Framebuffer;
             AttachmentLayout OldUsage, NewUsage;
             uint32_t BaseMip;
             uint32_t NumMips;
@@ -222,7 +219,7 @@ namespace wire {
         enum Type { General, RenderPass };
         Type ScopeType;
 
-        ::wire::RenderPass* CurrentRenderPass = nullptr;
+        std::shared_ptr<::wire::RenderPass> CurrentRenderPass = nullptr;
         std::vector<CommandEntry> Commands;
     };
 
@@ -238,32 +235,32 @@ namespace wire {
         void begin();
         void end();
 
-        void beginRenderPass(RenderPass* renderPass);
+        void beginRenderPass(const std::shared_ptr<RenderPass>& renderPass);
         void endRenderPass();
 
-        void bindPipeline(GraphicsPipeline* pipeline);
-        void bindPipeline(ComputePipeline* pipeline);
+        void bindPipeline(const std::shared_ptr<GraphicsPipeline>& pipeline);
+        void bindPipeline(const std::shared_ptr<ComputePipeline>& pipeline);
         void pushConstants(ShaderType shaderStage, const void* data, size_t size, size_t offset = 0);
-        void bindShaderResource(uint32_t set, ShaderResource* resource);
+        void bindShaderResource(uint32_t set, const std::shared_ptr<ShaderResource>& resource);
 
         void setViewport(const glm::vec2& position, const glm::vec2& size, float minDepth, float maxDepth);
         void setScissor(const glm::vec2& min, const glm::vec2& max);
         void setLineWidth(float lineWidth);
 
-        void bindVertexBuffers(const std::vector<BufferBase*> vertexBuffers);
-        void bindIndexBuffer(BufferBase* indexBuffer);
+        void bindVertexBuffers(const std::vector<std::shared_ptr<Buffer>>& vertexBuffers);
+        void bindIndexBuffer(const std::shared_ptr<Buffer>& indexBuffer);
 
         void draw(uint32_t vertexCount, uint32_t vertexOffset = 0);
         void drawIndexed(uint32_t indexCount, uint32_t vertexOffset = 0, uint32_t indexOffset = 0);
 
         void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
 
-        void clearImage(Framebuffer* framebuffer, const glm::vec4& color, AttachmentLayout currentLayout, uint32_t baseMip = 0, uint32_t numMips = 1);
+        void clearImage(const std::shared_ptr<Framebuffer>& framebuffer, const glm::vec4& color, AttachmentLayout currentLayout, uint32_t baseMip = 0, uint32_t numMips = 1);
 
-        void copyBuffer(BufferBase* srcBuffer, BufferBase* dstBuffer, size_t size, size_t srcOffset = 0, size_t dstOffset = 0);
-        void bufferMemoryBarrier(BufferBase* buffer, BarrierMask waitFor, BarrierMask access, PipelineStage waitStage, PipelineStage untilStage);
+        void copyBuffer(const std::shared_ptr<Buffer>& srcBuffer, const std::shared_ptr<Buffer>& dstBuffer, size_t size, size_t srcOffset = 0, size_t dstOffset = 0);
+        void bufferMemoryBarrier(const std::shared_ptr<Buffer>& buffer, BarrierMask waitFor, BarrierMask access, PipelineStage waitStage, PipelineStage untilStage);
 
-        void imageMemoryBarrier(Framebuffer* framebuffer, AttachmentLayout oldLayout, AttachmentLayout newLayout, uint32_t baseMip = 0, uint32_t numMips = 1);
+        void imageMemoryBarrier(const std::shared_ptr<Framebuffer>& framebuffer, AttachmentLayout oldLayout, AttachmentLayout newLayout, uint32_t baseMip = 0, uint32_t numMips = 1);
 
         void submitNativeCommand(std::shared_ptr<CommandListNativeCommand> nativeCommand, std::type_index typeIndex);
 
@@ -279,33 +276,6 @@ namespace wire {
         {
             pushConstants(shaderStage, &value, sizeof(T), offset);
         }
-
-        template<BufferType... Type>
-        std::enable_if_t<std::conjunction_v<std::bool_constant<is_vertex_buffer<Type>()>...>> bindVertexBuffers(Buffer<Type>*... buffers)
-        {
-            std::vector<BufferBase*> bases;
-            (bases.push_back(buffers->getBase()), ...);
-
-            bindVertexBuffers(bases);
-        }
-
-        template<BufferType Type>
-        std::enable_if_t<Type & IndexBuffer, void> bindIndexBuffer(Buffer<Type>* indexBuffer)
-        {
-            bindIndexBuffer(indexBuffer->getBase());
-        }
-
-        template<BufferType Type1, BufferType Type2>
-        void copyBuffer(Buffer<Type1>* srcBuffer, Buffer<Type2>* dstBuffer, size_t size, size_t srcOffset = 0, size_t dstOffset = 0)
-        {
-            copyBuffer(srcBuffer->getBase(), dstBuffer->getBase(), size, srcOffset, dstOffset);
-        }
-
-        template<BufferType Type>
-        void bufferMemoryBarrier(Buffer<Type>* buffer, BarrierMask waitFor, BarrierMask access, PipelineStage waitStage, PipelineStage untilStage)
-        {
-            bufferMemoryBarrier(buffer->getBase(), waitFor, access, waitStage, untilStage);
-        }
     private:
         Device* m_Device;
 
@@ -315,8 +285,8 @@ namespace wire {
         std::vector<CommandScope> m_Scopes;
         CommandScope m_CurrentScope;
 
-        GraphicsPipeline* m_CurrentGraphicsPipeline = nullptr;
-        ComputePipeline* m_CurrentComputePipeline = nullptr;
+        std::shared_ptr<GraphicsPipeline> m_CurrentGraphicsPipeline = nullptr;
+        std::shared_ptr<ComputePipeline> m_CurrentComputePipeline = nullptr;
     };
 
 }

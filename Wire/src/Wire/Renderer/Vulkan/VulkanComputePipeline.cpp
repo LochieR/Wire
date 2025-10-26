@@ -92,14 +92,28 @@ namespace wire {
 
     VulkanComputePipeline::~VulkanComputePipeline()
     {
-        m_Device->submitResourceFree([pipeline = m_Pipeline, pipelineLayout = m_Layout, computeShader = m_ComputeShader](Device* device)
-        {
-            VulkanDevice* vk = (VulkanDevice*)device;
+        destroy();
+    }
 
-            vkDestroyPipeline(vk->getDevice(), pipeline, vk->getAllocator());
-            vkDestroyPipelineLayout(vk->getDevice(), pipelineLayout, vk->getAllocator());
-            vkDestroyShaderModule(vk->getDevice(), computeShader, vk->getAllocator());
-        });
+    void VulkanComputePipeline::destroy()
+    {
+        if (m_Valid && m_Device)
+        {
+            m_Device->submitResourceFree([pipeline = m_Pipeline, pipelineLayout = m_Layout, computeShader = m_ComputeShader](Device* device)
+                                         {
+                VulkanDevice* vk = (VulkanDevice*)device;
+                
+                vkDestroyPipeline(vk->getDevice(), pipeline, vk->getAllocator());
+                vkDestroyPipelineLayout(vk->getDevice(), pipelineLayout, vk->getAllocator());
+                vkDestroyShaderModule(vk->getDevice(), computeShader, vk->getAllocator());
+            });
+        }
+    }
+
+    void VulkanComputePipeline::invalidate() noexcept
+    {
+        m_Valid = false;
+        m_Device = nullptr;
     }
 
 }

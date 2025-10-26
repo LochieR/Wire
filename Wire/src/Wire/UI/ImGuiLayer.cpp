@@ -28,10 +28,10 @@ namespace wire {
 			style.Colors[ImGuiCol_WindowBg].w = 1.0f;
 		}
 
-		VulkanDevice* vk = (VulkanDevice*)Application::get().getDevice();
+		VulkanDevice* vk = (VulkanDevice*)Application::get().getDevice().get();
 		m_Device = vk;
 
-		Swapchain* swapchain = vk->getSwapchain();
+		std::shared_ptr<Swapchain> swapchain = vk->getSwapchain();
 
 		RenderPassDesc renderPassDesc{};
 		renderPassDesc.Attachments = {
@@ -49,10 +49,10 @@ namespace wire {
 
 		m_RenderPass = m_Device->createRenderPass(renderPassDesc, swapchain);
 
-		VulkanRenderPass* vkRenderPass = (VulkanRenderPass*)m_RenderPass;
+		VulkanRenderPass* vkRenderPass = (VulkanRenderPass*)m_RenderPass.get();
 
 		ImGui_ImplVulkan_InitInfo initInfo{};
-		initInfo.Instance = static_cast<VulkanInstance*>(vk->getInstance())->getInstance();
+		initInfo.Instance = static_cast<VulkanInstance&>(vk->getInstance()).getInstance();
 		initInfo.PhysicalDevice = vk->getPhysicalDevice();
 		initInfo.Device = vk->getDevice();
 		initInfo.QueueFamily = vk->getGraphicsQueueFamily();
@@ -72,8 +72,6 @@ namespace wire {
 
 	void ImGuiLayer::onDetach()
 	{
-		delete m_RenderPass;
-
 		m_Device->submitResourceFree([](Device* device)
 		{
 			ImGui_ImplVulkan_Shutdown();

@@ -4,9 +4,9 @@
 
 namespace wire {
 
-    Instance* createInstance(const InstanceInfo& instanceInfo)
+    std::unique_ptr<Instance> createInstance(const InstanceInfo& instanceInfo)
     {
-        return new VulkanInstance(instanceInfo);
+        return std::make_unique<VulkanInstance>(instanceInfo);
     }
 
 }

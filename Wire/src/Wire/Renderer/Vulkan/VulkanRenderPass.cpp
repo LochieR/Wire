@@ -63,13 +63,13 @@ namespace wire {
 
     }
 
-    VulkanRenderPass::VulkanRenderPass(VulkanDevice* device, VulkanSwapchain* swapchain, const RenderPassDesc& desc, std::string_view debugName)
+    VulkanRenderPass::VulkanRenderPass(VulkanDevice* device, const std::shared_ptr<VulkanSwapchain>& swapchain, const RenderPassDesc& desc, std::string_view debugName)
         : m_Device(device), m_Swapchain(swapchain), m_Desc(desc), m_DebugName(debugName)
     {
         recreate();
     }
 
-    VulkanRenderPass::VulkanRenderPass(VulkanDevice* device, VulkanFramebuffer* framebuffer, const RenderPassDesc& desc, std::string_view debugName)
+    VulkanRenderPass::VulkanRenderPass(VulkanDevice* device, const std::shared_ptr<VulkanFramebuffer>& framebuffer, const RenderPassDesc& desc, std::string_view debugName)
         : m_Device(device), m_Framebuffer(framebuffer), m_Desc(desc), m_DebugName(debugName)
     {
         recreate();
@@ -77,11 +77,17 @@ namespace wire {
 
     VulkanRenderPass::~VulkanRenderPass()
     {
-        dispose();
+        destroy();
     }
 
     void VulkanRenderPass::recreate()
     {
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "RenderPass used after destroyed ({})", m_DebugName);
+            return;
+        }
+        
         dispose();
 
         std::vector<VkAttachmentDescription> attachments = createAttachmentDescriptions();
@@ -150,6 +156,12 @@ namespace wire {
 
     void VulkanRenderPass::recreateFramebuffers()
     {
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "RenderPass used after destroyed ({})", m_DebugName);
+            return;
+        }
+        
         m_Device->submitResourceFree([framebuffers = m_Framebuffers, renderPass = m_RenderPass](Device* device)
         {
             VulkanDevice* vk = (VulkanDevice*)device;
@@ -205,6 +217,20 @@ namespace wire {
         }
     }
 
+    void VulkanRenderPass::destroy()
+    {
+        if (m_Valid && m_Device)
+        {
+            dispose();
+        }
+    }
+
+    void VulkanRenderPass::invalidate() noexcept
+    {
+        m_Valid = false;
+        m_Device = nullptr;
+    }
+
     void VulkanRenderPass::dispose()
     {
         m_Device->submitResourceFree([framebuffers = m_Framebuffers, renderPass = m_RenderPass](Device* device)
@@ -223,16 +249,14 @@ namespace wire {
     {
         std::vector<VkAttachmentDescription> result;
 
-        VulkanSwapchain* vkSwapchain = (VulkanSwapchain*)m_Swapchain;
-
         for (const auto& attachment : m_Desc.Attachments)
         {
             VkAttachmentDescription desc{};
 
-            if (vkSwapchain && attachment.Format == AttachmentFormat::SwapchainColorDefault)
-                desc.format = vkSwapchain->getDefaultColorAttachmentFormat();
-            else if (vkSwapchain && attachment.Format == AttachmentFormat::SwapchainDepthDefault)
-                desc.format = vkSwapchain->getDefaultDepthAttachmentFormat();
+            if (m_Swapchain && attachment.Format == AttachmentFormat::SwapchainColorDefault)
+                desc.format = m_Swapchain->getDefaultColorAttachmentFormat();
+            else if (m_Swapchain && attachment.Format == AttachmentFormat::SwapchainDepthDefault)
+                desc.format = m_Swapchain->getDefaultDepthAttachmentFormat();
             else
                 desc.format = Utils::ConvertFormat(attachment.Format);
             desc.samples = (VkSampleCountFlagBits)attachment.Samples;

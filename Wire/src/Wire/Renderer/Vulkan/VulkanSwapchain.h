@@ -30,6 +30,9 @@ namespace wire {
         VkFormat getDefaultDepthAttachmentFormat() const;
 
         virtual const SwapchainInfo& getInfo() const override { return m_Info; }
+    protected:
+        virtual void destroy() override;
+        virtual void invalidate() noexcept override;
     private:
         void disposeSwapchain();
     private:

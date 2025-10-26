@@ -404,7 +404,12 @@ namespace wire {
 
     VulkanTexture2D::~VulkanTexture2D()
     {
-        if (!m_NoFree)
+        destroy();
+    }
+
+    void VulkanTexture2D::destroy()
+    {
+        if (m_Valid && m_Device && !m_NoFree)
         {
             m_Device->submitResourceFree([image = m_Image, memory = m_Memory, view = m_ImageView](Device* device)
             {
@@ -415,6 +420,12 @@ namespace wire {
                 vkFreeMemory(vk->getDevice(), memory, vk->getAllocator());
             });
         }
+    }
+
+    void VulkanTexture2D::invalidate() noexcept
+    {
+        m_Valid = false;
+        m_Device = nullptr;
     }
 
     VulkanSampler::VulkanSampler(Device* device, const SamplerDesc& desc, std::string_view debugName)
@@ -451,12 +462,26 @@ namespace wire {
 
     VulkanSampler::~VulkanSampler()
     {
-        m_Device->submitResourceFree([sampler = m_Sampler](Device* device)
-        {
-            VulkanDevice* vk = (VulkanDevice*)device;
+        destroy();
+    }
 
-            vkDestroySampler(vk->getDevice(), sampler, vk->getAllocator());
-        });
+    void VulkanSampler::destroy()
+    {
+        if (m_Valid && m_Device)
+        {
+            m_Device->submitResourceFree([sampler = m_Sampler](Device* device)
+            {
+                VulkanDevice* vk = (VulkanDevice*)device;
+
+                vkDestroySampler(vk->getDevice(), sampler, vk->getAllocator());
+            });
+        }
+    }
+
+    void VulkanSampler::invalidate() noexcept
+    {
+        m_Valid = false;
+        m_Device = nullptr;
     }
 
 }

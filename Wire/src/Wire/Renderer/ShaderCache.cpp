@@ -1,6 +1,6 @@
 #include "ShaderCache.h"
 
-#include "Renderer.h"
+#include "Device.h"
 #include "ShaderCompiler.h"
 #include "Wire/Core/Assert.h"
 #include "Wire/Serialization/Stream.h"

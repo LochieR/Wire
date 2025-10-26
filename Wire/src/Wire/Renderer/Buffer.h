@@ -1,5 +1,7 @@
 #pragma once
 
+#include "IResource.h"
+
 #include <cstdint>
 #include <type_traits>
 
@@ -63,16 +65,10 @@ namespace wire {
         return lhs;
     }
 
-    template<BufferType Type>
-    constexpr bool is_vertex_buffer()
-    {
-        return Type & VertexBuffer;
-    }
-
-    class BufferBase
+    class Buffer : public IResource
     {
     public:
-        virtual ~BufferBase() = default;
+        virtual ~Buffer() = default;
 
         virtual void setData(const void* data, size_t size, size_t offset = 0) = 0;
         virtual void setData(int data, size_t size) = 0;
@@ -81,29 +77,6 @@ namespace wire {
         virtual void unmap() = 0;
 
         virtual size_t getSize() const = 0;
-    };
-
-    template<BufferType Type>
-    class Buffer
-    {
-    public:
-        Buffer(BufferBase* base)
-            : m_Base(base)
-        {
-        }
-        ~Buffer() { delete m_Base; }
-
-        void setData(const void* data, size_t size, size_t offset = 0) { m_Base->setData(data, size, offset); }
-        void setData(int data, size_t size) { m_Base->setData(data, size); }
-
-        void* map(size_t size) { return m_Base->map(size); }
-        void unmap() { m_Base->unmap(); }
-
-        size_t getSize() const { return m_Base->getSize(); }
-
-        BufferBase* getBase() const { return m_Base; }
-    private:
-        BufferBase* m_Base;
     };
 
 }

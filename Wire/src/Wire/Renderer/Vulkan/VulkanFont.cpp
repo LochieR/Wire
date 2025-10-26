@@ -26,8 +26,23 @@ namespace wire {
 
     VulkanFont::~VulkanFont()
     {
-        delete m_Data;
-        delete m_AtlasTexture;
+        destroy();
+    }
+
+    void VulkanFont::destroy()
+    {
+        if (m_Valid)
+        {
+            delete m_Data;
+            m_Device->drop(m_AtlasTexture);
+            m_AtlasTexture = nullptr;
+        }
+    }
+
+    void VulkanFont::invalidate() noexcept
+    {
+        m_Valid = false;
+        m_Device = nullptr;
     }
 
     void VulkanFont::createFontData(const NaiveFont& naive)

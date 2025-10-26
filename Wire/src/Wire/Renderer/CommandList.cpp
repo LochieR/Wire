@@ -25,7 +25,7 @@ namespace wire {
         m_CurrentScope = {};
     }
 
-    void CommandList::beginRenderPass(RenderPass* renderPass)
+    void CommandList::beginRenderPass(const std::shared_ptr<RenderPass>& renderPass)
     {
         WR_ASSERT(!m_SingleTimeCommands, "cannot begin render pass during single time commands");
 
@@ -39,11 +39,11 @@ namespace wire {
         m_CurrentScope = CommandScope{ .ScopeType = CommandScope::General, .CurrentRenderPass = nullptr };
     }
 
-    void CommandList::bindPipeline(GraphicsPipeline* pipeline)
+    void CommandList::bindPipeline(const std::shared_ptr<GraphicsPipeline>& pipeline)
     {
         CommandEntry entry;
         entry.Type = CommandType::BindPipeline;
-        entry.Args = CommandEntry::BindPipelineArgs{ .IsGraphics = true, .Graphics = pipeline };
+        entry.Args = CommandEntry::BindPipelineArgs{ .IsGraphics = true, .Pipeline = pipeline };
 
         m_CurrentGraphicsPipeline = pipeline;
         m_CurrentComputePipeline = nullptr;
@@ -51,11 +51,11 @@ namespace wire {
         m_CurrentScope.Commands.push_back(entry);
     }
 
-    void CommandList::bindPipeline(ComputePipeline* pipeline)
+    void CommandList::bindPipeline(const std::shared_ptr<ComputePipeline>& pipeline)
     {
         CommandEntry entry;
         entry.Type = CommandType::BindPipeline;
-        entry.Args = CommandEntry::BindPipelineArgs{ .IsGraphics = false, .Compute = pipeline };
+        entry.Args = CommandEntry::BindPipelineArgs{ .IsGraphics = false, .Pipeline = pipeline };
 
         m_CurrentComputePipeline = pipeline;
         m_CurrentGraphicsPipeline = nullptr;
@@ -73,12 +73,12 @@ namespace wire {
         if (m_CurrentComputePipeline)
         {
             args.IsGraphics = false;
-            args.Compute = m_CurrentComputePipeline;
+            args.Pipeline = m_CurrentComputePipeline;
         }
         else
         {
             args.IsGraphics = true;
-            args.Graphics = m_CurrentGraphicsPipeline;
+            args.Pipeline = m_CurrentGraphicsPipeline;
         }
 
         args.Stage = shaderStage;
@@ -93,7 +93,7 @@ namespace wire {
         m_CurrentScope.Commands.push_back(entry);
     }
 
-    void CommandList::bindShaderResource(uint32_t set, ShaderResource* resource)
+    void CommandList::bindShaderResource(uint32_t set, const std::shared_ptr<ShaderResource>& resource)
     {
         WR_ASSERT(m_CurrentGraphicsPipeline || m_CurrentComputePipeline, "cannot bind descriptor set without binding a pipeline");
 
@@ -101,9 +101,9 @@ namespace wire {
         entry.Type = CommandType::BindShaderResource;
 
         if (m_CurrentGraphicsPipeline)
-            entry.Args = CommandEntry::BindShaderResourceArgs{ .IsGraphics = true, .Graphics = m_CurrentGraphicsPipeline, .Set = set, .Resource = resource };
+            entry.Args = CommandEntry::BindShaderResourceArgs{ .IsGraphics = true, .Pipeline = m_CurrentGraphicsPipeline, .Set = set, .Resource = resource };
         else if (m_CurrentComputePipeline)
-            entry.Args = CommandEntry::BindShaderResourceArgs{ .IsGraphics = false, .Compute = m_CurrentComputePipeline, .Set = set, .Resource = resource };
+            entry.Args = CommandEntry::BindShaderResourceArgs{ .IsGraphics = false, .Pipeline = m_CurrentComputePipeline, .Set = set, .Resource = resource };
 
         m_CurrentScope.Commands.push_back(entry);
     }
@@ -141,7 +141,7 @@ namespace wire {
         m_CurrentScope.Commands.push_back(entry);
     }
 
-    void CommandList::bindVertexBuffers(const std::vector<BufferBase*> vertexBuffers)
+    void CommandList::bindVertexBuffers(const std::vector<std::shared_ptr<Buffer>>& vertexBuffers)
     {
         CommandEntry entry;
         entry.Type = CommandType::BindVertexBuffers;
@@ -150,8 +150,9 @@ namespace wire {
         m_CurrentScope.Commands.push_back(entry);
     }
 
-    void CommandList::bindIndexBuffer(BufferBase* indexBuffer)
+    void CommandList::bindIndexBuffer(const std::shared_ptr<Buffer>& indexBuffer)
     {
+        std::static_pointer_cast<Buffer>(indexBuffer);
         CommandEntry entry;
         entry.Type = CommandType::BindIndexBuffer;
         entry.Args = CommandEntry::BindIndexBufferArgs{ .Buffer = indexBuffer };
@@ -192,7 +193,7 @@ namespace wire {
         m_CurrentScope.Commands.push_back(entry);
     }
 
-    void CommandList::clearImage(Framebuffer* framebuffer, const glm::vec4& color, AttachmentLayout currentLayout, uint32_t baseMip, uint32_t numMips)
+    void CommandList::clearImage(const std::shared_ptr<Framebuffer>& framebuffer, const glm::vec4& color, AttachmentLayout currentLayout, uint32_t baseMip, uint32_t numMips)
     {
         WR_ASSERT(m_CurrentScope.ScopeType == CommandScope::General, "cannot clear image inside a render pass");
 
@@ -213,7 +214,7 @@ namespace wire {
         }
     }
 
-    void CommandList::copyBuffer(BufferBase* srcBuffer, BufferBase* dstBuffer, size_t size, size_t srcOffset, size_t dstOffset)
+    void CommandList::copyBuffer(const std::shared_ptr<Buffer>& srcBuffer, const std::shared_ptr<Buffer>& dstBuffer, size_t size, size_t srcOffset, size_t dstOffset)
     {
         CommandEntry entry;
         entry.Type = CommandType::CopyBuffer;
@@ -222,7 +223,7 @@ namespace wire {
         m_CurrentScope.Commands.push_back(entry);
     }
 
-    void CommandList::bufferMemoryBarrier(BufferBase* buffer, BarrierMask waitFor, BarrierMask access, PipelineStage waitStage, PipelineStage untilStage)
+    void CommandList::bufferMemoryBarrier(const std::shared_ptr<Buffer>& buffer, BarrierMask waitFor, BarrierMask access, PipelineStage waitStage, PipelineStage untilStage)
     {
         CommandEntry entry;
         entry.Type = CommandType::BufferMemoryBarrier;
@@ -231,7 +232,7 @@ namespace wire {
         m_CurrentScope.Commands.push_back(entry);
     }
 
-    void CommandList::imageMemoryBarrier(Framebuffer* framebuffer, AttachmentLayout oldLayout, AttachmentLayout newLayout, uint32_t baseMip, uint32_t numMips)
+    void CommandList::imageMemoryBarrier(const std::shared_ptr<Framebuffer>& framebuffer, AttachmentLayout oldLayout, AttachmentLayout newLayout, uint32_t baseMip, uint32_t numMips)
     {
         CommandEntry entry;
         entry.Type = CommandType::ImageMemoryBarrier;

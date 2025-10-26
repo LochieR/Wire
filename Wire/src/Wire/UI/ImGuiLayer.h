@@ -20,7 +20,7 @@ namespace wire {
 		virtual void onEvent(Event& event) override;
 	private:
 		Device* m_Device = nullptr;
-		RenderPass* m_RenderPass = nullptr;
+		std::shared_ptr<RenderPass> m_RenderPass = nullptr;
 	};
 
 }

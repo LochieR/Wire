@@ -1,12 +1,13 @@
 #pragma once
 
-#include <cstdint>
-
+#include "IResource.h"
 #include "Wire/Core/UUID.h"
+
+#include <cstdint>
 
 namespace wire {
 
-    class Texture2D
+    class Texture2D : public IResource
     {
     public:
         virtual ~Texture2D() = default;
@@ -66,7 +67,7 @@ namespace wire {
         float MipLodBias;
     };
 
-    class Sampler
+    class Sampler : public IResource
     {
     public:
         virtual ~Sampler() = default;

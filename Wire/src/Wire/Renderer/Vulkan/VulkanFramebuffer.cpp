@@ -22,32 +22,17 @@ namespace wire {
 
     VulkanFramebuffer::~VulkanFramebuffer()
     {
-        m_Device->submitResourceFree([image = m_Image, view = m_View, memory = m_Memory, mips = m_Mips,
-            depthImage = m_DepthImage, depthView = m_DepthView, depthMemory = m_DepthMemory](Device* device)
-        {
-            VulkanDevice* vk = (VulkanDevice*)device;
-
-            if (depthView)
-                vkDestroyImageView(vk->getDevice(), depthView, vk->getAllocator());
-            if (depthImage)
-                vkDestroyImage(vk->getDevice(), depthImage, vk->getAllocator());
-            if (depthMemory)
-                vkFreeMemory(vk->getDevice(), depthMemory, vk->getAllocator());
-
-            for (VkImageView view : mips)
-                vkDestroyImageView(vk->getDevice(), view, vk->getAllocator());
-
-            if (view)
-                vkDestroyImageView(vk->getDevice(), view, vk->getAllocator());
-            if (image)
-                vkDestroyImage(vk->getDevice(), image, vk->getAllocator());
-            if (memory)
-                vkFreeMemory(vk->getDevice(), memory, vk->getAllocator());
-        });
+        destroy();
     }
 
     void VulkanFramebuffer::resize(const glm::vec2& extent)
     {
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "Framebuffer used after destroyed ({})", m_DebugName);
+            return;
+        }
+        
         m_Device->submitResourceFree([image = m_Image, view = m_View, memory = m_Memory, mips = m_Mips,
             depthImage = m_DepthImage, depthView = m_DepthView, depthMemory = m_DepthMemory](Device* device)
         {
@@ -184,15 +169,58 @@ namespace wire {
 
         if (m_Desc.Layout != AttachmentLayout::Undefined)
         {
+            std::shared_ptr<VulkanFramebuffer> framebuffer = m_Device->getResource<VulkanFramebuffer>(this);
+            
             CommandList list = m_Device->beginSingleTimeCommands();
-            list.imageMemoryBarrier(this, AttachmentLayout::Undefined, m_Desc.Layout, 0, m_Desc.MipCount);
+            list.imageMemoryBarrier(framebuffer, AttachmentLayout::Undefined, m_Desc.Layout, 0, m_Desc.MipCount);
             m_Device->endSingleTimeCommands(list);
         }
     }
 
     Texture2D* VulkanFramebuffer::asTexture2D() const
     {
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "Framebuffer used after destroyed ({})", m_DebugName);
+            return nullptr;
+        }
+        
         return new VulkanTexture2D(m_Image, m_Memory, m_View, m_Mips, (uint32_t)m_Desc.Extent.x, (uint32_t)m_Desc.Extent.y);
+    }
+
+    void VulkanFramebuffer::destroy()
+    {
+        if (m_Valid && m_Device)
+        {
+            m_Device->submitResourceFree([image = m_Image, view = m_View, memory = m_Memory, mips = m_Mips,
+                depthImage = m_DepthImage, depthView = m_DepthView, depthMemory = m_DepthMemory](Device* device)
+            {
+                VulkanDevice* vk = (VulkanDevice*)device;
+
+                if (depthView)
+                    vkDestroyImageView(vk->getDevice(), depthView, vk->getAllocator());
+                if (depthImage)
+                    vkDestroyImage(vk->getDevice(), depthImage, vk->getAllocator());
+                if (depthMemory)
+                    vkFreeMemory(vk->getDevice(), depthMemory, vk->getAllocator());
+
+                for (VkImageView view : mips)
+                    vkDestroyImageView(vk->getDevice(), view, vk->getAllocator());
+
+                if (view)
+                    vkDestroyImageView(vk->getDevice(), view, vk->getAllocator());
+                if (image)
+                    vkDestroyImage(vk->getDevice(), image, vk->getAllocator());
+                if (memory)
+                    vkFreeMemory(vk->getDevice(), memory, vk->getAllocator());
+            });
+        }
+    }
+
+    void VulkanFramebuffer::invalidate() noexcept
+    {
+        m_Valid = false;
+        m_Device = nullptr;
     }
 
 }

@@ -14,9 +14,12 @@ namespace wire {
     public:
         VulkanComputePipeline(Device* device, const ComputePipelineDesc& desc, std::string_view debugName = {});
         virtual ~VulkanComputePipeline();
-
+        
         VkPipeline getPipeline() const { return m_Pipeline; }
         VkPipelineLayout getPipelineLayout() const { return m_Layout; }
+    protected:
+        virtual void destroy() override;
+        virtual void invalidate() noexcept override;
     private:
         Device* m_Device = nullptr;
 

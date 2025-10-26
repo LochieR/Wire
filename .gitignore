@@ -13,3 +13,4 @@ bin-int/
 *.xcworkspace/
 *.xcodeproj/
 *.log
+*.ini

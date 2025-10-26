@@ -1,5 +1,6 @@
 #pragma once
 
+#include "IResource.h"
 #include "RenderPass.h"
 
 #include <glm/glm.hpp>
@@ -49,7 +50,7 @@ namespace wire {
         PresentMode PresentMode;
     };
 
-    class Swapchain
+    class Swapchain : public IResource
     {
     public:
         virtual ~Swapchain() = default;

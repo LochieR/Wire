@@ -107,8 +107,8 @@ namespace bloom {
 		m_ModelTexture = m_Device->createTexture2D("models/viking_room.png");
 		Utils::LoadModel("models/viking_room.obj", m_ModelVertices, m_ModelIndices);
 
-		m_ModelVertexBuffer = m_Device->createBuffer<wire::VertexBuffer>(m_ModelVertices.size() * sizeof(ModelVertex), m_ModelVertices.data());
-		m_ModelIndexBuffer = m_Device->createBuffer<wire::IndexBuffer>(m_ModelIndices.size() * sizeof(uint32_t), m_ModelIndices.data());
+		m_ModelVertexBuffer = m_Device->createBuffer(wire::VertexBuffer, m_ModelVertices.size() * sizeof(ModelVertex), m_ModelVertices.data());
+		m_ModelIndexBuffer = m_Device->createBuffer(wire::IndexBuffer, m_ModelIndices.size() * sizeof(uint32_t), m_ModelIndices.data());
 
 		wire::InputLayout layout{};
 		layout.VertexBufferLayout = {
@@ -172,14 +172,14 @@ namespace bloom {
 
 		m_ModelSampler = m_Device->createSampler(samplerDesc);
 
-        m_ModelUniformBuffer = m_Device->createBuffer<wire::UniformBuffer>(sizeof(glm::mat4) * 3);
+        m_ModelUniformBuffer = m_Device->createBuffer(wire::UniformBuffer, sizeof(glm::mat4) * 3);
         m_ModelUniformData = reinterpret_cast<glm::mat4*>(m_ModelUniformBuffer->map(sizeof(glm::mat4) * 3));
 
         m_ModelResource->update(m_ModelUniformBuffer, 0, 0);
 		m_ModelResource->update(m_ModelTexture, m_ModelSampler, 1, 0);
 
-		m_CommandLists.resize(m_Device->getInstance()->getNumFramesInFlight());
-		for (size_t i = 0; i < m_Device->getInstance()->getNumFramesInFlight(); i++)
+		m_CommandLists.resize(m_Device->getInstance().getNumFramesInFlight());
+		for (size_t i = 0; i < m_Device->getInstance().getNumFramesInFlight(); i++)
 		{
 			m_CommandLists[i] = m_Device->createCommandList();
 		}
@@ -188,16 +188,6 @@ namespace bloom {
 	void EngineLayer::onDetach()
 	{
         m_ModelUniformBuffer->unmap();
-        delete m_ModelUniformBuffer;
-
-		delete m_ModelSampler;
-		delete m_ModelPipeline;
-        delete m_ModelResource;
-        delete m_ModelResourceLayout;
-		delete m_ModelIndexBuffer;
-		delete m_ModelVertexBuffer;
-		delete m_ModelTexture;
-		delete m_RenderPass;
 	}
 
 	void EngineLayer::onUpdate(float timestep)
@@ -232,8 +222,8 @@ namespace bloom {
 		commandList.setViewport({ 0.0f, 0.0f }, extent, 0.0f, 1.0f);
 		commandList.setScissor({ 0.0f, 0.0f }, extent);
         commandList.bindShaderResource(0, m_ModelResource);
-		commandList.bindVertexBuffers({ m_ModelVertexBuffer->getBase() });
-		commandList.bindIndexBuffer(m_ModelIndexBuffer->getBase());
+		commandList.bindVertexBuffers({ m_ModelVertexBuffer });
+		commandList.bindIndexBuffer(m_ModelIndexBuffer);
 
 		commandList.drawIndexed((uint32_t)m_ModelIndices.size());
 

@@ -5,6 +5,9 @@
 
 #include <vulkan/vulkan.h>
 
+#include <memory>
+#include <vector>
+
 struct GLFWwindow;
 
 namespace wire {
@@ -72,22 +75,26 @@ namespace wire {
         virtual bool skipFrame() const override { return m_SkipFrame; }
         virtual bool didSwapchainResize() const override { return m_DidSwapchainResize; }
         
-        virtual Instance* getInstance() const override { return m_Instance; }
-        virtual Swapchain* getSwapchain() const override { return m_Swapchain; }
+        virtual Instance& getInstance() const override { return *m_Instance; }
+        virtual std::shared_ptr<Swapchain> getSwapchain() const override { return m_Swapchain; }
+        
+        virtual void drop(const std::shared_ptr<IResource>& resource) override;
+        virtual std::shared_ptr<IResource> getResource(IResource* resource) const override;
 
-        virtual Swapchain* createSwapchain(const SwapchainInfo& info, std::string_view debugName = {}) override;
-        virtual Framebuffer* createFramebuffer(const FramebufferDesc& desc, std::string_view debugName = {}) override;
-        virtual RenderPass* createRenderPass(const RenderPassDesc& desc, Swapchain* swapchain, std::string_view debugName = {}) override;
-        virtual RenderPass* createRenderPass(const RenderPassDesc& desc, Framebuffer* framebuffer, std::string_view debugName = {}) override;
-        virtual ShaderResourceLayout* createShaderResourceLayout(const ShaderResourceLayoutInfo& layoutInfo) override;
-        virtual ShaderResource* createShaderResource(uint32_t set, ShaderResourceLayout* layout) override;
-        virtual GraphicsPipeline* createGraphicsPipeline(const GraphicsPipelineDesc& desc, std::string_view debugName = {}) override;
-        virtual ComputePipeline* createComputePipeline(const ComputePipelineDesc& desc, std::string_view debugName = {}) override;
-        virtual Texture2D* createTexture2D(const std::filesystem::path& path, std::string_view debugName = {}) override;
-        virtual Texture2D* createTexture2D(uint32_t* data, uint32_t width, uint32_t height, std::string_view debugName = {}) override;
-        virtual Sampler* createSampler(const SamplerDesc& desc, std::string_view debugName = {}) override;
-        virtual Font* createFont(const std::filesystem::path& path, std::string_view debugName = {}, uint32_t minChar = 0x0020, uint32_t maxChar = 0x00FF) override;
-        virtual Font* getFontFromCache(const std::filesystem::path& path) override;
+        virtual std::shared_ptr<Swapchain> createSwapchain(const SwapchainInfo& info, std::string_view debugName = {}) override;
+        virtual std::shared_ptr<Framebuffer> createFramebuffer(const FramebufferDesc& desc, std::string_view debugName = {}) override;
+        virtual std::shared_ptr<RenderPass> createRenderPass(const RenderPassDesc& desc, const std::shared_ptr<Swapchain>& swapchain, std::string_view debugName = {}) override;
+        virtual std::shared_ptr<RenderPass> createRenderPass(const RenderPassDesc& desc, const std::shared_ptr<Framebuffer>& framebuffer, std::string_view debugName = {}) override;
+        virtual std::shared_ptr<Buffer> createBuffer(BufferType type, size_t size, const void* data = nullptr, std::string_view debugName = {}) override;
+        virtual std::shared_ptr<ShaderResourceLayout> createShaderResourceLayout(const ShaderResourceLayoutInfo& layoutInfo, std::string_view debugName = {}) override;
+        virtual std::shared_ptr<ShaderResource> createShaderResource(uint32_t set, const std::shared_ptr<ShaderResourceLayout>& layout, std::string_view debugName = {}) override;
+        virtual std::shared_ptr<GraphicsPipeline> createGraphicsPipeline(const GraphicsPipelineDesc& desc, std::string_view debugName = {}) override;
+        virtual std::shared_ptr<ComputePipeline> createComputePipeline(const ComputePipelineDesc& desc, std::string_view debugName = {}) override;
+        virtual std::shared_ptr<Texture2D> createTexture2D(const std::filesystem::path& path, std::string_view debugName = {}) override;
+        virtual std::shared_ptr<Texture2D> createTexture2D(uint32_t* data, uint32_t width, uint32_t height, std::string_view debugName = {}) override;
+        virtual std::shared_ptr<Sampler> createSampler(const SamplerDesc& desc, std::string_view debugName = {}) override;
+        virtual std::shared_ptr<Font> createFont(const std::filesystem::path& path, std::string_view debugName = {}, uint32_t minChar = 0x0020, uint32_t maxChar = 0x00FF) override;
+        virtual std::shared_ptr<Font> getFontFromCache(const std::filesystem::path& path) override;
 
         virtual ShaderCache& getShaderCache() override { return m_ShaderCache; }
         virtual const ShaderCache& getShaderCache() const override { return m_ShaderCache; }
@@ -96,7 +103,7 @@ namespace wire {
 
         virtual float getMaxAnisotropy() const override;
 
-        VkCommandBuffer beginCommandListOverride(RenderPass* renderPass = nullptr);
+        VkCommandBuffer beginCommandListOverride(const std::shared_ptr<RenderPass>& renderPass = nullptr);
         void endCommandListOverride();
 
         VkPhysicalDevice getPhysicalDevice() const { return m_PhysicalDevice; }
@@ -114,8 +121,9 @@ namespace wire {
         std::shared_ptr<CommandListNativeCommand> copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, size_t size, size_t srcOffset, size_t dstOffset, std::type_index& outType);
         std::shared_ptr<CommandListNativeCommand> pipelineBarrier(VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage, const VkImageMemoryBarrier& barrier, std::type_index& outType);
         std::shared_ptr<CommandListNativeCommand> copyBufferToImage(VkBuffer srcBuffer, VkImage dstImage, VkImageLayout dstImageLayout, const VkBufferImageCopy& copy, std::type_index& outType);
-    protected:
-        virtual BufferBase* createBufferBase(BufferType type, size_t size, const void* data = nullptr, std::string_view debugName = {}) override;
+        
+        virtual void destroy() override;
+        virtual void invalidate() noexcept override;
     private:
         void pickPhysicalDevice();
         void createLogicalDevice();
@@ -131,7 +139,7 @@ namespace wire {
         {
             std::vector<VkCommandBuffer> Buffers;
             std::vector<CommandScope::Type> Types;
-            std::vector<RenderPass*> RenderPasses;
+            std::vector<std::shared_ptr<RenderPass>> RenderPasses;
         };
     private:
         VulkanInstance* m_Instance = nullptr;
@@ -145,7 +153,8 @@ namespace wire {
 
         std::vector<VkCommandBuffer> m_FrameCommandBuffers;
 
-        Swapchain* m_Swapchain = nullptr;
+        std::shared_ptr<Swapchain> m_Swapchain = nullptr;
+        std::vector<std::shared_ptr<IResource>> m_Resources;
 
         uint32_t m_ImageIndex;
         uint32_t m_FrameIndex;

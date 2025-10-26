@@ -295,40 +295,17 @@ namespace wire {
 
     VulkanDevice::~VulkanDevice()
     {
-        vkDeviceWaitIdle(m_Device);
-
-        delete m_Swapchain;
-
-        m_FontCache.release();
-        
-        for (auto& queue : m_ResourceFreeQueue)
-        {
-            for (auto& func : queue)
-                func(this);
-            queue.clear();
-        }
-        m_ResourceFreeQueue.clear();
-
-        for (VkFence fence : m_InFlightFences)
-            vkDestroyFence(m_Device, fence, getAllocator());
-
-        for (VkSemaphore semaphore : m_ImageAvailableSemaphores)
-            vkDestroySemaphore(m_Device, semaphore, getAllocator());
-        m_ImageAvailableSemaphores.clear();
-
-        for (VkSemaphore semaphore : m_RenderFinishedSemaphores)
-            vkDestroySemaphore(m_Device, semaphore, getAllocator());
-        m_RenderFinishedSemaphores.clear();
-
-        vkDestroyDescriptorPool(m_Device, m_DescriptorPool, getAllocator());
-        vkDestroyCommandPool(m_Device, m_CommandPool, getAllocator());
-        m_FrameCommandBuffers.clear();
-
-        vkDestroyDevice(m_Device, getAllocator());
+        destroy();
     }
 
     void VulkanDevice::beginFrame()
     {
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "Device used after destroyed");
+            return;
+        }
+        
         VkResult result = vkWaitForFences(m_Device, 1, &m_InFlightFences[m_FrameIndex], VK_TRUE, std::numeric_limits<uint64_t>::max());
         VK_CHECK(result, "Failed to wait for Vulkan fence!");
 
@@ -349,6 +326,12 @@ namespace wire {
 
     void VulkanDevice::endFrame()
     {
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "Device used after destroyed");
+            return;
+        }
+        
         if (m_SkipFrame)
         {
             m_SkipFrame = false;
@@ -379,7 +362,7 @@ namespace wire {
             for (size_t i = 0; i < listInfo.Types.size(); i++)
             {
                 CommandScope::Type type = listInfo.Types[i];
-                VulkanRenderPass* renderPass = (VulkanRenderPass*)listInfo.RenderPasses[i];
+                VulkanRenderPass* renderPass = (VulkanRenderPass*)listInfo.RenderPasses[i].get();
                 
                 if (type == CommandScope::RenderPass)
                 {
@@ -424,7 +407,7 @@ namespace wire {
         result = vkQueueSubmit(m_GraphicsQueue, 1, &submit, m_InFlightFences[m_FrameIndex]);
         VK_CHECK(result, "Failed to submit to Vulkan queue!");
 
-        VkSwapchainKHR swapchain = ((VulkanSwapchain*)m_Swapchain)->getSwapchain();
+        VkSwapchainKHR swapchain = ((VulkanSwapchain*)m_Swapchain.get())->getSwapchain();
 
         VkPresentInfoKHR presentInfo{};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -458,6 +441,12 @@ namespace wire {
 
     CommandList VulkanDevice::beginSingleTimeCommands()
     {
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "Device used after destroyed");
+            return { nullptr };
+        }
+        
         CommandList list(this, true);
         list.begin();
 
@@ -466,6 +455,12 @@ namespace wire {
 
     void VulkanDevice::endSingleTimeCommands(CommandList& commandList)
     {
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "Device used after destroyed");
+            return;
+        }
+        
         WR_ASSERT(commandList.isSingleTimeCommands(), "command list must be single time commands");
 
         commandList.end();
@@ -511,11 +506,23 @@ namespace wire {
 
     CommandList VulkanDevice::createCommandList()
     {
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "Device used after destroyed");
+            return { nullptr };
+        }
+        
         return CommandList(this);
     }
 
     void VulkanDevice::submitCommandList(const CommandList& commandList)
     {
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "Device used after destroyed");
+            return;
+        }
+        
         WR_ASSERT(!commandList.isRecording(), "cannot submit a CommandList that is currently recording!");
 
         if (m_SkipFrame)
@@ -556,8 +563,8 @@ namespace wire {
             
             if (scope.ScopeType == CommandScope::RenderPass)
             {
-                inheritanceInfo.renderPass = ((VulkanRenderPass*)scope.CurrentRenderPass)->getRenderPass();
-                inheritanceInfo.framebuffer = ((VulkanRenderPass*)scope.CurrentRenderPass)->getFramebuffer(m_ImageIndex);
+                inheritanceInfo.renderPass = ((VulkanRenderPass*)scope.CurrentRenderPass.get())->getRenderPass();
+                inheritanceInfo.framebuffer = ((VulkanRenderPass*)scope.CurrentRenderPass.get())->getFramebuffer(m_ImageIndex);
 
                 beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
 
@@ -581,7 +588,7 @@ namespace wire {
         m_SubmittedCommandLists[m_FrameIndex].push_back(listData);
     }
 
-    void VulkanDevice::executeCommandScope(VkCommandBuffer commandBuffer, const CommandScope & commandScope)
+    void VulkanDevice::executeCommandScope(VkCommandBuffer commandBuffer, const CommandScope& commandScope)
     {
         for (const auto& command : commandScope.Commands)
         {
@@ -599,13 +606,13 @@ namespace wire {
 
                 if (args.IsGraphics)
                 {
-                    const VulkanGraphicsPipeline* vkPipeline = static_cast<const VulkanGraphicsPipeline*>(args.Graphics);
+                    const VulkanGraphicsPipeline* vkPipeline = static_cast<const VulkanGraphicsPipeline*>(std::get<std::shared_ptr<GraphicsPipeline>>(args.Pipeline).get());
                     pipeline = vkPipeline->getPipeline();
                     bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
                 }
                 else
                 {
-                    const VulkanComputePipeline* vkPipeline = static_cast<const VulkanComputePipeline*>(args.Compute);
+                    const VulkanComputePipeline* vkPipeline = static_cast<const VulkanComputePipeline*>(std::get<std::shared_ptr<ComputePipeline>>(args.Pipeline).get());
                     pipeline = vkPipeline->getPipeline();
                     bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
                 }
@@ -621,12 +628,12 @@ namespace wire {
 
                 if (args.IsGraphics)
                 {
-                    const VulkanGraphicsPipeline* vkPipeline = static_cast<const VulkanGraphicsPipeline*>(args.Graphics);
+                    const VulkanGraphicsPipeline* vkPipeline = static_cast<const VulkanGraphicsPipeline*>(std::get<std::shared_ptr<GraphicsPipeline>>(args.Pipeline).get());
                     layout = vkPipeline->getPipelineLayout();
                 }
                 else
                 {
-                    const VulkanComputePipeline* vkPipeline = static_cast<const VulkanComputePipeline*>(args.Compute);
+                    const VulkanComputePipeline* vkPipeline = static_cast<const VulkanComputePipeline*>(std::get<std::shared_ptr<ComputePipeline>>(args.Pipeline).get());
                     layout = vkPipeline->getPipelineLayout();
                 }
 
@@ -643,15 +650,15 @@ namespace wire {
 
                 if (args.IsGraphics)
                 {
-                    const VulkanGraphicsPipeline* vkPipeline = static_cast<const VulkanGraphicsPipeline*>(args.Graphics);
-                    set = static_cast<VulkanShaderResource*>(args.Resource)->getSet();
+                    const VulkanGraphicsPipeline* vkPipeline = static_cast<const VulkanGraphicsPipeline*>(std::get<std::shared_ptr<GraphicsPipeline>>(args.Pipeline).get());
+                    set = static_cast<VulkanShaderResource*>(args.Resource.get())->getSet();
                     layout = vkPipeline->getPipelineLayout();
                     bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
                 }
                 else
                 {
-                    const VulkanComputePipeline* vkPipeline = static_cast<const VulkanComputePipeline*>(args.Compute);
-                    set = static_cast<VulkanShaderResource*>(args.Resource)->getSet();
+                    const VulkanComputePipeline* vkPipeline = static_cast<const VulkanComputePipeline*>(std::get<std::shared_ptr<ComputePipeline>>(args.Pipeline).get());
+                    set = static_cast<VulkanShaderResource*>(args.Resource.get())->getSet();
                     layout = vkPipeline->getPipelineLayout();
                     bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
                 }
@@ -719,7 +726,7 @@ namespace wire {
                 std::vector<VkDeviceSize> offsets(args.Buffers.size());
                 for (size_t i = 0; i < args.Buffers.size(); i++)
                 {
-                    buffers[i] = static_cast<const VulkanBufferBase*>(args.Buffers[i])->getBuffer();
+                    buffers[i] = static_cast<const VulkanBuffer*>(args.Buffers[i].get())->getBuffer();
                     offsets[i] = 0;
                 }
 
@@ -736,7 +743,7 @@ namespace wire {
             {
                 const auto& args = std::get<CommandEntry::BindIndexBufferArgs>(command.Args);
 
-                vkCmdBindIndexBuffer(commandBuffer, static_cast<const VulkanBufferBase*>(args.Buffer)->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+                vkCmdBindIndexBuffer(commandBuffer, static_cast<const VulkanBuffer*>(args.Buffer.get())->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
                 break;
             }
             case CommandType::ClearImage:
@@ -753,7 +760,7 @@ namespace wire {
                 VkClearColorValue clearColor = { args.Color.x, args.Color.y, args.Color.z, args.Color.w };
                 vkCmdClearColorImage(
                     commandBuffer,
-                    ((VulkanFramebuffer*)args.Framebuffer)->getColorImage(),
+                    ((VulkanFramebuffer*)args.Framebuffer.get())->getColorImage(),
                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                     &clearColor,
                     1, &range
@@ -791,8 +798,8 @@ namespace wire {
                 copy.dstOffset = args.DstOffset;
                 copy.size = args.Size;
 
-                VulkanBufferBase* vkSrc = (VulkanBufferBase*)args.SrcBuffer;
-                VulkanBufferBase* vkDst = (VulkanBufferBase*)args.DstBuffer;
+                VulkanBuffer* vkSrc = (VulkanBuffer*)args.SrcBuffer.get();
+                VulkanBuffer* vkDst = (VulkanBuffer*)args.DstBuffer.get();
 
                 vkCmdCopyBuffer(commandBuffer, vkSrc->getBuffer(), vkDst->getBuffer(), 1, &copy);
 
@@ -808,7 +815,7 @@ namespace wire {
                 barrier.dstAccessMask = (VkAccessFlags)args.Access;
                 barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
                 barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-                barrier.buffer = ((VulkanBufferBase*)args.Buffer)->getBuffer();
+                barrier.buffer = ((VulkanBuffer*)args.Buffer.get())->getBuffer();
                 barrier.offset = 0;
                 barrier.size = VK_WHOLE_SIZE;
 
@@ -837,7 +844,7 @@ namespace wire {
                 barrier.newLayout = newLayout;
                 barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
                 barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-                barrier.image = ((VulkanFramebuffer*)args.Framebuffer)->getColorImage();
+                barrier.image = ((VulkanFramebuffer*)args.Framebuffer.get())->getColorImage();
                 barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
                 barrier.subresourceRange.baseMipLevel = args.BaseMip;
                 barrier.subresourceRange.levelCount = args.NumMips;
@@ -1006,71 +1013,223 @@ namespace wire {
 
     void VulkanDevice::submitResourceFree(std::function<void(Device*)>&& func)
     {
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "Device used after destroyed");
+            return;
+        }
+        
         m_ResourceFreeQueue[m_FrameIndex].emplace_back(func);
     }
 
-    Swapchain* VulkanDevice::createSwapchain(const SwapchainInfo& info, std::string_view debugName)
+    void VulkanDevice::drop(const std::shared_ptr<IResource>& resource)
     {
-        return new VulkanSwapchain(this, info, debugName);
+        auto it = std::find(m_Resources.begin(), m_Resources.end(), resource);
+        if (it != m_Resources.end())
+            m_Resources.erase(it);
     }
 
-    Framebuffer* VulkanDevice::createFramebuffer(const FramebufferDesc& desc, std::string_view debugName)
+    std::shared_ptr<IResource> VulkanDevice::getResource(IResource* resource) const
     {
-        return new VulkanFramebuffer(this, desc, debugName);
+        for (const auto& resourcePtr : m_Resources)
+        {
+            if (resourcePtr.get() == resource)
+                return resourcePtr;
+        }
+        
+        return nullptr;
     }
 
-    RenderPass* VulkanDevice::createRenderPass(const RenderPassDesc& desc, Swapchain* swapchain, std::string_view debugName)
+    std::shared_ptr<Swapchain> VulkanDevice::createSwapchain(const SwapchainInfo& info, std::string_view debugName)
     {
-        return new VulkanRenderPass(this, (VulkanSwapchain*)swapchain, desc, debugName);
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "Device used after destroyed");
+            return nullptr;
+        }
+        
+        auto swapchain = std::make_shared<VulkanSwapchain>(this, info, debugName);
+        m_Resources.push_back(swapchain);
+        
+        return swapchain;
     }
 
-    RenderPass* VulkanDevice::createRenderPass(const RenderPassDesc& desc, Framebuffer* framebuffer, std::string_view debugName)
+    std::shared_ptr<Framebuffer> VulkanDevice::createFramebuffer(const FramebufferDesc& desc, std::string_view debugName)
     {
-        return new VulkanRenderPass(this, (VulkanFramebuffer*)framebuffer, desc, debugName);
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "Device used after destroyed");
+            return nullptr;
+        }
+        
+        auto framebuffer = std::make_shared<VulkanFramebuffer>(this, desc, debugName);
+        m_Resources.push_back(framebuffer);
+        
+        return framebuffer;
     }
 
-    ShaderResourceLayout* VulkanDevice::createShaderResourceLayout(const ShaderResourceLayoutInfo& layoutInfo)
+    std::shared_ptr<RenderPass> VulkanDevice::createRenderPass(const RenderPassDesc& desc, const std::shared_ptr<Swapchain>& swapchain, std::string_view debugName)
     {
-        return new VulkanShaderResourceLayout(this, layoutInfo);
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "Device used after destroyed");
+            return nullptr;
+        }
+        
+        auto renderPass = std::make_shared<VulkanRenderPass>(this, std::static_pointer_cast<VulkanSwapchain>(swapchain), desc, debugName);
+        m_Resources.push_back(renderPass);
+        
+        return renderPass;
     }
 
-    ShaderResource* VulkanDevice::createShaderResource(uint32_t set, ShaderResourceLayout* layout)
+    std::shared_ptr<RenderPass> VulkanDevice::createRenderPass(const RenderPassDesc& desc, const std::shared_ptr<Framebuffer>& framebuffer, std::string_view debugName)
     {
-        return new VulkanShaderResource(this, set, layout);
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "Device used after destroyed");
+            return nullptr;
+        }
+        
+        auto renderPass = std::make_shared<VulkanRenderPass>(this, std::static_pointer_cast<VulkanFramebuffer>(framebuffer), desc, debugName);
+        m_Resources.push_back(renderPass);
+        
+        return renderPass;
     }
 
-    GraphicsPipeline* VulkanDevice::createGraphicsPipeline(const GraphicsPipelineDesc& desc, std::string_view debugName)
+    std::shared_ptr<Buffer> VulkanDevice::createBuffer(BufferType type, size_t size, const void* data, std::string_view debugName)
     {
-        return new VulkanGraphicsPipeline(this, desc, debugName);
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "Device used after destroyed");
+            return nullptr;
+        }
+        
+        auto buffer = std::make_shared<VulkanBuffer>(this, type, size, data, debugName);
+        m_Resources.push_back(buffer);
+        
+        return buffer;
     }
 
-    ComputePipeline* VulkanDevice::createComputePipeline(const ComputePipelineDesc& desc, std::string_view debugName)
+    std::shared_ptr<ShaderResourceLayout> VulkanDevice::createShaderResourceLayout(const ShaderResourceLayoutInfo& layoutInfo, std::string_view debugName)
     {
-        return new VulkanComputePipeline(this, desc, debugName);
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "Device used after destroyed");
+            return nullptr;
+        }
+        
+        auto layout = std::make_shared<VulkanShaderResourceLayout>(this, layoutInfo, debugName);
+        m_Resources.push_back(layout);
+        
+        return layout;
     }
 
-    Texture2D* VulkanDevice::createTexture2D(const std::filesystem::path& path, std::string_view debugName)
+    std::shared_ptr<ShaderResource> VulkanDevice::createShaderResource(uint32_t set, const std::shared_ptr<ShaderResourceLayout>& layout, std::string_view debugName)
     {
-        return new VulkanTexture2D(this, path, debugName);
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "Device used after destroyed");
+            return nullptr;
+        }
+        
+        auto resource = std::make_shared<VulkanShaderResource>(this, set, layout, debugName);
+        m_Resources.push_back(resource);
+        
+        return resource;
     }
 
-    Texture2D* VulkanDevice::createTexture2D(uint32_t* data, uint32_t width, uint32_t height, std::string_view debugName)
+    std::shared_ptr<GraphicsPipeline> VulkanDevice::createGraphicsPipeline(const GraphicsPipelineDesc& desc, std::string_view debugName)
     {
-        return new VulkanTexture2D(this, data, width, height, debugName);
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "Device used after destroyed");
+            return nullptr;
+        }
+        
+        auto graphicsPipeline = std::make_shared<VulkanGraphicsPipeline>(this, desc, debugName);
+        m_Resources.push_back(graphicsPipeline);
+        
+        return graphicsPipeline;
     }
 
-    Sampler* VulkanDevice::createSampler(const SamplerDesc& desc, std::string_view debugName)
+    std::shared_ptr<ComputePipeline> VulkanDevice::createComputePipeline(const ComputePipelineDesc& desc, std::string_view debugName)
     {
-        return new VulkanSampler(this, desc, debugName);
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "Device used after destroyed");
+            return nullptr;
+        }
+        
+        auto computePipeline = std::make_shared<VulkanComputePipeline>(this, desc, debugName);
+        m_Resources.push_back(computePipeline);
+        
+        return computePipeline;
     }
 
-    Font* VulkanDevice::createFont(const std::filesystem::path& path, std::string_view debugName, uint32_t minChar, uint32_t maxChar)
+    std::shared_ptr<Texture2D> VulkanDevice::createTexture2D(const std::filesystem::path& path, std::string_view debugName)
     {
-        return new VulkanFont(this, path, debugName, minChar, maxChar);
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "Device used after destroyed");
+            return nullptr;
+        }
+        
+        auto texture = std::make_shared<VulkanTexture2D>(this, path, debugName);
+        m_Resources.push_back(texture);
+        
+        return texture;
     }
 
-    Font* VulkanDevice::getFontFromCache(const std::filesystem::path& path)
+    std::shared_ptr<Texture2D> VulkanDevice::createTexture2D(uint32_t* data, uint32_t width, uint32_t height, std::string_view debugName)
     {
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "Device used after destroyed");
+            return nullptr;
+        }
+        
+        auto texture = std::make_shared<VulkanTexture2D>(this, data, width, height, debugName);
+        m_Resources.push_back(texture);
+        
+        return texture;
+    }
+
+    std::shared_ptr<Sampler> VulkanDevice::createSampler(const SamplerDesc& desc, std::string_view debugName)
+    {
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "Device used after destroyed");
+            return nullptr;
+        }
+        
+        auto sampler = std::make_shared<VulkanSampler>(this, desc, debugName);
+        m_Resources.push_back(sampler);
+        
+        return sampler;
+    }
+
+    std::shared_ptr<Font> VulkanDevice::createFont(const std::filesystem::path& path, std::string_view debugName, uint32_t minChar, uint32_t maxChar)
+    {
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "Device used after destroyed");
+            return nullptr;
+        }
+        
+        auto font = std::make_shared<VulkanFont>(this, path, debugName, minChar, maxChar);
+        m_Resources.push_back(font);
+        
+        return font;
+    }
+
+    std::shared_ptr<Font> VulkanDevice::getFontFromCache(const std::filesystem::path& path)
+    {
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "Device used after destroyed");
+            return nullptr;
+        }
+        
         std::string pathStr = path.string();
 
         WR_ASSERT(pathStr.contains("fontcache://"), "Invalid font cache path! (must begin with fontcache://)");
@@ -1080,7 +1239,12 @@ namespace wire {
         for (const auto& font : m_FontCache)
         {
             if (font.Name == name)
-                return new VulkanFont(this, font);
+            {
+                auto fontObj = std::make_shared<VulkanFont>(this, font);
+                m_Resources.push_back(fontObj);
+                
+                return fontObj;
+            }
         }
 
         WR_ASSERT(false, "Font not found in cache!");
@@ -1089,13 +1253,68 @@ namespace wire {
 
     float VulkanDevice::getMaxAnisotropy() const
     {
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "Device used after destroyed");
+            return 0.0f;
+        }
+        
         VkPhysicalDeviceProperties properties;
         vkGetPhysicalDeviceProperties(m_PhysicalDevice, &properties);
 
         return properties.limits.maxSamplerAnisotropy;
     }
 
-    VkCommandBuffer VulkanDevice::beginCommandListOverride(RenderPass* renderPass)
+    void VulkanDevice::destroy()
+    {
+        if (m_Valid && m_Instance)
+        {
+            vkDeviceWaitIdle(m_Device);
+            
+            m_Swapchain = nullptr;
+            
+            for (auto& resource : m_Resources)
+            {
+                resource->destroy();
+                resource->invalidate();
+            }
+            
+            m_FontCache.release();
+            
+            for (auto& queue : m_ResourceFreeQueue)
+            {
+                for (auto& func : queue)
+                    func(this);
+                queue.clear();
+            }
+            m_ResourceFreeQueue.clear();
+            
+            for (VkFence fence : m_InFlightFences)
+                vkDestroyFence(m_Device, fence, getAllocator());
+            
+            for (VkSemaphore semaphore : m_ImageAvailableSemaphores)
+                vkDestroySemaphore(m_Device, semaphore, getAllocator());
+            m_ImageAvailableSemaphores.clear();
+            
+            for (VkSemaphore semaphore : m_RenderFinishedSemaphores)
+                vkDestroySemaphore(m_Device, semaphore, getAllocator());
+            m_RenderFinishedSemaphores.clear();
+            
+            vkDestroyDescriptorPool(m_Device, m_DescriptorPool, getAllocator());
+            vkDestroyCommandPool(m_Device, m_CommandPool, getAllocator());
+            m_FrameCommandBuffers.clear();
+            
+            vkDestroyDevice(m_Device, getAllocator());
+        }
+    }
+
+    void VulkanDevice::invalidate() noexcept
+    {
+        m_Valid = false;
+        m_Instance = nullptr;
+    }
+
+    VkCommandBuffer VulkanDevice::beginCommandListOverride(const std::shared_ptr<RenderPass>& renderPass)
     {
         VkCommandBuffer commandBuffer;
 
@@ -1130,8 +1349,8 @@ namespace wire {
 
         if (renderPass)
         {
-            inheritanceInfo.renderPass = ((VulkanRenderPass*)renderPass)->getRenderPass();
-            inheritanceInfo.framebuffer = ((VulkanRenderPass*)renderPass)->getFramebuffers()[m_ImageIndex];
+            inheritanceInfo.renderPass = ((VulkanRenderPass*)renderPass.get())->getRenderPass();
+            inheritanceInfo.framebuffer = ((VulkanRenderPass*)renderPass.get())->getFramebuffers()[m_ImageIndex];
 
             beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
         }
@@ -1198,11 +1417,6 @@ namespace wire {
         outType = typeid(VulkanCopyBufferToImageNativeCommand);
 
         return result;
-    }
-
-    BufferBase* VulkanDevice::createBufferBase(BufferType type, size_t size, const void* data, std::string_view debugName)
-    {
-        return new VulkanBufferBase(this, type, size, data, debugName);
     }
 
     void VulkanDevice::pickPhysicalDevice()

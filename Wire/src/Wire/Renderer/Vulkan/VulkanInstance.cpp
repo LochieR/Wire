@@ -1,6 +1,7 @@
 #include "VulkanInstance.h"
 
 #include "VulkanDevice.h"
+#include "Wire/Core/Core.h"
 #include "Wire/Core/Application.h"
 
 #include <glfw/glfw3.h>
@@ -93,15 +94,25 @@ namespace wire {
     
     VulkanInstance::~VulkanInstance()
     {
+        for (auto& resource : m_Resources)
+        {
+            resource->destroy();
+            resource->invalidate();
+        }
+        m_Resources.clear();
+        
         vkDestroySurfaceKHR(m_Instance, m_Surface, m_Allocator);
         if constexpr (s_EnableValidationLayers)
             Utils::DestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, m_Allocator);
         vkDestroyInstance(m_Instance, m_Allocator);
     }
 
-    Device* VulkanInstance::createDevice(const DeviceInfo& deviceInfo, const SwapchainInfo& swapchainInfo)
+    std::shared_ptr<Device> VulkanInstance::createDevice(const DeviceInfo& deviceInfo, const SwapchainInfo& swapchainInfo)
     {
-        return new VulkanDevice(this, deviceInfo, swapchainInfo);
+        auto device = std::make_shared<VulkanDevice>(this, deviceInfo, swapchainInfo);
+        m_Resources.push_back(device);
+        
+        return device;
     }
 
     void VulkanInstance::createInstance()

@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include "IResource.h"
 #include "Texture2D.h"
 #include "RenderPass.h"
 #include "ShaderCache.h"
@@ -44,7 +45,7 @@ namespace wire {
         size_t Stride = 0;
 
         std::vector<PushConstantInfo> PushConstantInfos;
-        ShaderResourceLayout* ResourceLayout;
+        std::shared_ptr<ShaderResourceLayout> ResourceLayout;
     };
 
     struct GraphicsPipelineDesc
@@ -52,10 +53,10 @@ namespace wire {
         std::string ShaderPath;
         InputLayout Layout;
         PrimitiveTopology Topology;
-        RenderPass* RenderPass;
+        std::shared_ptr<RenderPass> RenderPass;
     };
 
-    class GraphicsPipeline
+    class GraphicsPipeline : public IResource
     {
     public:
         virtual ~GraphicsPipeline() = default;

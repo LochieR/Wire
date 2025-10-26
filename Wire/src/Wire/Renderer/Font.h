@@ -1,21 +1,22 @@
 #pragma once
 
+#include "IResource.h"
+#include "Texture2D.h"
+
 #include <string>
 #include <vector>
 #include <filesystem>
-
-#include "Texture2D.h"
 
 namespace wire {
 
     struct MSDFData;
 
-    class Font
+    class Font : public IResource
     {
     public:
         virtual ~Font() = default;
 
-        virtual Texture2D* getAtlasTexture() const = 0;
+        virtual const std::shared_ptr<Texture2D>& getAtlasTexture() const = 0;
         virtual const MSDFData& getMSDFData() const = 0;
     };
 

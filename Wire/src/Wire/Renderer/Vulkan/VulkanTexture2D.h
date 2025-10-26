@@ -20,10 +20,13 @@ namespace wire {
         virtual uint32_t getWidth() const override { return m_Width; }
         virtual uint32_t getHeight() const override { return m_Height; }
 
-        virtual UUID getUUID() const { return m_UUID; }
-
+        virtual UUID getUUID() const override { return m_UUID; }
+        
         VkImageView getImageView() const { return m_ImageView; }
         VkImageView getMip(uint32_t level) const { return m_Mips[level]; }
+    protected:
+        virtual void destroy() override;
+        virtual void invalidate() noexcept override;
     private:
         Device* m_Device = nullptr;
 
@@ -47,8 +50,11 @@ namespace wire {
     public:
         VulkanSampler(Device* device, const SamplerDesc& desc, std::string_view debugName);
         virtual ~VulkanSampler();
-
+        
         VkSampler getSampler() const { return m_Sampler; }
+    protected:
+        virtual void destroy() override;
+        virtual void invalidate() noexcept override;
     private:
         Device* m_Device = nullptr;
         SamplerDesc m_Desc;

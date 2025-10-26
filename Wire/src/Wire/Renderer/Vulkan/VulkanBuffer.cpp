@@ -88,7 +88,7 @@ namespace wire {
 
     }
 
-    VulkanBufferBase::VulkanBufferBase(Device* device, BufferType type, size_t size, const void* data, std::string_view debugName)
+    VulkanBuffer::VulkanBuffer(Device* device, BufferType type, size_t size, const void* data, std::string_view debugName)
         : m_Device(device), m_Type(type), m_Size(size), m_DebugName(debugName)
     {
         VulkanDevice* vk = (VulkanDevice*)device;
@@ -130,39 +130,45 @@ namespace wire {
         }
     }
 
-    VulkanBufferBase::~VulkanBufferBase()
+    VulkanBuffer::~VulkanBuffer()
     {
-        m_Device->submitResourceFree([buffer = m_Buffer, memory = m_Memory, stagingBuffer = m_StagingBuffer, stagingMemory = m_StagingMemory](Device* device)
-        {
-            VulkanDevice* vk = (VulkanDevice*)device;
-
-            if (buffer)
-                vkDestroyBuffer(vk->getDevice(), buffer, vk->getAllocator());
-            if (stagingBuffer)
-                vkDestroyBuffer(vk->getDevice(), stagingBuffer, vk->getAllocator());
-            if (memory)
-                vkFreeMemory(vk->getDevice(), memory, vk->getAllocator());
-            if (stagingMemory)
-                vkFreeMemory(vk->getDevice(), stagingMemory, vk->getAllocator());
-        });
+        destroy();
     }
 
-    void VulkanBufferBase::setData(const void* data, size_t size, size_t offset)
+    void VulkanBuffer::setData(const void* data, size_t size, size_t offset)
     {
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "Buffer used after destroyed ({})", m_DebugName);
+            return;
+        }
+        
         void* memory = map(size);
         std::memcpy(memory, data, size);
         unmap();
     }
 
-    void VulkanBufferBase::setData(int data, size_t size)
+    void VulkanBuffer::setData(int data, size_t size)
     {
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "Buffer used after destroyed ({})", m_DebugName);
+            return;
+        }
+        
         void* memory = map(size);
         std::memset(memory, data, size);
         unmap();
     }
 
-    void* VulkanBufferBase::map(size_t size)
+    void* VulkanBuffer::map(size_t size)
     {
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "Buffer used after destroyed ({})", m_DebugName);
+            return nullptr;
+        }
+        
         VulkanDevice* vk = (VulkanDevice*)m_Device;
 
         if (Utils::NeedsStagingBuffer(m_Type))
@@ -179,8 +185,14 @@ namespace wire {
         }
     }
 
-    void VulkanBufferBase::unmap()
+    void VulkanBuffer::unmap()
     {
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "Buffer used after destroyed ({})", m_DebugName);
+            return;
+        }
+        
         VulkanDevice* vk = (VulkanDevice*)m_Device;
 
         if (Utils::NeedsStagingBuffer(m_Type))
@@ -198,6 +210,32 @@ namespace wire {
         }
         else
             vkUnmapMemory(vk->getDevice(), m_Memory);
+    }
+
+    void VulkanBuffer::destroy()
+    {
+        if (m_Valid && m_Device)
+        {
+            m_Device->submitResourceFree([buffer = m_Buffer, memory = m_Memory, stagingBuffer = m_StagingBuffer, stagingMemory = m_StagingMemory](Device* device)
+                                         {
+                VulkanDevice* vk = (VulkanDevice*)device;
+                
+                if (buffer)
+                    vkDestroyBuffer(vk->getDevice(), buffer, vk->getAllocator());
+                if (stagingBuffer)
+                    vkDestroyBuffer(vk->getDevice(), stagingBuffer, vk->getAllocator());
+                if (memory)
+                    vkFreeMemory(vk->getDevice(), memory, vk->getAllocator());
+                if (stagingMemory)
+                    vkFreeMemory(vk->getDevice(), stagingMemory, vk->getAllocator());
+            });
+        }
+    }
+
+    void VulkanBuffer::invalidate() noexcept
+    {
+        m_Valid = false;
+        m_Device = nullptr;
     }
 
 }

@@ -1,6 +1,6 @@
 #include "ShaderCompiler.h"
 
-#include "Renderer.h"
+#include "Device.h"
 #include "Wire/Core/Assert.h"
 #include "Wire/Serialization/SHA-256.h"
 

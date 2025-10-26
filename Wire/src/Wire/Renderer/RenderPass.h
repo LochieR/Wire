@@ -1,5 +1,6 @@
 #pragma once
 
+#include "IResource.h"
 #include "Wire/Core/Assert.h"
 
 #include <vector>
@@ -61,7 +62,7 @@ namespace wire {
         std::vector<AttachmentDesc> Attachments;
     };
 
-    class RenderPass
+    class RenderPass : public IResource
     {
     public:
         virtual ~RenderPass() = default;

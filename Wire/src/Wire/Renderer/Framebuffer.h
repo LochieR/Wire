@@ -3,6 +3,8 @@
 #include "Swapchain.h"
 #include "Texture2D.h"
 
+#include <memory>
+
 namespace wire {
 
     enum class AttachmentUsage : uint16_t
@@ -78,7 +80,7 @@ namespace wire {
         AttachmentFormat DepthFormat;
     };
 
-    class Framebuffer
+    class Framebuffer : public IResource, std::enable_shared_from_this<Framebuffer>
     {
     public:
         virtual ~Framebuffer() = default;

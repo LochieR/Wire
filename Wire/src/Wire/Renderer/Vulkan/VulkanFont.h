@@ -18,8 +18,11 @@ namespace wire {
         VulkanFont(Device* device, const NaiveFont& naive);
         virtual ~VulkanFont();
 
-        virtual Texture2D* getAtlasTexture() const override { return m_AtlasTexture; }
+        virtual const std::shared_ptr<Texture2D>& getAtlasTexture() const override { return m_AtlasTexture; }
         virtual const MSDFData& getMSDFData() const override { return *m_Data; }
+    protected:
+        virtual void destroy() override;
+        virtual void invalidate() noexcept override;
     private:
         void createFontData(const NaiveFont& naive);
     private:
@@ -28,7 +31,7 @@ namespace wire {
         std::string m_DebugName;
 
         MSDFData* m_Data = nullptr;
-        Texture2D* m_AtlasTexture = nullptr;
+        std::shared_ptr<Texture2D> m_AtlasTexture = nullptr;
     };
 
 }

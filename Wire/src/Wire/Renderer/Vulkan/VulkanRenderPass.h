@@ -12,8 +12,8 @@ namespace wire {
     class VulkanRenderPass : public RenderPass
     {
     public:
-        VulkanRenderPass(VulkanDevice* device, VulkanSwapchain* swapchain, const RenderPassDesc& desc, std::string_view debugName);
-        VulkanRenderPass(VulkanDevice* device, VulkanFramebuffer* framebuffer, const RenderPassDesc& desc, std::string_view debugName);
+        VulkanRenderPass(VulkanDevice* device, const std::shared_ptr<VulkanSwapchain>& swapchain, const RenderPassDesc& desc, std::string_view debugName);
+        VulkanRenderPass(VulkanDevice* device, const std::shared_ptr<VulkanFramebuffer>& framebuffer, const RenderPassDesc& desc, std::string_view debugName);
         virtual ~VulkanRenderPass();
 
         virtual void recreate() override;
@@ -22,6 +22,9 @@ namespace wire {
         VkRenderPass getRenderPass() const { return m_RenderPass; }
         const std::vector<VkFramebuffer>& getFramebuffers() const { return m_Framebuffers; }
         VkFramebuffer getFramebuffer(uint32_t imageIndex) const { return m_Framebuffer ? m_Framebuffers[0] : m_Framebuffers[imageIndex]; }
+    protected:
+        virtual void destroy() override;
+        virtual void invalidate() noexcept override;
     private:
         void dispose();
 
@@ -29,8 +32,8 @@ namespace wire {
         std::vector<VkAttachmentReference> createAttachmentRefs();
     private:
         VulkanDevice* m_Device = nullptr;
-        VulkanSwapchain* m_Swapchain = nullptr;
-        VulkanFramebuffer* m_Framebuffer = nullptr;
+        std::shared_ptr<VulkanSwapchain> m_Swapchain = nullptr;
+        std::shared_ptr<VulkanFramebuffer> m_Framebuffer = nullptr;
         RenderPassDesc m_Desc;
 
         std::string m_DebugName;

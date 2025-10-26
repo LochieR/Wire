@@ -6,8 +6,8 @@
 
 namespace wire {
 
-    VulkanShaderResourceLayout::VulkanShaderResourceLayout(VulkanDevice* device, const ShaderResourceLayoutInfo& layoutInfo)
-        : m_Device(device)
+    VulkanShaderResourceLayout::VulkanShaderResourceLayout(VulkanDevice* device, const ShaderResourceLayoutInfo& layoutInfo, std::string_view debugName)
+        : m_Device(device), m_DebugName(debugName)
     {
         for (const auto& set : layoutInfo.Sets)
         {
@@ -35,24 +35,42 @@ namespace wire {
             VK_CHECK(result, "failed to create Vulkan descriptor set layout");
             
             m_SetLayouts.push_back(setLayout);
+            
+            std::string debugName = m_DebugName;
+            debugName += " (" + std::to_string(m_SetLayouts.size() - 1) + ")";
+            VK_DEBUG_NAME(m_Device->getDevice(), DESCRIPTOR_SET_LAYOUT, setLayout, debugName.c_str());
         }
     }
 
     VulkanShaderResourceLayout::~VulkanShaderResourceLayout()
     {
-        m_Device->submitResourceFree([setLayouts = m_SetLayouts](Device* device)
-        {
-            VulkanDevice* vk = (VulkanDevice*)device;
-
-            for (VkDescriptorSetLayout setLayout : setLayouts)
-                vkDestroyDescriptorSetLayout(vk->getDevice(), setLayout, vk->getAllocator());
-        });
+        destroy();
     }
 
-    VulkanShaderResource::VulkanShaderResource(VulkanDevice* device, uint32_t set, ShaderResourceLayout* layout)
-        : m_Device(device)
+    void VulkanShaderResourceLayout::destroy()
     {
-        VulkanShaderResourceLayout* vkResourceLayout = static_cast<VulkanShaderResourceLayout*>(layout);
+        if (m_Valid && m_Device)
+        {
+            m_Device->submitResourceFree([setLayouts = m_SetLayouts](Device* device)
+            {
+                VulkanDevice* vk = (VulkanDevice*)device;
+
+                for (VkDescriptorSetLayout setLayout : setLayouts)
+                    vkDestroyDescriptorSetLayout(vk->getDevice(), setLayout, vk->getAllocator());
+            });
+        }
+    }
+
+    void VulkanShaderResourceLayout::invalidate() noexcept
+    {
+        m_Valid = false;
+        m_Device = nullptr;
+    }
+
+    VulkanShaderResource::VulkanShaderResource(VulkanDevice* device, uint32_t set, const std::shared_ptr<ShaderResourceLayout>& layout, std::string_view debugName)
+        : m_Device(device), m_DebugName(debugName)
+    {
+        VulkanShaderResourceLayout* vkResourceLayout = static_cast<VulkanShaderResourceLayout*>(layout.get());
         
         VkDescriptorSetLayout setLayout = vkResourceLayout->getLayout(set);
         
@@ -64,16 +82,25 @@ namespace wire {
         
         VkResult result = vkAllocateDescriptorSets(device->getDevice(), &allocInfo, &m_Set);
         VK_CHECK(result, "failed to allocate Vulkan descriptor sets");
+        
+        VK_DEBUG_NAME(device->getDevice(), DESCRIPTOR_SET, m_Set, m_DebugName.c_str());
     }
 
     VulkanShaderResource::~VulkanShaderResource()
     {
+        destroy();
     }
 
-    void VulkanShaderResource::update(Texture2D* texture, uint32_t binding, uint32_t index)
+    void VulkanShaderResource::update(const std::shared_ptr<Texture2D>& texture, uint32_t binding, uint32_t index)
     {
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "ShaderResource used after destroyed ({})", m_DebugName);
+            return;
+        }
+        
         VulkanDevice* vk = (VulkanDevice*)m_Device;
-        VulkanTexture2D* vkTexture = (VulkanTexture2D*)texture;
+        VulkanTexture2D* vkTexture = (VulkanTexture2D*)texture.get();
 
         VkDescriptorImageInfo imageInfo{};
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -92,10 +119,16 @@ namespace wire {
         vkUpdateDescriptorSets(vk->getDevice(), 1, &descriptorWrite, 0, nullptr);
     }
 
-    void VulkanShaderResource::update(Sampler* sampler, uint32_t binding, uint32_t index)
+    void VulkanShaderResource::update(const std::shared_ptr<Sampler>& sampler, uint32_t binding, uint32_t index)
     {
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "ShaderResource used after destroyed ({})", m_DebugName);
+            return;
+        }
+        
         VulkanDevice* vk = (VulkanDevice*)m_Device;
-        VulkanSampler* vkSampler = (VulkanSampler*)sampler;
+        VulkanSampler* vkSampler = (VulkanSampler*)sampler.get();
 
         VkDescriptorImageInfo imageInfo{};
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -114,11 +147,17 @@ namespace wire {
         vkUpdateDescriptorSets(vk->getDevice(), 1, &descriptorWrite, 0, nullptr);
     }
 
-    void VulkanShaderResource::update(Texture2D* texture, Sampler* sampler, uint32_t binding, uint32_t index)
+    void VulkanShaderResource::update(const std::shared_ptr<Texture2D>& texture, const std::shared_ptr<Sampler>& sampler, uint32_t binding, uint32_t index)
     {
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "ShaderResource used after destroyed ({})", m_DebugName);
+            return;
+        }
+        
         VulkanDevice* vk = (VulkanDevice*)m_Device;
-        VulkanTexture2D* vkTexture = (VulkanTexture2D*)texture;
-        VulkanSampler* vkSampler = (VulkanSampler*)sampler;
+        VulkanTexture2D* vkTexture = (VulkanTexture2D*)texture.get();
+        VulkanSampler* vkSampler = (VulkanSampler*)sampler.get();
 
         VkDescriptorImageInfo imageInfo{};
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -137,10 +176,16 @@ namespace wire {
         vkUpdateDescriptorSets(vk->getDevice(), 1, &descriptorWrite, 0, nullptr);
     }
 
-    void VulkanShaderResource::update(BufferBase* uniformBuffer, uint32_t binding, uint32_t index)
+    void VulkanShaderResource::update(const std::shared_ptr<Buffer>& uniformBuffer, uint32_t binding, uint32_t index)
     {
+        if (!m_Valid)
+        {
+            WR_ASSERT_OR_WARN(false, "ShaderResource used after destroyed ({})", m_DebugName);
+            return;
+        }
+        
         VulkanDevice* vk = (VulkanDevice*)m_Device;
-        VulkanBufferBase* vkBuffer = (VulkanBufferBase*)uniformBuffer;
+        VulkanBuffer* vkBuffer = (VulkanBuffer*)uniformBuffer.get();
 
         VkDescriptorBufferInfo bufferInfo{};
         bufferInfo.buffer = vkBuffer->getBuffer();
@@ -157,6 +202,19 @@ namespace wire {
         descriptorWrite.pBufferInfo = &bufferInfo;
 
         vkUpdateDescriptorSets(vk->getDevice(), 1, &descriptorWrite, 0, nullptr);
+    }
+
+    void VulkanShaderResource::destroy()
+    {
+        if (m_Valid && m_Device)
+        {
+        }
+    }
+
+    void VulkanShaderResource::invalidate() noexcept
+    {
+        m_Valid = false;
+        m_Device = nullptr;
     }
 
 }

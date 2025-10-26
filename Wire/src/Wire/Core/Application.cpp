@@ -170,8 +170,6 @@ namespace wire {
 	Application::~Application()
 	{
 		delete m_LayerStack;
-		delete m_Device;
-		delete m_Instance;
 
 		glfwDestroyWindow(m_Window);
 		glfwTerminate();
