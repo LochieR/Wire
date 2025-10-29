@@ -153,11 +153,12 @@ namespace wire {
             }
         }
         
-        SwapchainInfo scInfo = {};
+        SwapchainInfo scInfo{};
         scInfo.Attachments = {
             AttachmentFormat::SwapchainColorDefault,
             AttachmentFormat::SwapchainDepthDefault
         };
+		scInfo.PresentMode = PresentMode::MailboxOrFifo;
 
 		m_Instance = createInstance(instanceInfo);
 		m_Device = m_Instance->createDevice(deviceInfo, scInfo);
@@ -187,19 +188,15 @@ namespace wire {
 
 			m_Device->beginFrame();
 
-			m_ImGuiLayer->begin();
-
-			ImGui::Begin("test");
-
-			if (ImGui::Button("hello"))
-				WR_INFO("hello");
-
-			ImGui::End();
-
-			m_ImGuiLayer->end();
-
 			for (Layer* layer : *m_LayerStack)
 				layer->onUpdate(timestep);
+
+			m_ImGuiLayer->begin();
+
+			for (Layer* layer : *m_LayerStack)
+				layer->onImGuiRender();
+
+			m_ImGuiLayer->end();
 
 			m_Device->endFrame();
 			glfwPollEvents();

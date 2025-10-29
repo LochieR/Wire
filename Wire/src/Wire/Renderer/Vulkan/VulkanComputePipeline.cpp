@@ -60,8 +60,11 @@ namespace wire {
             range.stageFlags = Utils::ConvertShaderType(pushConstant.Shader);
         }
 
-        VulkanShaderResourceLayout* vkShaderResourceLayout = static_cast<VulkanShaderResourceLayout*>(m_InputLayout.ResourceLayout);
-        const std::vector<VkDescriptorSetLayout>& setLayouts = vkShaderResourceLayout->getLayouts();
+        VulkanShaderResourceLayout* vkShaderResourceLayout = static_cast<VulkanShaderResourceLayout*>(m_InputLayout.ResourceLayout.get());
+        std::vector<VkDescriptorSetLayout> setLayouts;
+
+        if (vkShaderResourceLayout)
+            setLayouts = vkShaderResourceLayout->getLayouts();
 
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;

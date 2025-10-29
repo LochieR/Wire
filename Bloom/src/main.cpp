@@ -1,6 +1,7 @@
 #include "Wire.h"
 
 #include "EngineLayer.h"
+#include "BloomLayer.h"
 
 #if !defined(WR_DIST) || !defined(WR_PLATFORM_WINDOWS)
 
@@ -15,7 +16,8 @@ int main()
 
 	wire::Application app(desc);
 	
-	app.pushLayer(new bloom::EngineLayer());
+	//app.pushLayer(new bloom::EngineLayer());
+	app.pushLayer(new bloom::BloomLayer());
 	app.run();
 
 	return 0;

@@ -37,13 +37,14 @@ namespace wire {
 		renderPassDesc.Attachments = {
 			AttachmentDesc{
 				.Format = AttachmentFormat::SwapchainColorDefault,
-				.Usage = AttachmentLayout::Color,
-				.PreviousAttachmentUsage = AttachmentLayout::Undefined,
+				.Usage = AttachmentLayout::Present,
+				.PreviousAttachmentUsage = AttachmentLayout::Color,
 				.Samples = AttachmentDesc::Count1Bit,
-				.LoadOp = LoadOperation::Clear,
+				.LoadOp = LoadOperation::Load,
 				.StoreOp = StoreOperation::Store,
 				.StencilLoadOp = LoadOperation::DontCare,
-				.StencilStoreOp = StoreOperation::DontCare
+				.StencilStoreOp = StoreOperation::DontCare,
+				.BlendState = BlendState{}
 			}
 		};
 

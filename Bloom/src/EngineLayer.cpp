@@ -83,13 +83,14 @@ namespace bloom {
         wire::RenderPassDesc renderPassDesc{};
         wire::AttachmentDesc colorAttachment{};
         colorAttachment.Format = wire::AttachmentFormat::SwapchainColorDefault;
-        colorAttachment.Usage = wire::AttachmentLayout::Present;
+        colorAttachment.Usage = wire::AttachmentLayout::Color;
         colorAttachment.PreviousAttachmentUsage = wire::AttachmentLayout::Color;
         colorAttachment.Samples = wire::AttachmentDesc::Count1Bit;
         colorAttachment.LoadOp = wire::LoadOperation::Load;
         colorAttachment.StoreOp = wire::StoreOperation::Store;
         colorAttachment.StencilLoadOp = wire::LoadOperation::DontCare;
         colorAttachment.StencilStoreOp = wire::StoreOperation::DontCare;
+		colorAttachment.BlendState = {};
         
         wire::AttachmentDesc depthAttachment{};
         depthAttachment.Format = wire::AttachmentFormat::SwapchainDepthDefault;
@@ -100,6 +101,7 @@ namespace bloom {
         depthAttachment.StoreOp = wire::StoreOperation::Store;
         depthAttachment.StencilLoadOp = wire::LoadOperation::DontCare;
         depthAttachment.StencilStoreOp = wire::StoreOperation::DontCare;
+		depthAttachment.BlendState = wire::BlendState{ .BlendEnable = false };
         
         renderPassDesc.Attachments = { colorAttachment, depthAttachment };
         m_RenderPass = m_Device->createRenderPass(renderPassDesc, m_Device->getSwapchain(), "EngineLayer::m_RenderPass");

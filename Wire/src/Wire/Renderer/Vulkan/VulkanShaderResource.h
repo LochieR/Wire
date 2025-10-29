@@ -35,10 +35,13 @@ namespace wire {
         virtual ~VulkanShaderResource();
         
         virtual void update(const std::shared_ptr<Texture2D>& texture, uint32_t binding, uint32_t index) override;
+        virtual void update(const std::shared_ptr<Texture2D>& texture, uint32_t binding, uint32_t index, uint32_t mipLevel) override;
         virtual void update(const std::shared_ptr<Sampler>& sampler, uint32_t binding, uint32_t index) override;
         virtual void update(const std::shared_ptr<Texture2D>& texture, const std::shared_ptr<Sampler>& sampler, uint32_t binding, uint32_t index) override;
         virtual void update(const std::shared_ptr<Buffer>& uniformBuffer, uint32_t binding, uint32_t index) override;
-        
+        virtual void update(const std::shared_ptr<Framebuffer>& storageImage, uint32_t binding, uint32_t index) override;
+        virtual void update(const std::shared_ptr<Framebuffer>& storageImage, uint32_t binding, uint32_t index, uint32_t mipLevel) override;
+
         VkDescriptorSet getSet() const { return m_Set; }
     protected:
         virtual void destroy() override;

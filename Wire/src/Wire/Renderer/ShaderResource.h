@@ -3,6 +3,7 @@
 #include "Buffer.h"
 #include "IResource.h"
 #include "Texture2D.h"
+#include "Framebuffer.h"
 #include "ShaderCache.h"
 
 #include <cstdint>
@@ -50,9 +51,12 @@ namespace wire {
         virtual ~ShaderResource() = default;
         
         virtual void update(const std::shared_ptr<Texture2D>& texture, uint32_t binding, uint32_t index) = 0;
+        virtual void update(const std::shared_ptr<Texture2D>& texture, uint32_t binding, uint32_t index, uint32_t mipLevel) = 0;
         virtual void update(const std::shared_ptr<Sampler>& sampler, uint32_t binding, uint32_t index) = 0;
         virtual void update(const std::shared_ptr<Texture2D>& texture, const std::shared_ptr<Sampler>& sampler, uint32_t binding, uint32_t index) = 0;
         virtual void update(const std::shared_ptr<Buffer>& uniformBuffer, uint32_t binding, uint32_t index) = 0;
+        virtual void update(const std::shared_ptr<Framebuffer>& storageImage, uint32_t binding, uint32_t index) = 0;
+        virtual void update(const std::shared_ptr<Framebuffer>& storageImage, uint32_t binding, uint32_t index, uint32_t mipLevel) = 0;
     };
 
 }

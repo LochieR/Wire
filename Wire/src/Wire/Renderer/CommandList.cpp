@@ -152,7 +152,6 @@ namespace wire {
 
     void CommandList::bindIndexBuffer(const std::shared_ptr<Buffer>& indexBuffer)
     {
-        std::static_pointer_cast<Buffer>(indexBuffer);
         CommandEntry entry;
         entry.Type = CommandType::BindIndexBuffer;
         entry.Args = CommandEntry::BindIndexBufferArgs{ .Buffer = indexBuffer };

@@ -217,6 +217,7 @@ project "bloom"
     externalincludedirs
 	{
 		"external/tinyobjloader",
+		"%{IncludeDir.imgui}",
 		"%{IncludeDir.glm}",
     }
 

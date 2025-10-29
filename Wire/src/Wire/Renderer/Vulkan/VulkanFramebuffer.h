@@ -20,7 +20,7 @@ namespace wire {
         virtual glm::vec2 getExtent() const override { return m_Desc.Extent; }
         virtual uint32_t getNumMips() const override { return m_Desc.MipCount; }
 
-        virtual Texture2D* asTexture2D() const override;
+        virtual std::shared_ptr<Texture2D> asTexture2D() const override;
 
         VkImage getColorImage() const { return m_Image; }
         VkImage getDepthImage() const { return m_DepthImage; }
@@ -31,6 +31,8 @@ namespace wire {
     protected:
         virtual void destroy() override;
         virtual void invalidate() noexcept override;
+    private:
+        void transitionLayoutSetup();
     private:
         Device* m_Device;
         FramebufferDesc m_Desc;
@@ -46,6 +48,8 @@ namespace wire {
         VkImage m_DepthImage = nullptr;
         VkImageView m_DepthView = nullptr;
         VkDeviceMemory m_DepthMemory = nullptr;
+
+        friend class VulkanDevice;
     };
 
 }

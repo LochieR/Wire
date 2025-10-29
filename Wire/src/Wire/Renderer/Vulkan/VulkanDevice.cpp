@@ -1040,6 +1040,11 @@ namespace wire {
         return nullptr;
     }
 
+    void VulkanDevice::registerResource(const std::shared_ptr<IResource>& resource)
+    {
+        m_Resources.push_back(resource);
+    }
+
     std::shared_ptr<Swapchain> VulkanDevice::createSwapchain(const SwapchainInfo& info, std::string_view debugName)
     {
         if (!m_Valid)
@@ -1064,6 +1069,8 @@ namespace wire {
         
         auto framebuffer = std::make_shared<VulkanFramebuffer>(this, desc, debugName);
         m_Resources.push_back(framebuffer);
+
+        framebuffer->transitionLayoutSetup();
         
         return framebuffer;
     }

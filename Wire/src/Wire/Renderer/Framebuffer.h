@@ -89,7 +89,7 @@ namespace wire {
         virtual glm::vec2 getExtent() const = 0;
         virtual uint32_t getNumMips() const = 0;
 
-        virtual Texture2D* asTexture2D() const = 0;
+        virtual std::shared_ptr<Texture2D> asTexture2D() const = 0;
     };
 
 }

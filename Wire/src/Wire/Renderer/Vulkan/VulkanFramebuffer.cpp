@@ -166,18 +166,9 @@ namespace wire {
             std::string depthViewDebugName = m_DebugName + " (depth view)";
             VK_DEBUG_NAME(vk->getDevice(), IMAGE_VIEW, m_DepthView, depthViewDebugName.c_str());
         }
-
-        if (m_Desc.Layout != AttachmentLayout::Undefined)
-        {
-            std::shared_ptr<VulkanFramebuffer> framebuffer = m_Device->getResource<VulkanFramebuffer>(this);
-            
-            CommandList list = m_Device->beginSingleTimeCommands();
-            list.imageMemoryBarrier(framebuffer, AttachmentLayout::Undefined, m_Desc.Layout, 0, m_Desc.MipCount);
-            m_Device->endSingleTimeCommands(list);
-        }
     }
 
-    Texture2D* VulkanFramebuffer::asTexture2D() const
+    std::shared_ptr<Texture2D> VulkanFramebuffer::asTexture2D() const
     {
         if (!m_Valid)
         {
@@ -185,7 +176,10 @@ namespace wire {
             return nullptr;
         }
         
-        return new VulkanTexture2D(m_Image, m_Memory, m_View, m_Mips, (uint32_t)m_Desc.Extent.x, (uint32_t)m_Desc.Extent.y);
+        auto texture = std::make_shared<VulkanTexture2D>(m_Image, m_Memory, m_View, m_Mips, (uint32_t)m_Desc.Extent.x, (uint32_t)m_Desc.Extent.y);
+        ((VulkanDevice*)m_Device)->registerResource(texture);
+        
+        return texture;
     }
 
     void VulkanFramebuffer::destroy()
@@ -221,6 +215,18 @@ namespace wire {
     {
         m_Valid = false;
         m_Device = nullptr;
+    }
+
+    void VulkanFramebuffer::transitionLayoutSetup()
+    {
+        if (m_Desc.Layout != AttachmentLayout::Undefined)
+        {
+            std::shared_ptr<VulkanFramebuffer> framebuffer = m_Device->getResource<VulkanFramebuffer>(this);
+            
+            CommandList list = m_Device->beginSingleTimeCommands();
+            list.imageMemoryBarrier(framebuffer, AttachmentLayout::Undefined, m_Desc.Layout, 0, m_Desc.MipCount);
+            m_Device->endSingleTimeCommands(list);
+        }
     }
 
 }

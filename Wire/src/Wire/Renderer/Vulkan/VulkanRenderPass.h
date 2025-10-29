@@ -22,6 +22,8 @@ namespace wire {
         VkRenderPass getRenderPass() const { return m_RenderPass; }
         const std::vector<VkFramebuffer>& getFramebuffers() const { return m_Framebuffers; }
         VkFramebuffer getFramebuffer(uint32_t imageIndex) const { return m_Framebuffer ? m_Framebuffers[0] : m_Framebuffers[imageIndex]; }
+    
+        std::vector<VkPipelineColorBlendAttachmentState> getBlendAttachmentStates() const;
     protected:
         virtual void destroy() override;
         virtual void invalidate() noexcept override;

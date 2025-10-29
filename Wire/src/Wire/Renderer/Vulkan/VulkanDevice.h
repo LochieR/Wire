@@ -80,6 +80,7 @@ namespace wire {
         
         virtual void drop(const std::shared_ptr<IResource>& resource) override;
         virtual std::shared_ptr<IResource> getResource(IResource* resource) const override;
+        void registerResource(const std::shared_ptr<IResource>& resource);
 
         virtual std::shared_ptr<Swapchain> createSwapchain(const SwapchainInfo& info, std::string_view debugName = {}) override;
         virtual std::shared_ptr<Framebuffer> createFramebuffer(const FramebufferDesc& desc, std::string_view debugName = {}) override;

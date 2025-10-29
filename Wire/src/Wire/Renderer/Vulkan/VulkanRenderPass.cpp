@@ -217,6 +217,31 @@ namespace wire {
         }
     }
 
+    std::vector<VkPipelineColorBlendAttachmentState> VulkanRenderPass::getBlendAttachmentStates() const
+    {
+        std::vector<VkPipelineColorBlendAttachmentState> result;
+
+        for (const auto& attachment : m_Desc.Attachments)
+        {
+            if (attachment.Format == AttachmentFormat::SwapchainDepthDefault || attachment.Format == AttachmentFormat::D32_SFloat)
+                continue;
+
+            VkPipelineColorBlendAttachmentState state{};
+            state.blendEnable = attachment.BlendState.BlendEnable ? VK_TRUE : VK_FALSE;
+            state.srcColorBlendFactor = (VkBlendFactor)attachment.BlendState.SrcColorBlendFactor;
+            state.dstColorBlendFactor = (VkBlendFactor)attachment.BlendState.DstColorBlendFactor;
+            state.colorBlendOp = (VkBlendOp)attachment.BlendState.ColorBlendOp;
+            state.srcAlphaBlendFactor = (VkBlendFactor)attachment.BlendState.SrcAlphaBlendFactor;
+            state.dstAlphaBlendFactor = (VkBlendFactor)attachment.BlendState.DstAlphaBlendFactor;
+            state.alphaBlendOp = (VkBlendOp)attachment.BlendState.AlphaBlendOp;
+            state.colorWriteMask = (VkColorComponentFlags)attachment.BlendState.ColorWriteMask;
+
+            result.push_back(state);
+        }
+
+        return result;
+    }
+
     void VulkanRenderPass::destroy()
     {
         if (m_Valid && m_Device)

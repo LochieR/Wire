@@ -10,7 +10,7 @@ namespace wire {
     struct ComputeInputLayout
     {
         std::vector<PushConstantInfo> PushConstantInfos;
-        ShaderResourceLayout* ResourceLayout;
+        std::shared_ptr<ShaderResourceLayout> ResourceLayout;
     };
 
     struct ComputePipelineDesc

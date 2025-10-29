@@ -82,7 +82,7 @@ namespace wire {
         requires std::is_base_of_v<IResource, T>
         std::shared_ptr<T> getResource(T* resource) const
         {
-            return std::static_pointer_cast<T>(getResource(resource));
+            return std::static_pointer_cast<T>(getResource(static_cast<IResource*>(resource)));
         }
     };
 
